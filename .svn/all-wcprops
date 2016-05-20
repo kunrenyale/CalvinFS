@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 21
+/svn/!svn/ver/291/src
+END
+Makefile.default
+K 25
+svn:wc:ra_dav:version-url
+V 38
+/svn/!svn/ver/202/src/Makefile.default
+END
+lint
+K 25
+svn:wc:ra_dav:version-url
+V 25
+/svn/!svn/ver/27/src/lint
+END
+Makefile.template
+K 25
+svn:wc:ra_dav:version-url
+V 38
+/svn/!svn/ver/64/src/Makefile.template
+END

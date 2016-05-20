@@ -1,0 +1,119 @@
+K 25
+svn:wc:ra_dav:version-url
+V 38
+/svn/!svn/ver/289/src/components/store
+END
+store_app_test.cc
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/!svn/ver/61/src/components/store/store_app_test.cc
+END
+leveldbstore.h
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/71/src/components/store/leveldbstore.h
+END
+store_app.cc
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/167/src/components/store/store_app.cc
+END
+kvstore_test.cc
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/71/src/components/store/kvstore_test.cc
+END
+kvstore.cc
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/71/src/components/store/kvstore.cc
+END
+store_app.h
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/!svn/ver/77/src/components/store/store_app.h
+END
+store.h
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/73/src/components/store/store.h
+END
+kvstore.h
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/71/src/components/store/kvstore.h
+END
+versioned_kvstore_test.cc
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/!svn/ver/289/src/components/store/versioned_kvstore_test.cc
+END
+versioned_kvstore.cc
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/73/src/components/store/versioned_kvstore.cc
+END
+kvstore.proto
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/63/src/components/store/kvstore.proto
+END
+hybrid_versioned_kvstore_test.cc
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/!svn/ver/115/src/components/store/hybrid_versioned_kvstore_test.cc
+END
+hybrid_versioned_kvstore.cc
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/!svn/ver/115/src/components/store/hybrid_versioned_kvstore.cc
+END
+versioned_kvstore.h
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/73/src/components/store/versioned_kvstore.h
+END
+btreestore.cc
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/73/src/components/store/btreestore.cc
+END
+hybrid_versioned_kvstore.h
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/!svn/ver/80/src/components/store/hybrid_versioned_kvstore.h
+END
+btreestore.h
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/288/src/components/store/btreestore.h
+END
+versioned_kvstore.proto
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/!svn/ver/63/src/components/store/versioned_kvstore.proto
+END
+leveldbstore.cc
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/77/src/components/store/leveldbstore.cc
+END

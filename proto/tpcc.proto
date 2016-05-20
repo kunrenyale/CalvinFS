@@ -1,0 +1,17 @@
+// TPC-C New Order:
+//
+//  - read warehouse record (read tax)
+//  - update district record counter
+//  - read customer (read discount, lastname, and credit status)
+//  - insert new-order and order records
+//  - for each orderline:
+//      - read item (price, name, data)
+//      - update stock record counter
+//      - insert order line record
+
+message NewOrderInput {
+  optional int32 district = 1;
+  optional int32 customer = 2;
+  optional int32 order = 3;  // unique id
+  repeated int32 ol_item = 4;
+}

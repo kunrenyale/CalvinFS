@@ -1,0 +1,18 @@
+// Author: Alex Thomson (thomson@cs.yale.edu)
+//
+
+message StartAppProto {
+  // IDs of Machines to which app is being deployed.
+  repeated uint64 participants = 1;
+
+  // Specifies the app TYPE.
+  optional string app = 2;
+
+  // Specifies the name under which the app will be registered at each
+  // participating machine.
+  optional string app_name = 3;
+
+  // AppType-specific arg for initializing apps. May contain an arbitrary
+  // serialized protobuf.
+  optional string app_args = 4;
+}

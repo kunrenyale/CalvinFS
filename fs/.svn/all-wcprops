@@ -1,0 +1,155 @@
+K 25
+svn:wc:ra_dav:version-url
+V 24
+/svn/!svn/ver/287/src/fs
+END
+block_log.cc
+K 25
+svn:wc:ra_dav:version-url
+V 36
+/svn/!svn/ver/77/src/fs/block_log.cc
+END
+metadata_store_test.cc
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/77/src/fs/metadata_store_test.cc
+END
+metadata_store.cc
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/svn/!svn/ver/236/src/fs/metadata_store.cc
+END
+block_log.h
+K 25
+svn:wc:ra_dav:version-url
+V 36
+/svn/!svn/ver/197/src/fs/block_log.h
+END
+metadata_store.h
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/!svn/ver/226/src/fs/metadata_store.h
+END
+metadata.proto
+K 25
+svn:wc:ra_dav:version-url
+V 38
+/svn/!svn/ver/72/src/fs/metadata.proto
+END
+batch.proto
+K 25
+svn:wc:ra_dav:version-url
+V 35
+/svn/!svn/ver/77/src/fs/batch.proto
+END
+Makefile.inc
+K 25
+svn:wc:ra_dav:version-url
+V 36
+/svn/!svn/ver/90/src/fs/Makefile.inc
+END
+calvinfs_client_app.cc
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/156/src/fs/calvinfs_client_app.cc
+END
+calvinfs_client_app.h
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/287/src/fs/calvinfs_client_app.h
+END
+block_store_test.cc
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svn/!svn/ver/77/src/fs/block_store_test.cc
+END
+calvinfs.cc
+K 25
+svn:wc:ra_dav:version-url
+V 36
+/svn/!svn/ver/115/src/fs/calvinfs.cc
+END
+block_store.cc
+K 25
+svn:wc:ra_dav:version-url
+V 39
+/svn/!svn/ver/266/src/fs/block_store.cc
+END
+fs_test.cc
+K 25
+svn:wc:ra_dav:version-url
+V 34
+/svn/!svn/ver/81/src/fs/fs_test.cc
+END
+calvinfs.h
+K 25
+svn:wc:ra_dav:version-url
+V 35
+/svn/!svn/ver/115/src/fs/calvinfs.h
+END
+calvinfs_config.proto
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/77/src/fs/calvinfs_config.proto
+END
+block_store.h
+K 25
+svn:wc:ra_dav:version-url
+V 37
+/svn/!svn/ver/77/src/fs/block_store.h
+END
+fs.h
+K 25
+svn:wc:ra_dav:version-url
+V 28
+/svn/!svn/ver/71/src/fs/fs.h
+END
+local_calvinfs.h
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/svn/!svn/ver/71/src/fs/local_calvinfs.h
+END
+localfs.cc
+K 25
+svn:wc:ra_dav:version-url
+V 34
+/svn/!svn/ver/72/src/fs/localfs.cc
+END
+hdfs.cc
+K 25
+svn:wc:ra_dav:version-url
+V 31
+/svn/!svn/ver/71/src/fs/hdfs.cc
+END
+localfs.h
+K 25
+svn:wc:ra_dav:version-url
+V 33
+/svn/!svn/ver/71/src/fs/localfs.h
+END
+status.h
+K 25
+svn:wc:ra_dav:version-url
+V 32
+/svn/!svn/ver/71/src/fs/status.h
+END
+hdfs.h
+K 25
+svn:wc:ra_dav:version-url
+V 30
+/svn/!svn/ver/71/src/fs/hdfs.h
+END
+block_log_test.cc
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/svn/!svn/ver/129/src/fs/block_log_test.cc
+END

@@ -1,0 +1,65 @@
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/svn/!svn/ver/288/src/components/scheduler
+END
+lazy_scheduler.cc
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/60/src/components/scheduler/lazy_scheduler.cc
+END
+serial_scheduler.cc
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/!svn/ver/60/src/components/scheduler/serial_scheduler.cc
+END
+scheduler_test.cc
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/!svn/ver/69/src/components/scheduler/scheduler_test.cc
+END
+lazy_scheduler.h
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/!svn/ver/59/src/components/scheduler/lazy_scheduler.h
+END
+serial_scheduler.h
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/!svn/ver/288/src/components/scheduler/serial_scheduler.h
+END
+scheduler.h
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/svn/!svn/ver/288/src/components/scheduler/scheduler.h
+END
+lock_manager.cc
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/!svn/ver/58/src/components/scheduler/lock_manager.cc
+END
+lock_manager.h
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/!svn/ver/55/src/components/scheduler/lock_manager.h
+END
+locking_scheduler.cc
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/241/src/components/scheduler/locking_scheduler.cc
+END
+locking_scheduler.h
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/svn/!svn/ver/288/src/components/scheduler/locking_scheduler.h
+END

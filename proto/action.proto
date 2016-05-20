@@ -1,0 +1,62 @@
+// Author: Alex Thomson
+//
+// An Action is the fundamental unit of work in Calvin. The state of a Calvin
+// instance is uniquely determined by (a) the historical log of all Actions that
+// it has run, and (b) some method of interpreting each Action as a state
+// transition. Action execution is essentially a pure function of type:
+//
+//          DBState -> (DBState, Results)
+//
+
+import "scalar.proto";
+
+message Action {
+  // Uniquely identifies the originator of the Action.
+  optional uint64 client_machine = 1;
+  optional string client_channel = 2;
+
+  // Identifies the backend store to which the action is directed.
+  optional string store = 11;
+
+  // Specifies type of action (semantics determined by specified backend).
+  required int32 action_type = 12;
+
+  // May be set to true iff this action does not modify the state at all.
+  optional bool read_only = 13 [default = false];
+
+  // Specifies the full semantics of the action being requested. This may be
+  // encoded in ANY way, depending on the interpreter. For example, it may be
+  // an arbitrary serialized protobuf.
+  required bytes input = 14;
+
+  // Specifies any results returned once the Action was executed.
+  optional bytes output = 15;
+
+  // Keys of records READ by the action.
+  repeated bytes readset = 21;
+
+  // Keys of records WRITTEN by the action.
+  repeated bytes writeset = 22;
+
+  // Version at which Action was committed to the log.
+  optional uint64 version = 31;
+
+  // If the version isn't fully determined yet, this specifies relative version
+  // w.r.t. the starting version for the ActionBatch.
+  optional uint64 version_offset = 32;
+
+  // Miscellaneous data.
+  repeated Scalar misc = 51;
+  
+  // Action status used by VLL scheduler.(FREE or BLOCKED)
+  optional int32 action_status = 61;
+  
+  enum ActionStatus {
+    FREE = 0;
+    BLOCKED = 1;
+  }
+}
+
+message ActionBatch {
+  repeated Action entries = 1;
+}

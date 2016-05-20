@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 29
+/svn/!svn/ver/252/src/scripts
+END
+calvinfs_server.cc
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/252/src/scripts/calvinfs_server.cc
+END
+cfs.cc
+K 25
+svn:wc:ra_dav:version-url
+V 35
+/svn/!svn/ver/95/src/scripts/cfs.cc
+END
+Makefile.inc
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/!svn/ver/91/src/scripts/Makefile.inc
+END
+cluster.cc
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/svn/!svn/ver/229/src/scripts/cluster.cc
+END
+calvin_server.cc
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/83/src/scripts/calvin_server.cc
+END
+script_utils.cc
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/!svn/ver/91/src/scripts/script_utils.cc
+END
+script_utils.h
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svn/!svn/ver/91/src/scripts/script_utils.h
+END
