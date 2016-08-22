@@ -1,0 +1,76 @@
+#!/bin/bash
+
+# requires: make, g++, autoconf, libtool, libreadline-dev, svn(subversion),git,unzip,tar,cmake, libsnappy-dev
+
+cd ext
+
+# protobuf
+git clone https://github.com/google/protobuf.git
+cd protobuf
+./autogen.sh
+./configure --prefix=$PWD
+make -j
+cd ..
+
+# gtest
+wget http://googletest.googlecode.com/files/gtest-1.6.0.zip
+unzip gtest-1.6.0.zip
+rm gtest-1.6.0.zip
+mv gtest-1.6.0 gtest
+cd gtest
+./configure --prefix=$PWD
+make -j
+cd ..
+
+# glog
+git clone https://github.com/google/glog.git
+cd glog
+./configure --prefix=$PWD
+mkdir build && cd build
+export CXXFLAGS="-fPIC" && cmake .. && make VERBOSE=1
+make -j
+sudo make install
+cd ..
+
+# leveldb
+wget https://leveldb.googlecode.com/files/leveldb-1.9.0.tar.gz
+tar -xzf leveldb-1.9.0.tar.gz
+mv leveldb-1.9.0 leveldb
+rm -fr leveldb-1.9.0.tar.gz
+cd leveldb
+make -j
+make libmemenv.a
+cd ..
+
+# zeromq
+wget http://download.zeromq.org/zeromq-3.2.2.tar.gz
+tar xzf zeromq-3.2.2.tar.gz
+rm zeromq-3.2.2.tar.gz
+mv zeromq-3.2.2 zeromq
+cd zeromq
+./autogen.sh
+./configure --prefix=$PWD
+make -j
+make install
+cd ..
+
+#gperftools
+git clone https://github.com/gperftools/gperftools.git
+cd gperftools
+./autogen.sh
+./configure --prefix=$PWD --enable-frame-pointers
+make -j
+make install
+cd ..
+
+#gflags
+wget http://gflags.googlecode.com/files/gflags-2.0-no-svn-files.tar.gz
+tar xzf gflags-2.0-no-svn-files.tar.gz 
+rm gflags-2.0-no-svn-files.tar.gz 
+mv gflags-2.0 gflags
+cd gflags
+./configure --prefix=$PWD
+make -j
+make install
+cd ..
+
