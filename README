@@ -1,4 +1,4 @@
-----------------------This is CalvinFS codebase.---------------------------
+----------------------This is the CalvinFS codebase.---------------------------
 
 Installation(This is for Ubuntu 14.04, it should be similar with other Linux distribution):
 1. You should install the following softwares:
@@ -22,10 +22,25 @@ Installation(This is for Ubuntu 14.04, it should be similar with other Linux dis
    I wrote a script(install-ext), so that you can directly run this script to download and compile the libraries.
 
 3. After that, you should add the LD_LIBRARY_PATH to the ~/.bashrc, below is my cofig:
-export LD_LIBRARY_PATH=~/CalvinFS/ext/zeromq/src/.libs:~/CalvinFSext/protobuf/src/.libs:~/CalvinFS/ext/gtest/lib/.libs:~/CalvinFS/ext/glog/.libs:~/CalvinFS/ext/leveldb:~/CalvinFS/ext/gperftools/.libs:~/CalvinFSext/gflags/.libs
+export LD_LIBRARY_PATH=~/CalvinFS/ext/zeromq/src/.libs:~/CalvinFS/ext/protobuf/src/.libs:~/CalvinFS/ext/gtest/lib/.libs:~/CalvinFS/ext/glog/.libs:~/CalvinFS/ext/leveldb:~/CalvinFS/ext/gperftools/.libs:~/CalvinFS/ext/gflags/.libs
 
 Then run source ~/.bashrc.
 
 
+4. Now you can compile the code:
+$ cd ~/CalvinFS/src
+$ make -j
 
+Then all the binaries will be created at ~/CalvinFS/bin/
+
+
+5. You can change the config file(calvin.conf) to include all machines in the cluster. Now you can run CalvinFS:
+$ cd ~/CalvinFS
+$ bin/scripts/cluster --command="status"  // Check the status of the cluster
+$ bin/scripts/cluster --command="put-config" // Send the config file to all the machines in the cluster
+$ bin/scripts/cluster --command="update"  // Use git to get the latest code, and compile it on each machine 
+$ bin/scripts/cluster --command="start"  // Start the CalvinFS cluster
+$ bin/scripts/cluster --command="kill"   // Stop the CalvinFS cluster
+
+In default, when you start CalvinFS experiments, it will run FillExperiment() experiments. If you want to run other experiments, you can change the code in function Start() in fs/calvinfs_client_app.h.
 
