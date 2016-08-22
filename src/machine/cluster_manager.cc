@@ -34,7 +34,15 @@ const string& ClusterManager::ssh_key(uint64 m) {
 
 void* SystemFunction(void* arg) {
   // Run the specified command.
-  system(reinterpret_cast<string*>(arg)->c_str());
+  int status = system(reinterpret_cast<string*>(arg)->c_str());
+  if(status == -1){
+    LOG(FATAL)<<"system error";
+  } else if(WIFEXITED(status) && (WEXITSTATUS(status) == 0)){
+    // printf("run command successful\n");
+  } else {
+    LOG(FATAL) << "run command fail and exit code is " << WEXITSTATUS(status);
+  }
+
   delete reinterpret_cast<string*>(arg);
   return NULL;
 }

@@ -1,5 +1,5 @@
 // Author: Alex Thomson (thomson@cs.yale.edu)
-
+syntax = "proto2";
 import "scalar.proto";
 
 message Report {

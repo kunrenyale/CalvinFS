@@ -79,7 +79,8 @@ int get_pid_by_name(char* process_name, int list_size) {
     }
 
     memset(cmdline, 0, sizeof(cmdline));
-    if (fread(cmdline, MAX_BUF_SIZE - 1, 1, fp) < 0) {
+    size_t result = fread(cmdline, MAX_BUF_SIZE - 1, 1, fp);
+    if (result < 0) {
       fclose(fp);
       continue;
     }

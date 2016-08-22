@@ -8,7 +8,7 @@
 //      - read item (price, name, data)
 //      - update stock record counter
 //      - insert order line record
-
+syntax = "proto2";
 message NewOrderInput {
   optional int32 district = 1;
   optional int32 customer = 2;

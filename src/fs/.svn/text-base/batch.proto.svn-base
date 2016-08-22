@@ -1,7 +1,0 @@
-// Author: Alex Thomson (thomson@cs.yale.edu)
-//
-
-message Batch {
-  repeated bytes entries = 1;
-}
-

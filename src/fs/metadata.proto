@@ -4,6 +4,7 @@
 // is omitted here.
 
 // All files are currently either directories or plain data files.
+syntax = "proto2";
 enum FileType {
   DATA = 0;
   DIR = 1;

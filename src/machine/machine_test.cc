@@ -8,7 +8,7 @@
 #include "common/utils.h"
 
 #include <glog/logging.h>
-#include <google/profiler.h>
+#include <gperftools/profiler.h>
 #include <gtest/gtest.h>
 
 #include "proto/header.pb.h"

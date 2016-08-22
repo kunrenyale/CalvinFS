@@ -1,6 +1,6 @@
 // Author: Alexander Thomson <thomson@cs.yale.edu>
 //
-
+syntax = "proto2";
 message KVStoreAction {  // Actually a namespace!
 
 // Types of actions that KVStore can interpret.

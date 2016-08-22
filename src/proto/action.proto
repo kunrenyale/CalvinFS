@@ -7,7 +7,7 @@
 //
 //          DBState -> (DBState, Results)
 //
-
+syntax = "proto2";
 import "scalar.proto";
 
 message Action {

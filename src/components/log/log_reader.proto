@@ -1,6 +1,6 @@
 // Author: Alex Thomson (thomson@cs.yale.edu)
 //
-
+syntax = "proto2";
 message LogReaderState {
   // False iff Reader is positioned before the first entry.
   optional bool started = 1 [default = false];

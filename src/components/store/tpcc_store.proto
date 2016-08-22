@@ -1,6 +1,6 @@
 // Author: Kun Ren <kun@cs.yale.edu>
 //
-
+syntax = "proto2";
 message TpccAction {  // Actually a namespace!
 
 // Types of actions that KVStore can interpret.

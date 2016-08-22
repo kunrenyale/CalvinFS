@@ -1,6 +1,6 @@
 // Author: Alex Thomson (thomson@cs.yale.edu)
 //
-
+syntax = "proto2";
 message StartAppProto {
   // IDs of Machines to which app is being deployed.
   repeated uint64 participants = 1;

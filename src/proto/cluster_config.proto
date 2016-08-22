@@ -3,6 +3,7 @@
 // ClusterConfig is essentially a collection of MachineInfo entries, each
 // of which stores the MachineID, host (ip address), and listen port for a
 // machine in the cluster.
+syntax = "proto2";
 message MachineInfo {
   optional uint64 id = 1;
   optional string host = 2;

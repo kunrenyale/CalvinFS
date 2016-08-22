@@ -1,6 +1,6 @@
 // Author: Alexander Thomson <thomson@cs.yale.edu>
 //
-
+syntax = "proto2";
 message CalvinFSConfig {
   optional uint64 block_replication_factor = 1;
   optional uint64 metadata_replication_factor = 2;

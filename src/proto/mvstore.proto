@@ -1,6 +1,7 @@
 // Author: Alex Thomson (thomson@cs.yale.edu)
 
 // Input to write action. (No output.)
+syntax = "proto2";
 message MVStoreWriteInput {
   required bytes key = 1;
   required bytes value = 2;

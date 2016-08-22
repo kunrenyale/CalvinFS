@@ -1,7 +1,7 @@
 // Author: Alex Thomson
 //
 // Encoding of some kind of numeric or string value.
-
+syntax = "proto2";
 message Scalar {
   // Specifies actual type of scalar value.
   enum ScalarType {
