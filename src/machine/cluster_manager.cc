@@ -70,7 +70,6 @@ void ClusterManager::PutConfig() {
 }
 
 void ClusterManager::GetTempFiles(const string& base) {
-  // Next, Run "svn up;make clean;make -j" to get the latest code and compile.
   vector<pthread_t> threads;
   for (map<uint64, MachineInfo>::const_iterator it =
        config_.machines().begin();
@@ -91,7 +90,7 @@ void ClusterManager::GetTempFiles(const string& base) {
 }
 
 void ClusterManager::Update() {
-  // Next, Run "svn up;make clean;make -j" to get the latest code and compile.
+  // Next, Run "git pull ;make clean;make -j" to get the latest code and compile.
   vector<pthread_t> threads;
   for (map<uint64, MachineInfo>::const_iterator it =
        config_.machines().begin();
@@ -99,7 +98,7 @@ void ClusterManager::Update() {
     threads.resize(threads.size()+1);
     string* ssh_command = new string(
       "ssh " + ssh_key(it->first)  + " "+ ssh_username_ + "@" + it->second.host() +
-      " 'cd " + calvin_path_ + "; svn up; cd src; cp Makefile.default Makefile; make clean; make -j'");
+      " 'cd " + calvin_path_ + "; git pull; cd src; cp Makefile.default Makefile; make clean; make -j'");
     pthread_create(
         &threads[threads.size()-1],
         NULL,

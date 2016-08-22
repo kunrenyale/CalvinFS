@@ -8,12 +8,12 @@
 
 DEFINE_string(command, "status", "cluster command");
 DEFINE_string(config, "calvin.conf", "conf file of Calvin cluster");
-DEFINE_string(calvin_path, "/home/ubuntu/calvin_codebase/calvin",
+DEFINE_string(calvin_path, "/home/ubuntu/CalvinFS",
               "path to the main calvin directory");
 DEFINE_string(binary, "calvinfs_server", "Calvin binary executable program");
-DEFINE_string(ssh_key1, "-i ~/Calvin_Key.pem", "For ssh authentication");
-DEFINE_string(ssh_key2, "-i ~/Virginia.pem", "For ssh authentication");
-DEFINE_string(ssh_key3, "-i ~/Ireland.pem", "For ssh authentication");
+DEFINE_string(ssh_key1, "-i ~/Calvin_Key.pem", "ssh_key for the first data center");
+DEFINE_string(ssh_key2, "-i ~/Calvin_Key.pem", "ssh_key for the second data center");
+DEFINE_string(ssh_key3, "-i ~/Calvin_Key.pem", "ssh_key for the third data center");
 DEFINE_bool(valgrind, false, "Run binaries with valgrind?");
 
 int main(int argc, char** argv) {

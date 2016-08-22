@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
     if (is_process_exist((char *)FLAGS_binary.c_str()) == true) {
       return -2;
     } else {
-      printf("Machine %d: (Calvin) 0.1 (c) Yale University 2013.\n",
+      printf("Machine %d: (CalvinFS) 0.1 (c) Yale University 2016.\n",
              (int)FLAGS_machine_id);
       return 0;
     }
