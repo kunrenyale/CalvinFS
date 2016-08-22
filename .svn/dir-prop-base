@@ -1,8 +1,0 @@
-K 10
-svn:ignore
-V 25
-Makefile
-gmon.out
-*.conf
-
-END

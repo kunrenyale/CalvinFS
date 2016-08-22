@@ -1,0 +1,89 @@
+K 25
+svn:wc:ra_dav:version-url
+V 29
+/svn/!svn/ver/224/src/machine
+END
+cluster_manager.cc
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/!svn/ver/224/src/machine/cluster_manager.cc
+END
+cluster_manager.h
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/!svn/ver/224/src/machine/cluster_manager.h
+END
+message_buffer.h
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/115/src/machine/message_buffer.h
+END
+Makefile.inc
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/!svn/ver/91/src/machine/Makefile.inc
+END
+external_connection.cc
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/91/src/machine/external_connection.cc
+END
+machine_test.cc
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/!svn/ver/71/src/machine/machine_test.cc
+END
+message_handler.h
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/47/src/machine/message_handler.h
+END
+external_connection.h
+K 25
+svn:wc:ra_dav:version-url
+V 50
+/svn/!svn/ver/91/src/machine/external_connection.h
+END
+machine.cc
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/svn/!svn/ver/218/src/machine/machine.cc
+END
+cluster_config_test.cc
+K 25
+svn:wc:ra_dav:version-url
+V 51
+/svn/!svn/ver/47/src/machine/cluster_config_test.cc
+END
+cluster_config.cc
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/!svn/ver/70/src/machine/cluster_config.cc
+END
+machine.h
+K 25
+svn:wc:ra_dav:version-url
+V 39
+/svn/!svn/ver/113/src/machine/machine.h
+END
+cluster_config.h
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/!svn/ver/47/src/machine/cluster_config.h
+END
+cluster_manager_test.cc
+K 25
+svn:wc:ra_dav:version-url
+V 52
+/svn/!svn/ver/80/src/machine/cluster_manager_test.cc
+END

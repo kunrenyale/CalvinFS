@@ -1,0 +1,48 @@
+// Author: Alexander Thomson <thomson@cs.yale.edu>
+//
+
+message KVStoreAction {  // Actually a namespace!
+
+// Types of actions that KVStore can interpret.
+enum Type {
+  EXISTS = 0;
+  PUT = 1;
+  GET = 2;
+  DELETE = 3;
+};
+
+/////////////////////////
+// EXISTS
+message ExistsInput {
+  required bytes key = 1;
+}
+message ExistsOutput {
+  required bool exists = 1;
+}
+
+/////////////////////////
+// PUT
+message PutInput {
+  required bytes key = 1;
+  required bytes value = 2;
+}
+// (no output type)
+
+/////////////////////////
+// GET
+message GetInput {
+  required bytes key = 1;
+}
+message GetOutput {
+  required bool exists = 1;
+  optional bytes value = 2;
+}
+
+/////////////////////////
+// DELETE
+message DeleteInput {
+  required bytes key = 1;
+}
+// (no output type)
+
+}  // message KVStoreAction

@@ -1,0 +1,89 @@
+K 25
+svn:wc:ra_dav:version-url
+V 27
+/svn/!svn/ver/77/src/common
+END
+atomic_test.cc
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/svn/!svn/ver/71/src/common/atomic_test.cc
+END
+vec_test.cc
+K 25
+svn:wc:ra_dav:version-url
+V 39
+/svn/!svn/ver/27/src/common/vec_test.cc
+END
+atomic.h
+K 25
+svn:wc:ra_dav:version-url
+V 36
+/svn/!svn/ver/77/src/common/atomic.h
+END
+utils_test.cc
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/!svn/ver/55/src/common/utils_test.cc
+END
+vec.h
+K 25
+svn:wc:ra_dav:version-url
+V 33
+/svn/!svn/ver/27/src/common/vec.h
+END
+utils.cc
+K 25
+svn:wc:ra_dav:version-url
+V 36
+/svn/!svn/ver/59/src/common/utils.cc
+END
+Makefile.inc
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/svn/!svn/ver/62/src/common/Makefile.inc
+END
+mutex_test.cc
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/!svn/ver/52/src/common/mutex_test.cc
+END
+utils.h
+K 25
+svn:wc:ra_dav:version-url
+V 35
+/svn/!svn/ver/58/src/common/utils.h
+END
+varint_test.cc
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/svn/!svn/ver/27/src/common/varint_test.cc
+END
+source.h
+K 25
+svn:wc:ra_dav:version-url
+V 36
+/svn/!svn/ver/69/src/common/source.h
+END
+mutex.h
+K 25
+svn:wc:ra_dav:version-url
+V 35
+/svn/!svn/ver/54/src/common/mutex.h
+END
+varint.h
+K 25
+svn:wc:ra_dav:version-url
+V 36
+/svn/!svn/ver/27/src/common/varint.h
+END
+types.h
+K 25
+svn:wc:ra_dav:version-url
+V 35
+/svn/!svn/ver/27/src/common/types.h
+END

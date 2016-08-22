@@ -1,0 +1,17 @@
+// Author: Alex Thomson (thomson@cs.yale.edu)
+//
+
+message LogReaderState {
+  // False iff Reader is positioned before the first entry.
+  optional bool started = 1 [default = false];
+
+  // Current version and entry.
+  optional uint64 version = 2;
+  optional bytes entry = 3;
+
+  // True if the last call to Next/Seek succeeded.
+  optional bool success = 4 [default = false];
+
+  // TODO(agt): Add batching.
+}
+
