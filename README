@@ -1,1 +1,26 @@
-This is CalvinFS codebase. 
+----------------------This is CalvinFS codebase.---------------------------
+
+Installation(This is for Ubuntu 14.04, it should be similar with other Linux distribution):
+1. You should install the following softwares:
+   Git
+   make,g++
+   autoconf, libtool,libreadline-dev,libsnappy-dev
+   subversion
+   unzip, tar
+   cmake
+
+
+2. You should install the following external libraries:
+    --- protobuf
+    --- gtest
+    --- glog
+    --- leveldb
+    --- zeromq
+    --- gperftools
+    --- gflags
+
+   I wrote a script(install-ext), so that you can directly run this script to download the libraries and compile them.
+
+
+
+
