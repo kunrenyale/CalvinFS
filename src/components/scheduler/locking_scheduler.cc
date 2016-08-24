@@ -37,25 +37,25 @@ void LockingScheduler::MainLoopBody() {
     // re-request any as read locks.
     set<string> writeset;
     for (int i = 0; i < action->writeset_size(); i++) {
-      if (store_->IsLocal(action->writeset(i))) {
+//      if (store_->IsLocal(action->writeset(i))) {
         writeset.insert(action->writeset(i));
         if (!lm_.WriteLock(action, action->writeset(i))) {
           ungranted_requests++;
         }
-      }
+//      }
     }
 
     // Request read locks.
     for (int i = 0; i < action->readset_size(); i++) {
       // Avoid re-requesting shared locks if an exclusive lock is already
       // requested.
-      if (store_->IsLocal(action->readset(i))) {
+//      if (store_->IsLocal(action->readset(i))) {
         if (writeset.count(action->readset(i)) == 0) {
           if (!lm_.ReadLock(action, action->readset(i))) {
             ungranted_requests++;
           }
         }
-      }
+//      }
     }
 
     // If all read and write locks were immediately acquired, this action
@@ -70,16 +70,16 @@ void LockingScheduler::MainLoopBody() {
   while (completed_.Pop(&action)) {
     // Release read locks.
     for (int i = 0; i < action->readset_size(); i++) {
-      if (store_->IsLocal(action->readset(i))) {
+//      if (store_->IsLocal(action->readset(i))) {
         lm_.Release(action, action->readset(i));
-      }
+//      }
     }
 
     // Release write locks. (Okay to release a lock twice.)
     for (int i = 0; i < action->writeset_size(); i++) {
-      if (store_->IsLocal(action->writeset(i))) {
+//      if (store_->IsLocal(action->writeset(i))) {
         lm_.Release(action, action->writeset(i));
-      }
+//      }
     }
 
     active_actions_.erase(action->version());
