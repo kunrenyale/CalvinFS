@@ -223,7 +223,7 @@ void DistributedBlockStoreApp::Put(uint64 block_id, const Slice& data) {
   }
 
   // Wait for acks
-  while (acks->load() < (int)config_->config().block_replication_factor() - 1) {
+  while (acks->load() < (int)config_->config().block_replication_factor()/2 + 1) {
     usleep(10);
   }
 }
