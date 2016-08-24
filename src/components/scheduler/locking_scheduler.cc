@@ -70,12 +70,16 @@ void LockingScheduler::MainLoopBody() {
   while (completed_.Pop(&action)) {
     // Release read locks.
     for (int i = 0; i < action->readset_size(); i++) {
-      lm_.Release(action, action->readset(i));
+      if (store_->IsLocal(action->readset(i))) {
+        lm_.Release(action, action->readset(i));
+      }
     }
 
     // Release write locks. (Okay to release a lock twice.)
     for (int i = 0; i < action->writeset_size(); i++) {
-      lm_.Release(action, action->writeset(i));
+      if (store_->IsLocal(action->writeset(i))) {
+        lm_.Release(action, action->writeset(i));
+      }
     }
 
     active_actions_.erase(action->version());

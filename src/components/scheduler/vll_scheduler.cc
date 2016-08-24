@@ -72,14 +72,18 @@ void VLLScheduler::MainLoopBody() {
       
       // Release write locks.
       for (int i = 0; i < action->writeset_size(); i++) {
-        hash_index = FNVModHash(action->writeset(i)) % ARRAY_SIZE;
-        Cx[hash_index]--;
+        if (store_->IsLocal(action->writeset(i))) {
+          hash_index = FNVModHash(action->writeset(i)) % ARRAY_SIZE;
+          Cx[hash_index]--;
+        }
       }
     
       // Release read locks.
       for (int i = 0; i < action->readset_size(); i++) {
-        hash_index = FNVModHash(action->readset(i)) % ARRAY_SIZE;
-        Cs[hash_index]--;
+        if (store_->IsLocal(action->readset(i))) {
+          hash_index = FNVModHash(action->readset(i)) % ARRAY_SIZE;
+          Cs[hash_index]--;
+        }
       }
       
       // Remove the action from ActionQueue;
