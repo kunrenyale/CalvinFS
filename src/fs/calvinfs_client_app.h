@@ -55,8 +55,8 @@ class CalvinFSClientApp : public App {
     // Run experiments.
 //    FillExperiment();
 //    ConflictingAppendExperiment();
-//    RandomAppendExperiment();
-    LatencyExperiment();
+    RandomAppendExperiment();
+//    LatencyExperiment();
 //    CrashExperiment();
   }
   static const int kMaxCapacity = 100;
