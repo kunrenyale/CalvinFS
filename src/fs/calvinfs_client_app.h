@@ -54,8 +54,8 @@ class CalvinFSClientApp : public App {
 
     // Run experiments.
 //    FillExperiment();
-//    ConflictingAppendExperiment();
-    RandomAppendExperiment();
+    ConflictingAppendExperiment();
+//    RandomAppendExperiment();
 //    LatencyExperiment();
 //    CrashExperiment();
   }
