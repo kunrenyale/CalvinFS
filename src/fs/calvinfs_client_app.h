@@ -54,9 +54,9 @@ class CalvinFSClientApp : public App {
 
     // Run experiments.
 //    FillExperiment();
-    ConflictingAppendExperiment();
+//    ConflictingAppendExperiment();
 //    RandomAppendExperiment();
-//    LatencyExperiment();
+    LatencyExperiment();
 //    CrashExperiment();
   }
   static const int kMaxCapacity = 100;
@@ -310,11 +310,11 @@ class CalvinFSClientApp : public App {
       int seed = rand() % 100;
 
       // 60% read operations
-      if (seed < 60) {
+      if (seed < 100) {
         BackgroundReadFile(RandomFile());
 
       // 10% file creation operations
-      } else if (seed < 70) {
+      }/** else if (seed < 70) {
         BackgroundCreateFile(
             "/a" + IntToString(rand() % machine()->config().size()) +
             "/b" + IntToString(rand() % 100) +
@@ -329,7 +329,7 @@ class CalvinFSClientApp : public App {
       if (i % 10 == 0) {
         LOG(ERROR) << "[" << machine()->machine_id() << "] "
                    << "LE test progress: " << i / 10 << "/" << 100;
-      }
+      }**/
     }
     // Wait for all operations to finish.
     while (capacity_.load() < kMaxCapacity) {
