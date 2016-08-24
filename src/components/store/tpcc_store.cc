@@ -25,6 +25,10 @@ TpccStore::~TpccStore() {
   delete records_;
 }
 
+bool TpccStore::IsLocal(const string& path) {
+  return true;
+}
+
 void TpccStore::GetRWSets(Action* action) {
   action->clear_readset();
   action->clear_writeset();

@@ -204,6 +204,10 @@ void VersionedKVStore::Put(
   records_[m]->Put(versioned_key, value);
 }
 
+bool VersionedKVStore::IsLocal(const string& path) {
+  return true;
+}
+
 bool VersionedKVStore::Get(
     const string& key,
     uint64 version,

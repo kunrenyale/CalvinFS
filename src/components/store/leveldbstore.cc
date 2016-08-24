@@ -94,6 +94,10 @@ LevelDBStore::~LevelDBStore() {
   delete records_;
 }
 
+bool LevelDBStore::IsLocal(const string& path) {
+  return true;
+}
+
 bool LevelDBStore::Exists(const string& key) {
   string s;
   return Get(key, &s);

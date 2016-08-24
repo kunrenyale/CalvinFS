@@ -15,6 +15,7 @@ class MicrobenchmarkStore : public Store {
   // Types of actions that MicrobenchmarkStore can interpret.
   virtual void GetRWSets(Action* action);
   virtual void Run(Action* action);
+  virtual bool IsLocal(const string& path);
 
   KVStore* records_;
 }

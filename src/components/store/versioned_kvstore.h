@@ -50,6 +50,9 @@ class VersionedKVStore : public Store {
   // Erases record with key 'key' at version 'version'.
   void Delete(const string& key, uint64 version);
 
+
+  virtual bool IsLocal(const string& path);
+
  protected:
   friend class HybridVersionedKVStore;
   VersionedKVStore();

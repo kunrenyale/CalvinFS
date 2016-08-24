@@ -78,7 +78,7 @@ class MetadataStore : public Store {
       const MetadataAction::ChangePermissionsInput& in,
       MetadataAction::ChangePermissionsOutput* out);
 
-  bool IsLocal(const string& path);
+  virtual bool IsLocal(const string& path);
 
   // Map of file paths to serialized MetadataEntries.
   VersionedKVStore* store_;

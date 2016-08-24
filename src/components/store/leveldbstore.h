@@ -20,6 +20,7 @@ class LevelDBStore : public KVStore {
   virtual bool Get(const string& key, string* value);
   virtual void Delete(const string& key);
   virtual KVStore::Iterator* GetIterator();
+  virtual bool IsLocal(const string& path);
 
  private:
   friend class LevelDBIterator;

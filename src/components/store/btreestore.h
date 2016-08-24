@@ -22,6 +22,8 @@ class BTreeStore : public KVStore {
   virtual int Size();
   virtual KVStore::Iterator* GetIterator();
 
+  virtual bool IsLocal(const string& path);
+
  protected:
   friend class BTreeIterator;
 

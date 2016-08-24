@@ -20,6 +20,8 @@ class HybridVersionedKVStore : public VersionedKVStore {
   // Types of actions that VersionedKVStore can interpret.
   virtual void GetRWSets(Action* action);
   virtual void Run(Action* action);
+  virtual bool IsLocal(const string& path);
+
 
   // Returns true iff a record exists at version 'version' with key 'key'.
   bool Exists(const string& key, uint64 version);

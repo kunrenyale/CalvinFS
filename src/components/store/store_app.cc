@@ -56,6 +56,10 @@ void StoreApp::GetRWSets(Action* action) {
   store_->GetRWSets(action);
 }
 
+bool StoreApp::IsLocal(const string& path) {
+  return store_->IsLocal(path);
+}
+
 void StoreApp::Run(Action* action) {
   store_->Run(action);
 

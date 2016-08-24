@@ -36,6 +36,10 @@ HybridVersionedKVStore::~HybridVersionedKVStore() {
   delete delay_queue;
 }
 
+bool HybridVersionedKVStore::IsLocal(const string& path) {
+  return true;
+}
+
 void HybridVersionedKVStore::GetRWSets(Action* action) {
   action->clear_readset();
   action->clear_writeset();

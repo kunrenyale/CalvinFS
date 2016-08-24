@@ -45,6 +45,10 @@ void KVStore::GetRWSets(Action* action) {
   }
 }
 
+bool KVStore::IsLocal(const string& path) {
+  return true;
+}
+
 void KVStore::Run(Action* action) {
   KVStoreAction::Type type =
       static_cast<KVStoreAction::Type>(action->action_type());

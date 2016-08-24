@@ -16,6 +16,8 @@ class TpccStore : public Store {
   virtual void GetRWSets(Action* action);
   virtual void Run(Action* action);
 
+  virtual bool IsLocal(const string& path);
+
   KVStore* records_;
 }
 

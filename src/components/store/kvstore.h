@@ -36,6 +36,9 @@ class KVStore : public Store {
   // Erases record with key 'key'.
   virtual void Delete(const string& key) = 0;
 
+
+  virtual bool IsLocal(const string& path);
+
   // Thread-safe iterator over a current snapshot of the store. For some
   // implementations, this may hold a read lock on the store for its full
   // lifetime, so iterators should NEVER be long-lived objects.

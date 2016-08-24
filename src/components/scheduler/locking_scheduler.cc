@@ -37,9 +37,11 @@ void LockingScheduler::MainLoopBody() {
     // re-request any as read locks.
     set<string> writeset;
     for (int i = 0; i < action->writeset_size(); i++) {
-      writeset.insert(action->writeset(i));
-      if (!lm_.WriteLock(action, action->writeset(i))) {
-        ungranted_requests++;
+      if (store_->IsLocal(action->writeset(i))) {
+        writeset.insert(action->writeset(i));
+        if (!lm_.WriteLock(action, action->writeset(i))) {
+          ungranted_requests++;
+        }
       }
     }
 
@@ -47,9 +49,11 @@ void LockingScheduler::MainLoopBody() {
     for (int i = 0; i < action->readset_size(); i++) {
       // Avoid re-requesting shared locks if an exclusive lock is already
       // requested.
-      if (writeset.count(action->readset(i)) == 0) {
-        if (!lm_.ReadLock(action, action->readset(i))) {
-          ungranted_requests++;
+      if (store_->IsLocal(action->readset(i))) {
+        if (writeset.count(action->readset(i)) == 0) {
+          if (!lm_.ReadLock(action, action->readset(i))) {
+            ungranted_requests++;
+          }
         }
       }
     }

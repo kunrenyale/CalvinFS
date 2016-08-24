@@ -61,6 +61,10 @@ class BTreeIterator : public KVStore::Iterator {
   btree::btree_map<string, string>::const_iterator iter_;
 };
 
+bool BTreeStore::IsLocal(const string& path) {
+  return true;
+}
+
 bool BTreeStore::Exists(const string& key) {
   ReadLock l(&mutex_);
   return records_.count(key) != 0;

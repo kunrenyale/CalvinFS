@@ -25,6 +25,10 @@ MicrobenchmarkStore::~MicrobenchmarkStore() {
   delete records_;
 }
 
+bool MicrobenchmarkStore::IsLocal(const string& path) {
+  return true;
+}
+
 void MicrobenchmarkStore::GetRWSets(Action* action) {
   action->clear_readset();
   action->clear_writeset();

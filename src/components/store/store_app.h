@@ -23,6 +23,7 @@ class StoreApp : public App {
   void GetRWSets(Action* action);
   virtual void Run(Action* action);
 
+  virtual bool IsLocal(const string& path);
   // Run the action in a background thread. The action is pushed to '*queue'
   // after it is completed.
   void RunAsync(Action* action, AtomicQueue<Action*>* queue);
