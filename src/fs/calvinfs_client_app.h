@@ -38,7 +38,11 @@ class CalvinFSClientApp : public App {
     latencies_["mkdir"] = new AtomicQueue<double>();
     latencies_["append"] = new AtomicQueue<double>();
     latencies_["ls"] = new AtomicQueue<double>();
-    latencies_["cat"] = new AtomicQueue<double>();
+    latencies_["cat0"] = new AtomicQueue<double>();
+    latencies_["cat1"] = new AtomicQueue<double>();
+    latencies_["cat10"] = new AtomicQueue<double>();
+    latencies_["cat100"] = new AtomicQueue<double>();
+
 
     config_ = new CalvinFSConfigMap(machine());
     replica_ = config_->LookupReplica(machine()->machine_id());
