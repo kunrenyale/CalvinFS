@@ -27,6 +27,7 @@ DEFINE_string(binary, "calvinfs_server", "Calvin binary executable program");
 DEFINE_string(config, "calvin.conf", "conf file of Calvin cluster");
 DEFINE_int32(machine_id, 0, "machine id");
 DEFINE_double(time, 0, "start time");
+DEFINE_int32(experiment, 0, "experiment that you want to run");
 
 int main(int argc, char** argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
@@ -143,6 +144,8 @@ int main(int argc, char** argv) {
   LOG(ERROR) << "[" << FLAGS_machine_id << "] created CalvinFSClientApp";
   reinterpret_cast<CalvinFSClientApp*>(m.GetApp("client"))
       ->set_start_time(FLAGS_time);
+  reinterpret_cast<CalvinFSClientApp*>(m.GetApp("client"))
+      ->set_experiment(FLAGS_experiment); 
 
   while (!m.Stopped()) {
     usleep(10000);

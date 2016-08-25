@@ -39,9 +39,15 @@ $ cd ~/CalvinFS
 $ bin/scripts/cluster --command="status"  // Check the status of the cluster
 $ bin/scripts/cluster --command="put-config" // Send the config file to all the machines in the cluster
 $ bin/scripts/cluster --command="update"  // Use git to get the latest code, and compile it on each machine 
-$ bin/scripts/cluster --command="start"  // Start the CalvinFS cluster
+$ bin/scripts/cluster --command="start" --experiment=0  // Start the CalvinFS cluster, and run experiments.
 $ bin/scripts/cluster --command="get-data"  // Get experiments result if you enable reporting, it will copy result to the data/ directory. Right now, it is used to get latency results. 
 $ bin/scripts/cluster --command="kill"   // Stop the CalvinFS cluster
 
-In default, when you start CalvinFS experiments, it will run FillExperiment() experiments. If you want to run other experiments, you can change the code in function Start() in fs/calvinfs_client_app.h.
+Note that: When you finish running one experiment, and want to run another experiment, you should first run command to kill the cluster, and then start the cluster to run another experiment. In default experiment=0, which means when you start CalvinFS experiments,  it will run FillExperiment() experiments. If you want to run other experiments, you can change the parameter. 
+Currently:
+0-----------FillExperiment()
+1-----------ConflictingAppendExperiment()
+2-----------RandomAppendExperiment()
+3-----------LatencyExperiment()
+4-----------CrashExperiment()
 

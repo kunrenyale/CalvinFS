@@ -56,8 +56,31 @@ class CalvinFSClientApp : public App {
 
     Spin(1);
 
+    switch(experiment) {
+      case 0:
+        FillExperiment();
+        break;
+
+      case 1:
+        ConflictingAppendExperiment();
+        break;
+
+      case 2:
+        RandomAppendExperiment();
+        break;
+
+      case 3:
+        LatencyExperiment();
+        break;
+
+      case 4:
+        CrashExperiment();
+        break;
+
+    }
+
     // Run experiments.
-    FillExperiment();
+//    FillExperiment();
 //    ConflictingAppendExperiment();
 //    RandomAppendExperiment();
 //    LatencyExperiment();
@@ -613,6 +636,9 @@ class CalvinFSClientApp : public App {
 
   void set_start_time(double t) { start_time_ = t; }
   double start_time_;
+
+  void set_experiment(int e) {experiment = e;}
+  int experiment;
 
   atomic<int> action_count_;
   atomic<int> capacity_;

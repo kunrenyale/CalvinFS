@@ -14,6 +14,7 @@ DEFINE_string(binary, "calvinfs_server", "Calvin binary executable program");
 DEFINE_string(ssh_key1, "-i ~/Calvin_Key.pem", "ssh_key for the first data center");
 DEFINE_string(ssh_key2, "-i ~/Calvin_Key.pem", "ssh_key for the second data center");
 DEFINE_string(ssh_key3, "-i ~/Calvin_Key.pem", "ssh_key for the third data center");
+DEFINE_int32(experiment, 0, "the experiment that you want to run");
 DEFINE_bool(valgrind, false, "Run binaries with valgrind?");
 
 int main(int argc, char** argv) {
@@ -34,7 +35,7 @@ int main(int argc, char** argv) {
     cm.GetTempFiles("report.");
 
   } else if (FLAGS_command == "start") {
-    cm.DeployCluster(GetTime() + 10);
+    cm.DeployCluster(GetTime() + 10, FLAGS_experiment);
 
   } else if (FLAGS_command == "kill") {
     cm.KillCluster();

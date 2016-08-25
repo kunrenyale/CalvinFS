@@ -111,7 +111,7 @@ void ClusterManager::Update() {
   threads.clear();
 }
 
-void ClusterManager::DeployCluster(double time) {
+void ClusterManager::DeployCluster(double time, int experiment) {
   vector<pthread_t> threads;
   // Now ssh into all machines and start 'binary' running.
   for (map<uint64, MachineInfo>::const_iterator it =
@@ -123,7 +123,7 @@ void ClusterManager::DeployCluster(double time) {
          "ssh " + ssh_key(it->first)  + " "+ ssh_username_ + "@" + it->second.host() +
          "  'cd " + calvin_path_ + "; " + " bin/scripts/" + binary_ +
          " --machine_id=" + IntToString(it->second.id()) +
-         "  --config=" + config_file_ + " --time=" + DoubleToString(time) + " ' &");
+         "  --config=" + config_file_ + " --time=" + DoubleToString(time) + " --experiment=" + IntToString(experiment) + " ' &");
     pthread_create(
         &threads[threads.size()-1],
         NULL,
