@@ -199,7 +199,7 @@ class BlockLogApp : public App {
       Action* a = new Action();
       a->ParseFromArray((*message)[0].data(), (*message)[0].size());
       queue_.Push(a);
-    } if (header->rpc() == "BATCH") {
+    } else if (header->rpc() == "BATCH") {
       // Write batch block to local block store.
       uint64 block_id = header->misc_int(0);
       blocks_->Put(block_id, (*message)[0]);
