@@ -281,6 +281,11 @@ int RandomSize() {
   return 1 + rand() % 2047;
 }
 
+// Right now just  return the local machine_id, will change it.
+uint32 MetadataStore::GetMachineForReplica(Action* action) {
+  return machine_->machine_id();
+}
+
 void MetadataStore::Init() {
   int asize = machine_->config().size();
   int bsize = 1000;

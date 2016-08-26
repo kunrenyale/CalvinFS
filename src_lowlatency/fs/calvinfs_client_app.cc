@@ -59,7 +59,18 @@ MessageBuffer* CalvinFSClientApp::CreateFile(const Slice& path, FileType type) {
   in.set_type(type);
   in.SerializeToString(a->mutable_input());
   metadata_->GetRWSets(a);
-  log_->Append(a);
+  
+  // Send the action to the log of machine_sent
+  uint32 machine_sent = metadata_->GetMachineForReplica(a);
+  Header* header = new Header();
+  header->set_from(machine()->machine_id());
+  header->set_to(machine_sent);
+  header->set_type(Header::RPC);
+  header->set_app("blocklog");
+  header->set_rpc("APPEND");
+  string* block = new string();
+  a->SerializeToString(block);
+  machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
 
   MessageBuffer* m = NULL;
   while (!channel->Pop(&m)) {

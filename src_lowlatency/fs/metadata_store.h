@@ -32,6 +32,8 @@ class MetadataStore : public Store {
   void Init();
   void InitSmall();
 
+  uint32 GetMachineForReplica(Action* action);
+
  private:
   void CreateFile_Internal(
       ExecutionContext* context,
