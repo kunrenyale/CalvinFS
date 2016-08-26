@@ -1,0 +1,60 @@
+// Author: Alex Thomson (thomson@cs.yale.edu)
+
+// Input to write action. (No output.)
+syntax = "proto2";
+message MVStoreWriteInput {
+  required bytes key = 1;
+  required bytes value = 2;
+}
+
+/////////////////////////////////////////////
+
+// Input to read action.
+message MVStoreReadInput {
+  required bytes key = 1;
+}
+
+// Output from read action.
+message MVStoreReadOutput {
+  required bool exists = 1;
+  optional bytes value = 2;
+}
+
+/////////////////////////////////////////////
+
+// Input to append action.
+message MVStoreAppendInput {
+  required bytes key = 1;
+  required bytes value = 2;
+}
+
+// Output from append action.
+message MVStoreAppendOutput {
+  required bool success = 1;
+}
+
+/////////////////////////////////////////////
+
+// Input to increment action.
+message MVStoreIncrementInput {
+  required bytes key = 1;
+}
+
+// Output from increment action.
+message MVStoreIncrementOutput {
+  required bool success = 1;
+}
+
+/////////////////////////////////////////////
+
+// Input to microbenchmark action.
+message MVStoreMicroInput {
+  repeated bytes keys = 1;
+  optional int32 writes = 2 [default = 10];
+}
+
+// Output from microbenchmark action.
+message MVStoreMicroOutput {
+  required bool success = 1;
+}
+

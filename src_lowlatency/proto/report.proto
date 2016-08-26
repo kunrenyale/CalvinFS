@@ -1,0 +1,16 @@
+// Author: Alex Thomson (thomson@cs.yale.edu)
+syntax = "proto2";
+import "scalar.proto";
+
+message Report {
+  optional string app = 1;
+  optional double time = 2;
+
+  message Datum {
+    optional string quantity = 1;
+    optional Scalar value = 2;
+  }
+
+  repeated Datum data = 3;
+}
+
