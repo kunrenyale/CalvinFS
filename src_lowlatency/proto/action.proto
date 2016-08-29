@@ -55,6 +55,8 @@ message Action {
     FREE = 0;
     BLOCKED = 1;
   }
+
+  optional int32 origin = 62;
 }
 
 message ActionBatch {

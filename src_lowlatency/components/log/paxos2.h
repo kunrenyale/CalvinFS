@@ -20,6 +20,7 @@ using std::vector;
 class Header;
 class Machine;
 class MessageBuffer;
+class CalvinFSConfigMap;
 
 class Paxos2App : public LogApp {
  public:
@@ -57,6 +58,8 @@ class Paxos2App : public LogApp {
   PairSequence sequence_;
   std::atomic<uint64> count_;
   Mutex mutex_;
+
+  CalvinFSConfigMap* config_;
 };
 
 #endif  // CALVIN_COMPONENTS_LOG_PAXOS2_H_

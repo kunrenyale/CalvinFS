@@ -86,8 +86,8 @@ class BlockLogApp : public App {
     replica_ = config_->LookupReplica(machine()->machine_id());
 
     // Record local replica's paxos machine.
-    int replica_count = config_->config().block_replication_factor();
-    int paxos_id = replica_ * (machine()->config().size() / replica_count);
+    uint32 replica_count = config_->config().block_replication_factor();
+    uint32 paxos_id = replica_ * (machine()->config().size() / replica_count);
 
     // Note what machines contain metadata shards on the same replica.
     for (auto it = config_->mds().begin(); it != config_->mds().end(); ++it) {
@@ -101,7 +101,7 @@ class BlockLogApp : public App {
         ->blocks_;
 
     // Get ptr to paxos leader (maybe).
-    if (machine()->machine_id() == 0) {
+    if (machine()->machine_id() == paxos_id) {
       paxos_leader_ =
           reinterpret_cast<Paxos2App*>(machine()->GetApp("paxos2"));
     }
@@ -125,6 +125,7 @@ class BlockLogApp : public App {
           Action* a = NULL;
           queue_.Pop(&a);
           a->set_version_offset(i);
+	  a->set_origin(config_->LookupReplica(machine()->machine_id()));
           batch.mutable_entries()->AddAllocated(a);
         }
 
@@ -208,16 +209,18 @@ class BlockLogApp : public App {
       ActionBatch batch;
       batch.ParseFromArray((*message)[0].data(), (*message)[0].size());
 
-      // Send paxos proposal.
-      Header* header = new Header();
-      header->set_from(machine()->machine_id());
-      header->set_to(0);  // Paxos leader.
-      header->set_type(Header::RPC);
-      header->set_app(name());
-      header->set_rpc("VOTE");
-      header->add_misc_int(block_id);
-      header->add_misc_int(batch.entries_size());
-      machine()->SendMessage(header, new MessageBuffer());
+      //  If (This batch come from this replica) → send SUBMIT to the Sequencer(LogApp) on the master node of the local paxos participants
+      if (config_->LookupReplica(header->from()) == config_->LookupReplica(machine()->machine_id())) {
+        Header* header = new Header();
+        header->set_from(machine()->machine_id());
+        header->set_to(config_->LookupReplica(machine()->machine_id())*(machine()->config().size() / config_->config().block_replication_factor()));  // Local Paxos leader.
+        header->set_type(Header::RPC);
+        header->set_app(name());
+        header->set_rpc("SUBMIT");
+        header->add_misc_int(block_id);
+        header->add_misc_int(batch.entries_size());
+        machine()->SendMessage(header, new MessageBuffer());
+      }
 
       // Forward sub-batches to relevant readers (same replica only).
       map<uint64, ActionBatch> subbatches;
@@ -246,27 +249,13 @@ class BlockLogApp : public App {
         machine()->SendMessage(header, new MessageBuffer(subbatches[*it]));
       }
 
-    } else if (header->rpc() == "VOTE") {
+    } else if (header->rpc() == "SUBMIT") {
       CHECK(machine()->machine_id() == 0);
 
       uint64 block_id = header->misc_int(0);
-      uint32 votes;
-      {
-        Lock l(&batch_votes_mutex_);
-        votes = ++batch_votes_[block_id];
 
-        // Remove from map if all servers are accounted for.
-        if (votes == config_->config().block_replication_factor()) {
-          batch_votes_.erase(block_id);
-        }
-      }
-
-      // If block is now written to (exactly) a majority of replicas, submit
-      // to paxos leader.
-      if (votes == config_->config().block_replication_factor() / 2 + 1) {
-        uint64 count = header->misc_int(1);
-        paxos_leader_->Append(block_id, count);
-      }
+      uint64 count = header->misc_int(1);
+      paxos_leader_->Append(block_id, count);
 
     } else if (header->rpc() == "SUBBATCH") {
       uint64 block_id = header->misc_int(0);

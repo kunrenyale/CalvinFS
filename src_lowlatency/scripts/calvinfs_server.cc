@@ -73,11 +73,12 @@ int main(int argc, char** argv) {
   m.AppData()->Put("calvinfs-config", fsconfig);
   Spin(1);
 
-  // Start paxos app (maybe).
-  if (FLAGS_machine_id % partitions == 0) {
+  // Start paxos app (Currently each paxos group includes 3 machines).
+  if (FLAGS_machine_id % partitions < 3) {
     StartAppProto sap;
-    for (int i = 0; i < replicas; i++) {
-      sap.add_participants(i * partitions);
+    uint32 replica = FLAGS_machine_id / partitions; 
+    for (int i = replica * partitions; i < replica * partitions + 3; i++) {
+      sap.add_participants(i);
     }
 
     sap.set_app("Paxos2App2");

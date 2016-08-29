@@ -222,8 +222,8 @@ void DistributedBlockStoreApp::Put(uint64 block_id, const Slice& data) {
     machine()->SendMessage(header, new MessageBuffer(data));
   }
 
-  // Wait for acks
-  while (acks->load() < (int)config_->config().block_replication_factor()/2 + 1) {
+  // Only need to wait for ack from the local data center.
+  while (acks->load() < + 1) {
     usleep(10);
   }
 }

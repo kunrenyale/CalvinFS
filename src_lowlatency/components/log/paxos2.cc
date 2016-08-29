@@ -19,6 +19,8 @@
 #include "machine/message_buffer.h"
 #include "proto/header.pb.h"
 #include "proto/scalar.pb.h"
+#include "fs/calvinfs.h"
+
 
 using std::atomic;
 using std::make_pair;
@@ -76,6 +78,9 @@ void Paxos2App::Append(uint64 blockid, uint64 count) {
 
 void Paxos2App::Start() {
   going_ = true;
+  // Get local config info.
+  config_ = new CalvinFSConfigMap(machine());
+
   if (IsLeader()) {
     RunLeader();
   } else {
@@ -100,7 +105,9 @@ void Paxos2App::HandleOtherMessages(Header* header, MessageBuffer* message) {
     p->set_second(header->misc_int(1));
     count_ += p->second();
 
-  } else {
+  } else if (header->rpc() == "NEW-SEQUENCE") { 
+    
+  }else {
     LOG(FATAL) << "unknown message type: " << header->rpc();
   }
 
@@ -113,6 +120,9 @@ void Paxos2App::RunLeader() {
   int quorum = static_cast<int>(participants_.size()) / 2 + 1;
   set<atomic<int>*> ack_ptrs;
   MessageBuffer* m = NULL;
+  bool isFirst = true;
+  bool isLocal;
+
   while (go_.load()) {
     // Sleep while there are NO requests.
     while (count_.load() == 0) {
@@ -133,6 +143,7 @@ void Paxos2App::RunLeader() {
       sequence_.set_misc(version);
       sequence_.SerializeToString(&encoded);
       sequence_.Clear();
+      isLocal = true;
     }
     atomic<int>* acks = new atomic<int>(1);
     ack_ptrs.insert(acks);
@@ -167,6 +178,28 @@ void Paxos2App::RunLeader() {
       machine()->SendMessage(h, new MessageBuffer());
     }
     log_->Append(version, encoded);
+
+    if (isLocal == true && isFirst == true) {
+      // Send the sequence to the LeaderPaxosApp of all the other replicas;
+      int replica_count = config_->config().block_replication_factor();
+      int partitions_per_replica = machine()->config().size() / replica_count;
+
+      for (uint64 i = 0; i < config_->config().block_replication_factor();i++) {
+        if (i != machine()->machine_id()/partitions_per_replica) {
+          Header* header = new Header();
+          header->set_from(machine()->machine_id());
+          header->set_to(i*partitions_per_replica);
+          header->set_type(Header::RPC);
+          header->set_app(name());
+          header->set_rpc("NEW-SEQUENCE");
+          m = new MessageBuffer(new string(encoded));
+	  m->Append(ToScalar<uint64>(version));
+          machine()->SendMessage(header, m);
+	}
+      }
+
+      isFirst = false;
+    }
 
 //    // Clean up old ack counters.
 //    while (!ack_ptrs.empty() &&
