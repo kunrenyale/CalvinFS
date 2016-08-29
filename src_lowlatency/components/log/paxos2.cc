@@ -19,7 +19,6 @@
 #include "machine/message_buffer.h"
 #include "proto/header.pb.h"
 #include "proto/scalar.pb.h"
-#include "fs/calvinfs.h"
 
 
 using std::atomic;
@@ -78,8 +77,8 @@ void Paxos2App::Append(uint64 blockid, uint64 count) {
 
 void Paxos2App::Start() {
   going_ = true;
-  // Get local config info.
-  config_ = new CalvinFSConfigMap(machine());
+  replica_count = (machine()->config().size() >= 3) ? 3 : 1;
+  partitions_per_replica = machine()->config().size() / replica_count;
 
   if (IsLeader()) {
     RunLeader();
@@ -181,10 +180,8 @@ void Paxos2App::RunLeader() {
 
     if (isLocal == true && isFirst == true) {
       // Send the sequence to the LeaderPaxosApp of all the other replicas;
-      int replica_count = config_->config().block_replication_factor();
-      int partitions_per_replica = machine()->config().size() / replica_count;
 
-      for (uint64 i = 0; i < config_->config().block_replication_factor();i++) {
+      for (uint64 i = 0; i < replica_count;i++) {
         if (i != machine()->machine_id()/partitions_per_replica) {
           Header* header = new Header();
           header->set_from(machine()->machine_id());

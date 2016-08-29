@@ -56,8 +56,8 @@ int main(int argc, char** argv) {
   ClusterConfig cc;
   cc.FromFile(FLAGS_config);
 
-  int replicas = (cc.size() >= 3) ? 3 : 1;
-  int partitions = cc.size() / replicas;
+  uint32 replicas = (cc.size() >= 3) ? 3 : 1;
+  uint32 partitions = cc.size() / replicas;
 
   LOG(ERROR) << "Starting CalvinFS node " << FLAGS_machine_id
              << " (partition " << (FLAGS_machine_id % partitions)
@@ -77,7 +77,7 @@ int main(int argc, char** argv) {
   if (FLAGS_machine_id % partitions < 3) {
     StartAppProto sap;
     uint32 replica = FLAGS_machine_id / partitions; 
-    for (int i = replica * partitions; i < replica * partitions + 3; i++) {
+    for (uint32 i = replica * partitions; i < replica * partitions + 3; i++) {
       sap.add_participants(i);
     }
 
