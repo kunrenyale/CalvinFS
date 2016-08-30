@@ -7,6 +7,7 @@
 #include <set>
 #include <vector>
 
+#include "common/atomic.h"
 #include "common/mutex.h"
 #include "common/types.h"
 #include "components/log/log.h"
@@ -61,6 +62,7 @@ class Paxos2App : public LogApp {
   uint32 replica_count;
   uint32 partitions_per_replica;
 
+  AtomicQueue<MessageBuffer*> sequences_other_replicas;
 };
 
 #endif  // CALVIN_COMPONENTS_LOG_PAXOS2_H_

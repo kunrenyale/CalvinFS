@@ -105,7 +105,7 @@ void Paxos2App::HandleOtherMessages(Header* header, MessageBuffer* message) {
     count_ += p->second();
 
   } else if (header->rpc() == "NEW-SEQUENCE") { 
-    
+    sequences_other_replicas.Push(message);   
   }else {
     LOG(FATAL) << "unknown message type: " << header->rpc();
   }
@@ -120,30 +120,37 @@ void Paxos2App::RunLeader() {
   set<atomic<int>*> ack_ptrs;
   MessageBuffer* m = NULL;
   bool isFirst = true;
-  bool isLocal;
+  bool isLocal = false;
 
   while (go_.load()) {
     // Sleep while there are NO requests.
-    while (count_.load() == 0) {
+    while (count_.load() == 0 && sequences_other_replicas.Size() == 0) {
       usleep(10);
       if (!go_.load()) {
         return;
       }
     }
 
-    // Propose a new sequence.
-    uint64 version;
     string encoded;
-    {
-      Lock l(&mutex_);
-      version = next_version;
-      next_version += count_.load();
-      count_ = 0;
-      sequence_.set_misc(version);
-      sequence_.SerializeToString(&encoded);
-      sequence_.Clear();
-      isLocal = true;
+    uint64 version;
+    if (count_.load() != 0) {
+      // Propose a new sequence.
+      {
+        Lock l(&mutex_);
+        version = next_version;
+        next_version += count_.load();
+        count_ = 0;
+        sequence_.set_misc(version);
+        sequence_.SerializeToString(&encoded);
+        sequence_.Clear();
+        isLocal = true;
+      }
+    } else if (sequences_other_replicas.Size() != 0) {
+      sequences_other_replicas.Pop(&m);
+      encoded = ((*m)[0]).ToString();
+      isLocal = false;
     }
+
     atomic<int>* acks = new atomic<int>(1);
     ack_ptrs.insert(acks);
     for (uint32 i = 1; i < participants_.size(); i++) {
@@ -196,7 +203,11 @@ void Paxos2App::RunLeader() {
       }
 
       isFirst = false;
+    } else if (isLocal == false) {
+      
     }
+
+
 
 //    // Clean up old ack counters.
 //    while (!ack_ptrs.empty() &&
