@@ -6,6 +6,7 @@
 
 #include <set>
 #include <vector>
+#include <map>
 
 #include "common/atomic.h"
 #include "common/mutex.h"
@@ -17,6 +18,7 @@
 #include "proto/scalar.pb.h"
 
 using std::vector;
+using std::map;
 
 class Header;
 class Machine;
@@ -63,6 +65,14 @@ class Paxos2App : public LogApp {
   uint32 partitions_per_replica;
 
   AtomicQueue<MessageBuffer*> sequences_other_replicas;
+
+  // Record the current sequence index
+  uint64 local_sequences_index;
+  // Map the local sequence index to the version.
+  map<uint64, uint64> local_versions_index_table;
+  // Map the replica ID to its locking running index
+  AtomicMap<uint32, uint64> sequences_index_for_replicas;
+  
 };
 
 #endif  // CALVIN_COMPONENTS_LOG_PAXOS2_H_

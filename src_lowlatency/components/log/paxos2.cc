@@ -79,6 +79,8 @@ void Paxos2App::Start() {
   going_ = true;
   replica_count = (machine()->config().size() >= 3) ? 3 : 1;
   partitions_per_replica = machine()->config().size() / replica_count;
+  
+  local_sequences_index = 0;
 
   if (IsLeader()) {
     RunLeader();
@@ -107,7 +109,7 @@ void Paxos2App::HandleOtherMessages(Header* header, MessageBuffer* message) {
   } else if (header->rpc() == "NEW-SEQUENCE") { 
     sequences_other_replicas.Push(message);   
   } else if (header->rpc() == "NEW-SEQUENCE-ACK") {
-  
+    // Send next sequence to the from-replica
   } else {
     LOG(FATAL) << "unknown message type: " << header->rpc();
   }
@@ -147,6 +149,9 @@ void Paxos2App::RunLeader() {
         sequence_.SerializeToString(&encoded);
         sequence_.Clear();
         isLocal = true;
+        
+        local_versions_index_table[local_sequences_index] = version;
+        local_sequences_index++;
       }
     } else if (sequences_other_replicas.Size() != 0) {
       sequences_other_replicas.Pop(&m);
@@ -209,6 +214,8 @@ void Paxos2App::RunLeader() {
 	  m->Append(ToScalar<uint64>(version));
           m->Append(ToScalar<uint32>(machine()->machine_id()));
           machine()->SendMessage(header, m);
+
+          sequences_index_for_replicas[i] = 0;
 	}
       }
 
@@ -220,7 +227,9 @@ void Paxos2App::RunLeader() {
       header->set_type(Header::RPC);
       header->set_app(name());
       header->set_rpc("NEW-SEQUENCE-ACK");
-      machine()->SendMessage(header, new MessageBuffer());
+      m = new MessageBuffer();
+      m->Append(ToScalar<uint32>(machine()->machine_id()));
+      machine()->SendMessage(header, m);
     }
 
   }
