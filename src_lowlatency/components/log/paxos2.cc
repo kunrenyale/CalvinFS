@@ -106,7 +106,9 @@ void Paxos2App::HandleOtherMessages(Header* header, MessageBuffer* message) {
 
   } else if (header->rpc() == "NEW-SEQUENCE") { 
     sequences_other_replicas.Push(message);   
-  }else {
+  } else if (header->rpc() == "NEW-SEQUENCE-ACK") {
+  
+  } else {
     LOG(FATAL) << "unknown message type: " << header->rpc();
   }
 
@@ -133,6 +135,7 @@ void Paxos2App::RunLeader() {
 
     string encoded;
     uint64 version;
+    uint32 from_machine;
     if (count_.load() != 0) {
       // Propose a new sequence.
       {
@@ -148,6 +151,12 @@ void Paxos2App::RunLeader() {
     } else if (sequences_other_replicas.Size() != 0) {
       sequences_other_replicas.Pop(&m);
       encoded = ((*m)[0]).ToString();
+      Scalar s;
+      s.ParseFromArray((*m)[1].data(), (*m)[1].size());
+      version = FromScalar<uint64>(s);
+      s.ParseFromArray((*m)[2].data(), (*m)[2].size());
+      from_machine = FromScalar<uint32>(s);
+
       isLocal = false;
     }
 
@@ -198,23 +207,22 @@ void Paxos2App::RunLeader() {
           header->set_rpc("NEW-SEQUENCE");
           m = new MessageBuffer(new string(encoded));
 	  m->Append(ToScalar<uint64>(version));
+          m->Append(ToScalar<uint32>(machine()->machine_id()));
           machine()->SendMessage(header, m);
 	}
       }
 
       isFirst = false;
     } else if (isLocal == false) {
-      
+      Header* header = new Header();
+      header->set_from(machine()->machine_id());
+      header->set_to(from_machine);
+      header->set_type(Header::RPC);
+      header->set_app(name());
+      header->set_rpc("NEW-SEQUENCE-ACK");
+      machine()->SendMessage(header, new MessageBuffer());
     }
 
-
-
-//    // Clean up old ack counters.
-//    while (!ack_ptrs.empty() &&
-//           (*ack_ptrs.begin())->load() == (int)participants_.size()) {
-//      delete *ack_ptrs.begin();
-//      ack_ptrs.erase(ack_ptrs.begin());
-//    }
   }
 }
 
