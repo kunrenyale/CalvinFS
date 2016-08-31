@@ -63,6 +63,10 @@ uint64 CalvinFSConfigMap::LookupMetadataShard(uint64 id, uint64 replica) {
   return it->second;
 }
 
+uint64 CalvinFSConfigMap::GetPartitionsPerReplica () {
+  return config_.metadata_shard_count();
+}
+
 void CalvinFSConfigMap::Init(const CalvinFSConfig& config) {
   config_.CopyFrom(config);
 
@@ -81,6 +85,16 @@ void CalvinFSConfigMap::Init(const CalvinFSConfig& config) {
                                config.metadata_shards(i).replica())] =
         config.metadata_shards(i).machine();
   }
+
+  // Init replica_schema_
+  replica_schema_["/a"] = 0;
+  replica_schema_["/b"] = 0;
+  replica_schema_["/c"] = 0; 
+}
+
+uint32 CalvinFSConfigMap::LookupReplicaByDir(string dir) {
+  CHECK(replica_schema_.count(dir) > 0);
+  return replica_scheme_[dir];
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -44,6 +44,10 @@ class CalvinFSConfigMap {
 
   const CalvinFSConfig& config() { return config_; }
 
+  uint32 LookupReplicaByDir(string dir);
+
+  uint64 GetPartitionsPerReplica();
+
  private:
   void Init(const CalvinFSConfig& config);
 
@@ -55,6 +59,10 @@ class CalvinFSConfigMap {
   // (id, replica) -> machine
   map<pair<uint64, uint64>, uint64> bluckets_;
   map<pair<uint64, uint64>, uint64> metadata_shards_;
+
+
+  // dir -> replica
+  map<string, uint32> replica_schema_;
 };
 
 // One machine, one replica, one blucket, one mds.

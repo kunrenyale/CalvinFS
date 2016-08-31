@@ -256,6 +256,19 @@ string FileName(const string& path) {
   return string(path, offset + 1);
 }
 
+string TopDir(const string& path) {
+  // Root dir is a special case.
+  if (path.empty()) {
+    LOG(FATAL) << "root dir has no topdir";
+  }
+  
+  uint32 offset = string(path, 1, path.size()-1).find('/');
+  CHECK_NE(string::npos, offset);     // at least 1 slash required
+  CHECK_NE(path.size() - 1, offset);  // filename cannot be empty
+  return string(path, 0, offset);
+  
+}
+
 MetadataStore::MetadataStore(VersionedKVStore* store)
     : store_(store), machine_(NULL), config_(NULL) {
   // Initialize by inserting an entry for the root directory "/" (actual
@@ -281,9 +294,49 @@ int RandomSize() {
   return 1 + rand() % 2047;
 }
 
+uint32 MetadataStore::LookupReplicaByDir(string dir) {
+  return config_->LookupReplicaByDir(dir);
+}
+
 // Right now just  return the local machine_id, will change it.
 uint32 MetadataStore::GetMachineForReplica(Action* action) {
-  return machine_->machine_id();
+  bool replica_involved[3];
+  for (uint32 i = 0; i < 3;i++) {
+    replica_involved[i] = false;
+  }
+  
+  int replicas;
+  for (int i = 0; i < action->writeset_size(); i++) {
+    uint32 replica = LookupReplicaByDir(action->writeset(i));
+    if (replica_involved[i] == false) {
+      replicas++;
+      replica_involved[replica] = true;
+    }
+  }
+
+  for (int i = 0; i < action->readset_size(); i++) {
+    uint32 replica = LookupReplicaByDir(action->readset(i));
+    if (replica_involved[i] == false) {
+      replicas++;
+      replica_involved[replica] = true;
+    }
+  }
+
+  if (replicas == 1) {
+    action->set_single_replica(true);
+  } else {
+    action->set_single_replica(false);  
+  }
+  
+  uint32 lowest_replica;
+  for (uint32 i = 0; i < 3; i++) {
+    if (replica_involved[i] == true) {
+      lowest_replica = i;
+    }
+  }
+  
+  uint32 partitions = config_->GetPartitionsPerReplica();
+  return lowest_replica * partitions + rand() % partitions;
 }
 
 void MetadataStore::Init() {

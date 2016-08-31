@@ -45,6 +45,8 @@ message Action {
   // w.r.t. the starting version for the ActionBatch.
   optional uint64 version_offset = 32;
 
+  required bool single_replica = 41;  
+
   // Miscellaneous data.
   repeated Scalar misc = 51;
   
