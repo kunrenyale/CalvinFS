@@ -71,7 +71,7 @@ class Paxos2App : public LogApp {
   // Map the local sequence index to the version.
   map<uint64, uint64> local_versions_index_table;
   // Map the replica ID to its locking running index
-  AtomicMap<uint32, uint64> sequences_index_for_replicas;
+  AtomicMap<uint32, uint64> next_sequences_index;
   
 };
 
