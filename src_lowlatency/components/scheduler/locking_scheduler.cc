@@ -33,6 +33,38 @@ void LockingScheduler::MainLoopBody() {
     active_actions_.insert(action->version());
     int ungranted_requests = 0;
 
+ 
+    if (action->single_replica() == false) {
+      bool ignore = false;
+      for (int i = 0; i < action->writeset_size(); i++) {
+        if (store_->IsLocal(action->writeset(i))) {
+          if (store_->LookupReplicaByDir(action->writeset(i)) != action->origin()) {
+            ignore = true;
+            break;
+          }
+        }
+      }
+
+      if (ignore == false) {
+        for (int i = 0; i < action->readset_size(); i++) {
+          if (store_->IsLocal(action->readset(i))) {
+            if (store_->LookupReplicaByDir(action->readset(i)) != action->origin()) {
+              ignore = true;
+              break;
+            }
+          }
+        }
+      }
+
+      if (ignore == true) {
+        // Finish this loop
+        continue;
+      } else {
+        // Send a new action to sequencer
+      }
+    }   
+
+
     // Request write locks. Track requests so we can check that we don't
     // re-request any as read locks.
     set<string> writeset;

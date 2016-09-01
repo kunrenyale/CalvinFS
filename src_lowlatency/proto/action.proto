@@ -47,6 +47,8 @@ message Action {
 
   required bool single_replica = 41;  
 
+  required uint32 origin = 42;
+
   // Miscellaneous data.
   repeated Scalar misc = 51;
   
