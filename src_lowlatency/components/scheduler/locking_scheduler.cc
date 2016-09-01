@@ -61,6 +61,24 @@ void LockingScheduler::MainLoopBody() {
         continue;
       } else {
         // Send a new action to sequencer
+        Action* new_action;
+        new_action->CopyFrom(action);
+        new_action->clear_client_machine();
+        new_action->clear_client_channel();
+        new_action->clear_origin();
+
+        uint64 this_machine = machine()->machine_id();
+        uint64 machine_sent = store_->GetHeadMachine(this_machine);
+        Header* header = new Header();
+        header->set_from(this_machine);
+        header->set_to(machine_sent);
+        header->set_type(Header::RPC);
+        header->set_app("blocklog");
+        header->set_rpc("APPEND");
+        string* block = new string();
+        a->SerializeToString(block);
+        machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
+ 
       }
     }   
 

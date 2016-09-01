@@ -177,6 +177,7 @@ class BlockLogApp : public App {
 
   // Takes ownership of '*entry'.
   virtual void Append(Action* entry) {
+    entry->set_origin(config_->LookupReplica(machine()->machine_id()));
     queue_.Push(entry);
   }
 
@@ -184,6 +185,7 @@ class BlockLogApp : public App {
     CHECK(count == 1);
     Action* a = new Action();
     a->ParseFromArray(entry.data(), entry.size());
+    a->set_origin(config_->LookupReplica(machine()->machine_id()));
     queue_.Push(a);
   }
 
@@ -199,6 +201,7 @@ class BlockLogApp : public App {
     if (header->rpc() == "APPEND") {
       Action* a = new Action();
       a->ParseFromArray((*message)[0].data(), (*message)[0].size());
+      a->set_origin(config_->LookupReplica(machine()->machine_id()));
       queue_.Push(a);
     } else if (header->rpc() == "BATCH") {
       // Write batch block to local block store.

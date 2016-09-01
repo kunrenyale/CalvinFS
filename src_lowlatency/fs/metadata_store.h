@@ -33,6 +33,7 @@ class MetadataStore : public Store {
   void InitSmall();
 
   virtual uint32 LookupReplicaByDir(string dir);
+  virtual uint64 GetHeadMachine(uint64 machine_id);
   uint32 GetMachineForReplica(Action* action);
 
  private:
