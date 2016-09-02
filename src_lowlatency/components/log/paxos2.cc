@@ -1,4 +1,5 @@
 // Author: Alex Thomson (thomson@cs.yale.edu)
+// Author: Kun  Ren (kun.ren@yale.edu)
 //
 
 #include "components/log/paxos2.h"
@@ -113,13 +114,20 @@ void Paxos2App::HandleOtherMessages(Header* header, MessageBuffer* message) {
     Scalar s;
     s.ParseFromArray((*message)[0].data(), (*message)[0].size());
     uint32 from_replica = FromScalar<uint64>(s);
-    uint64 next_index = 1;
+    uint64 next_index = 0;
     next_sequences_index.Lookup(from_replica, &next_index);
-    uint64 next_version = local_versions_index_table[next_index]; 
+    uint64 next_sequence_version  = 0;
+    local_versions_index_table.Lookup(next_index, &next_sequence_version); 
+
+    // The number of actions of the current sequence
+    uint64 previous_version = 0;
+    local_versions_index_table.Lookup(next_index - 1, &previous_version);
+    uint64 num_actions = next_sequence_version - previous_version;
+
     next_sequences_index.Put(from_replica, ++next_index);
  
     Log::Reader* r = log_->GetReader();
-    r->Seek(next_version);
+    r->Seek(next_sequence_version);
 
     Header* header = new Header();
     header->set_from(machine()->machine_id());
@@ -129,7 +137,7 @@ void Paxos2App::HandleOtherMessages(Header* header, MessageBuffer* message) {
     header->set_rpc("NEW-SEQUENCE");
     MessageBuffer* m = new MessageBuffer();
     m->Append(r->Entry());
-    m->Append(ToScalar<uint64>(r->Version()));
+    m->Append(ToScalar<uint64>(num_actions));
     m->Append(ToScalar<uint32>(machine()->machine_id()));
     machine()->SendMessage(header, m);
 
@@ -174,7 +182,7 @@ void Paxos2App::RunLeader() {
         sequence_.Clear();
         isLocal = true;
         
-        local_versions_index_table[local_sequences_index] = version;
+        local_versions_index_table.Put(local_sequences_index, version);
         local_sequences_index++;
       }
     } else if (sequences_other_replicas.Size() != 0) {
@@ -182,7 +190,8 @@ void Paxos2App::RunLeader() {
       encoded = ((*m)[0]).ToString();
       Scalar s;
       s.ParseFromArray((*m)[1].data(), (*m)[1].size());
-      version = FromScalar<uint64>(s);
+      version = next_version;
+      next_version += FromScalar<uint64>(s);
       s.ParseFromArray((*m)[2].data(), (*m)[2].size());
       from_machine = FromScalar<uint32>(s);
 
@@ -245,6 +254,7 @@ void Paxos2App::RunLeader() {
       }
 
       isFirst = false;
+
     } else if (isLocal == false) {
       Header* header = new Header();
       header->set_from(machine()->machine_id());

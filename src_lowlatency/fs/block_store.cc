@@ -207,7 +207,6 @@ bool DistributedBlockStoreApp::Exists(uint64 block_id) {
   return result;
 }
 
-// TODO(agt): Return after fewer than 'kBlockReplicationFactor' acks!
 void DistributedBlockStoreApp::Put(uint64 block_id, const Slice& data) {
   atomic<int>* acks = new atomic<int>(0);
   for (uint32 i = 0; i < config_->config().block_replication_factor(); i++) {
@@ -223,7 +222,7 @@ void DistributedBlockStoreApp::Put(uint64 block_id, const Slice& data) {
   }
 
   // Only need to wait for ack from the local data center.
-  while (acks->load() < + 1) {
+  while (acks->load() < 1) {
     usleep(10);
   }
 }

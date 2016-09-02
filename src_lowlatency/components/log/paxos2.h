@@ -1,4 +1,5 @@
 // Author: Alex Thomson (thomson@cs.yale.edu)
+// Author: Kun  Ren (kun.ren@yale.edu)
 //
 
 #ifndef CALVIN_COMPONENTS_LOG_PAXOS2_H_
@@ -68,9 +69,11 @@ class Paxos2App : public LogApp {
 
   // Record the current sequence index
   uint64 local_sequences_index;
+
   // Map the local sequence index to the version.
-  map<uint64, uint64> local_versions_index_table;
-  // Map the replica ID to its locking running index
+  AtomicMap<uint64, uint64> local_versions_index_table;
+
+  // Map the replica ID to its local running index
   AtomicMap<uint32, uint64> next_sequences_index;
   
 };

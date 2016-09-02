@@ -1,4 +1,5 @@
 // Author: Alexander Thomson <thomson@cs.yale.edu>
+//         Kun  Ren <kun.ren@yale.edu>
 //
 
 #include "fs/calvinfs.h"
@@ -87,9 +88,9 @@ void CalvinFSConfigMap::Init(const CalvinFSConfig& config) {
   }
 
   // Init replica_schema_
-  replica_schema_["/a"] = 0;
-  replica_schema_["/b"] = 0;
-  replica_schema_["/c"] = 0; 
+  replica_schema_["/a0"] = 0;
+  replica_schema_["/a1"] = 1;
+  replica_schema_["/a2"] = 2; 
 }
 
 uint32 CalvinFSConfigMap::LookupReplicaByDir(string dir) {

@@ -60,14 +60,14 @@ void LockingScheduler::MainLoopBody() {
       if (ignore == true) {
         // Finish this loop
         return;
-      } else if (ignore == false && store_->LocalReplica() != action->origin()){
+      } else if ((new_action->create_new() == true) && (store_->LocalReplica() != action->origin())) {
         // Send a new action to sequencer
         Action* new_action = new Action();
         new_action->CopyFrom(*action);
         new_action->clear_client_machine();
         new_action->clear_client_channel();
         new_action->clear_origin();
-        new_action->set_origin_version(action->version());
+        new_action->set_create_new(false);
 
         uint64 this_machine = machine()->machine_id();
         uint64 machine_sent = store_->GetHeadMachine(this_machine);
@@ -80,7 +80,6 @@ void LockingScheduler::MainLoopBody() {
         string* block = new string();
         new_action->SerializeToString(block);
         machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
- 
       }
     }   
 

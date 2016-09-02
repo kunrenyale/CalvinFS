@@ -1,4 +1,5 @@
 // Author: Alexander Thomson <thomson@cs.yale.edu>
+//         Kun  Ren <kun.ren@yale.edu>
 //
 
 #include "fs/calvinfs_client_app.h"
@@ -46,7 +47,8 @@ MessageBuffer* CalvinFSClientApp::GetMetadataEntry(const Slice& path) {
 }
 
 MessageBuffer* CalvinFSClientApp::CreateFile(const Slice& path, FileType type) {
-  string channel_name = "action-result-" + UInt64ToString(machine()->GetGUID());
+  uint64 distinct_id = machine()->GetGUID();
+  string channel_name = "action-result-" + UInt64ToString(distinct_id);
   auto channel = machine()->DataChannel(channel_name);
   CHECK(!channel->Pop(NULL));
 
@@ -54,6 +56,8 @@ MessageBuffer* CalvinFSClientApp::CreateFile(const Slice& path, FileType type) {
   a->set_client_machine(machine()->machine_id());
   a->set_client_channel(channel_name);
   a->set_action_type(MetadataAction::CREATE_FILE);
+  a->set_distinct_id(distinct_id);
+
   MetadataAction::CreateFileInput in;
   in.set_path(path.data(), path.size());
   in.set_type(type);

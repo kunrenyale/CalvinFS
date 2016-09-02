@@ -120,11 +120,7 @@ class DistributedExecutionContext : public ExecutionContext {
     version_ = action->version();
     aborted_ = false;
 
-    if (action->has_origin_version()) {
-      data_channel_version = action->origin_version();
-    } else {
-      data_channel_version = version_;    
-    }
+    data_channel_version = action->distinct_id();
 
     // Look up what replica we're at.
     replica_ = config_->LookupReplica(machine_->machine_id());
@@ -304,7 +300,7 @@ int RandomSize() {
 }
 
 uint32 MetadataStore::LookupReplicaByDir(string dir) {
-  return config_->LookupReplicaByDir(dir);
+  return config_->LookupReplicaByDir(TopDir(dir));
 }
 
 uint32 MetadataStore::GetMachineForReplica(Action* action) {
@@ -319,6 +315,8 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
     uint32 replica = LookupReplicaByDir(action->readset(i));
     replica_involved.insert(replica);
   }
+
+  CHECK(replica_involved.size() >= 1);
 
   if (replica_involved.size() == 1) {
     action->set_single_replica(true);

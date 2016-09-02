@@ -50,7 +50,10 @@ message Action {
 
   required uint32 origin = 42;
 
-  optional uint64 origin_version = 43;
+  required uint64 distinct_id = 43;
+ 
+  // For some cross-replica actions, need to create a new action to guarantee deterministic order
+  optional bool create_new = 44 [default = true];
 
   // Miscellaneous data.
   repeated Scalar misc = 51;
