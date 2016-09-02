@@ -60,7 +60,7 @@ void LockingScheduler::MainLoopBody() {
       if (ignore == true) {
         // Finish this loop
         return;
-      } else if ((new_action->create_new() == true) && (store_->LocalReplica() != action->origin())) {
+      } else if ((action->create_new() == true) && (store_->LocalReplica() != action->origin())) {
         // Send a new action to sequencer
         Action* new_action = new Action();
         new_action->CopyFrom(*action);
