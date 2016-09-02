@@ -310,10 +310,9 @@ uint32 MetadataStore::LookupReplicaByDir(string dir) {
 uint32 MetadataStore::GetMachineForReplica(Action* action) {
   set<uint32> replica_involved;
   
-  int replicas;
   for (int i = 0; i < action->writeset_size(); i++) {
     uint32 replica = LookupReplicaByDir(action->writeset(i));
-    replica_involved.insert(replica)
+    replica_involved.insert(replica);
   }
 
   for (int i = 0; i < action->readset_size(); i++) {

@@ -62,8 +62,8 @@ void LockingScheduler::MainLoopBody() {
         return;
       } else if (ignore == false && store_->LocalReplica() != action->origin()){
         // Send a new action to sequencer
-        Action* new_action;
-        new_action->CopyFrom(action);
+        Action* new_action = new Action();
+        new_action->CopyFrom(*action);
         new_action->clear_client_machine();
         new_action->clear_client_channel();
         new_action->clear_origin();
@@ -78,7 +78,7 @@ void LockingScheduler::MainLoopBody() {
         header->set_app("blocklog");
         header->set_rpc("APPEND");
         string* block = new string();
-        a->SerializeToString(block);
+        new_action->SerializeToString(block);
         machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
  
       }
