@@ -49,6 +49,19 @@ bool KVStore::IsLocal(const string& path) {
   return true;
 }
 
+uint32 KVStore::LookupReplicaByDir(string dir) {
+  return 0;
+}
+
+uint64 KVStore::GetHeadMachine(uint64 machine_id) {
+  return 0;
+}
+
+uint32 KVStore::LocalReplica() {
+  return 0;
+}
+
+
 void KVStore::Run(Action* action) {
   KVStoreAction::Type type =
       static_cast<KVStoreAction::Type>(action->action_type());

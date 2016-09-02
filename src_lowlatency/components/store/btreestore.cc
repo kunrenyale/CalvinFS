@@ -65,6 +65,19 @@ bool BTreeStore::IsLocal(const string& path) {
   return true;
 }
 
+uint32 BTreeStore::LookupReplicaByDir(string dir) {
+  return 0;
+}
+
+uint64 BTreeStore::GetHeadMachine(uint64 machine_id) {
+  return 0;
+}
+
+uint32 BTreeStore::LocalReplica() {
+  return 0;
+}
+
+
 bool BTreeStore::Exists(const string& key) {
   ReadLock l(&mutex_);
   return records_.count(key) != 0;

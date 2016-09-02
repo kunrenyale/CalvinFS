@@ -1,4 +1,5 @@
 // Author: Alexander Thomson <thomson@cs.yale.edu>
+// Author: Kun  Ren (kun.ren@yale.edu)
 //
 // All interactions with the MetadataStore MUST occur through Actions.
 // See fs/metadata.proto for more details.
@@ -34,6 +35,8 @@ class MetadataStore : public Store {
 
   virtual uint32 LookupReplicaByDir(string dir);
   virtual uint64 GetHeadMachine(uint64 machine_id);
+  virtual uint32 LocalReplica();
+
   uint32 GetMachineForReplica(Action* action);
 
  private:

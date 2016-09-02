@@ -29,6 +29,18 @@ bool MicrobenchmarkStore::IsLocal(const string& path) {
   return true;
 }
 
+uint32 MicrobenchmarkStore::LookupReplicaByDir(string dir) {
+  return 0;
+}
+
+uint64 MicrobenchmarkStore::GetHeadMachine(uint64 machine_id) {
+  return 0;
+}
+
+uint32 MicrobenchmarkStore::LocalReplica() {
+  return 0;
+}
+
 void MicrobenchmarkStore::GetRWSets(Action* action) {
   action->clear_readset();
   action->clear_writeset();

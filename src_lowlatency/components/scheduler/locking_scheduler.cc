@@ -1,4 +1,5 @@
 // Author: Alex Thomson (thomson@cs.yale.edu)
+// Author: Kun  Ren (kun.ren@yale.edu)
 //
 
 #include "components/scheduler/locking_scheduler.h"
@@ -58,14 +59,15 @@ void LockingScheduler::MainLoopBody() {
 
       if (ignore == true) {
         // Finish this loop
-        continue;
-      } else {
+        return;
+      } else if (ignore == false && store_->LocalReplica() != action->origin()){
         // Send a new action to sequencer
         Action* new_action;
         new_action->CopyFrom(action);
         new_action->clear_client_machine();
         new_action->clear_client_channel();
         new_action->clear_origin();
+        new_action->set_origin_version(action->version());
 
         uint64 this_machine = machine()->machine_id();
         uint64 machine_sent = store_->GetHeadMachine(this_machine);

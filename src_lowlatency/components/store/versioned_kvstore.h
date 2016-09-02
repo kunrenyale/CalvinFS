@@ -52,6 +52,9 @@ class VersionedKVStore : public Store {
 
 
   virtual bool IsLocal(const string& path);
+  virtual uint32 LookupReplicaByDir(string dir);
+  virtual uint64 GetHeadMachine(uint64 machine_id);
+  virtual uint32 LocalReplica();
 
  protected:
   friend class HybridVersionedKVStore;

@@ -17,6 +17,9 @@ class TpccStore : public Store {
   virtual void Run(Action* action);
 
   virtual bool IsLocal(const string& path);
+  virtual uint32 LookupReplicaByDir(string dir);
+  virtual uint64 GetHeadMachine(uint64 machine_id);
+  virtual uint32 LocalReplica();
 
   KVStore* records_;
 }

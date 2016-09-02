@@ -60,6 +60,18 @@ bool StoreApp::IsLocal(const string& path) {
   return store_->IsLocal(path);
 }
 
+uint32 StoreApp::LookupReplicaByDir(string dir) {
+  return store_->LookupReplicaByDir(dir);
+}
+
+uint64 StoreApp::GetHeadMachine(uint64 machine_id) {
+  return store_->GetHeadMachine(machine_id);
+}
+
+uint32 StoreApp::LocalReplica() {
+  return 0;
+}
+
 void StoreApp::Run(Action* action) {
   store_->Run(action);
 

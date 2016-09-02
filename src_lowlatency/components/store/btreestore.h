@@ -23,6 +23,9 @@ class BTreeStore : public KVStore {
   virtual KVStore::Iterator* GetIterator();
 
   virtual bool IsLocal(const string& path);
+  virtual uint32 LookupReplicaByDir(string dir);
+  virtual uint64 GetHeadMachine(uint64 machine_id);
+  virtual uint32 LocalReplica();
 
  protected:
   friend class BTreeIterator;

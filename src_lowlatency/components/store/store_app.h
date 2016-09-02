@@ -24,6 +24,11 @@ class StoreApp : public App {
   virtual void Run(Action* action);
 
   virtual bool IsLocal(const string& path);
+
+  virtual uint32 LookupReplicaByDir(string dir);
+  virtual uint64 GetHeadMachine(uint64 machine_id);
+  virtual uint32 LocalReplica();
+
   // Run the action in a background thread. The action is pushed to '*queue'
   // after it is completed.
   void RunAsync(Action* action, AtomicQueue<Action*>* queue);

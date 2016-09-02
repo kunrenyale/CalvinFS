@@ -29,6 +29,18 @@ bool TpccStore::IsLocal(const string& path) {
   return true;
 }
 
+uint32 TpccStore::LookupReplicaByDir(string dir) {
+  return 0;
+}
+
+uint64 TpccStore::GetHeadMachine(uint64 machine_id) {
+  return 0;
+}
+
+uint32 TpccStore::LocalReplica() {
+  return 0;
+}
+
 void TpccStore::GetRWSets(Action* action) {
   action->clear_readset();
   action->clear_writeset();

@@ -1,4 +1,5 @@
 // Author: Alexander Thomson <thomson@cs.yale.edu>
+// Author: Kun  Ren (kun.ren@yale.edu)
 //
 
 #include "fs/metadata_store.h"
@@ -103,8 +104,8 @@ class ExecutionContext {
 
 ////////////////////      DistributedExecutionContext      /////////////////////
 //
-// TODO(agt): Generalize and move to components/store/store.{h,cc}.
-//
+//  Generalize and move to components/store/store.{h,cc}?
+
 class DistributedExecutionContext : public ExecutionContext {
  public:
   // Constructor performs all reads.
@@ -118,6 +119,12 @@ class DistributedExecutionContext : public ExecutionContext {
     store_ = store;
     version_ = action->version();
     aborted_ = false;
+
+    if (action->has_origin_version()) {
+      data_channel_version = action->origin_version();
+    } else {
+      data_channel_version = version_;    
+    }
 
     // Look up what replica we're at.
     replica_ = config_->LookupReplica(machine_->machine_id());
@@ -167,7 +174,7 @@ class DistributedExecutionContext : public ExecutionContext {
         header->set_from(machine_->machine_id());
         header->set_to(*it);
         header->set_type(Header::DATA);
-        header->set_data_channel("action-" + UInt64ToString(version_));
+        header->set_data_channel("action-" + UInt64ToString(data_channel_version));
         machine_->SendMessage(header, new MessageBuffer(local_reads));
       }
     }
@@ -176,7 +183,7 @@ class DistributedExecutionContext : public ExecutionContext {
     if (writer_) {
       // Get channel.
       AtomicQueue<MessageBuffer*>* channel =
-          machine_->DataChannel("action-" + UInt64ToString(version_));
+          machine_->DataChannel("action-" + UInt64ToString(data_channel_version));
       for (uint32 i = 0; i < remote_readers.size(); i++) {
         MessageBuffer* m = NULL;
         // Get results.
@@ -191,7 +198,7 @@ class DistributedExecutionContext : public ExecutionContext {
         }
       }
       // Close channel.
-      machine_->CloseDataChannel("action-" + UInt64ToString(version_));
+      machine_->CloseDataChannel("action-" + UInt64ToString(data_channel_version));
     }
   }
 
@@ -230,6 +237,8 @@ class DistributedExecutionContext : public ExecutionContext {
 
   // True iff any writes are at this partition.
   bool writer_;
+
+  uint64 data_channel_version;
 };
 
 ///////////////////////          MetadataStore          ///////////////////////
@@ -328,7 +337,10 @@ uint64 MetadataStore::GetHeadMachine(uint64 machine_id) {
   uint32 partitions = config_->GetPartitionsPerReplica();
 
   return (machine_id/partitions) * partitions;
+}
 
+uint32 MetadataStore::LocalReplica() {
+  return config_->LookupReplica(machine_->machine_id());
 }
 
 void MetadataStore::Init() {

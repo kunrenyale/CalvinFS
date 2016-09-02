@@ -208,6 +208,18 @@ bool VersionedKVStore::IsLocal(const string& path) {
   return true;
 }
 
+uint32 VersionedKVStore::LookupReplicaByDir(string dir) {
+  return 0;
+}
+
+uint64 VersionedKVStore::GetHeadMachine(uint64 machine_id) {
+  return 0;
+}
+
+uint32 VersionedKVStore::LocalReplica() {
+  return 0;
+}
+
 bool VersionedKVStore::Get(
     const string& key,
     uint64 version,

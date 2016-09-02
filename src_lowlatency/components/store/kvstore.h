@@ -39,6 +39,10 @@ class KVStore : public Store {
 
   virtual bool IsLocal(const string& path);
 
+  virtual uint32 LookupReplicaByDir(string dir);
+  virtual uint64 GetHeadMachine(uint64 machine_id);
+  virtual uint32 LocalReplica();
+
   // Thread-safe iterator over a current snapshot of the store. For some
   // implementations, this may hold a read lock on the store for its full
   // lifetime, so iterators should NEVER be long-lived objects.

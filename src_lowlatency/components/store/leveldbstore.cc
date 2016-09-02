@@ -98,6 +98,18 @@ bool LevelDBStore::IsLocal(const string& path) {
   return true;
 }
 
+uint32 LevelDBStore::LookupReplicaByDir(string dir) {
+  return 0;
+}
+
+uint64 LevelDBStore::GetHeadMachine(uint64 machine_id) {
+  return 0;
+}
+
+uint32 LevelDBStore::LocalReplica() {
+  return 0;
+}
+
 bool LevelDBStore::Exists(const string& key) {
   string s;
   return Get(key, &s);

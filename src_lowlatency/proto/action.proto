@@ -1,4 +1,5 @@
 // Author: Alex Thomson
+// Author: Kun  Ren (kun.ren@yale.edu)
 //
 // An Action is the fundamental unit of work in Calvin. The state of a Calvin
 // instance is uniquely determined by (a) the historical log of all Actions that
@@ -48,6 +49,8 @@ message Action {
   required bool single_replica = 41;  
 
   required uint32 origin = 42;
+
+  optional uint64 origin_version = 43;
 
   // Miscellaneous data.
   repeated Scalar misc = 51;

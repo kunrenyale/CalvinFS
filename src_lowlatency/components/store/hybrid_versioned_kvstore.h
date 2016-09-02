@@ -20,7 +20,11 @@ class HybridVersionedKVStore : public VersionedKVStore {
   // Types of actions that VersionedKVStore can interpret.
   virtual void GetRWSets(Action* action);
   virtual void Run(Action* action);
+
   virtual bool IsLocal(const string& path);
+  virtual uint32 LookupReplicaByDir(string dir);
+  virtual uint64 GetHeadMachine(uint64 machine_id);
+  virtual uint32 LocalReplica();
 
 
   // Returns true iff a record exists at version 'version' with key 'key'.
