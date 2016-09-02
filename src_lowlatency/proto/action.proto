@@ -48,7 +48,7 @@ message Action {
 
   required bool single_replica = 41;  
 
-  required uint32 origin = 42;
+  optional uint32 origin = 42 [default = 0];
 
   required uint64 distinct_id = 43;
  

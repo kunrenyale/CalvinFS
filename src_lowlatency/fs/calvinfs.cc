@@ -94,6 +94,7 @@ void CalvinFSConfigMap::Init(const CalvinFSConfig& config) {
 }
 
 uint32 CalvinFSConfigMap::LookupReplicaByDir(string dir) {
+  printf("dir = %s\n", dir.c_str());
   CHECK(replica_schema_.count(dir) > 0);
   return replica_schema_[dir];
 }

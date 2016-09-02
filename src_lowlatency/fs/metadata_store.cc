@@ -267,11 +267,12 @@ string TopDir(const string& path) {
     LOG(FATAL) << "root dir has no topdir";
   }
   
-  uint32 offset = string(path, 1, path.size()-1).find('/');
-  CHECK_NE(string::npos, offset);     // at least 1 slash required
-  CHECK_NE(path.size() - 1, offset);  // filename cannot be empty
-  return string(path, 0, offset);
-  
+  uint32 offset = string(path, 1).find('/');
+  if (offset == string::npos) {
+    return path;
+  } else {
+    return string(path, 0, offset+1);
+  }
 }
 
 MetadataStore::MetadataStore(VersionedKVStore* store)
