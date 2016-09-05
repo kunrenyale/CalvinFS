@@ -13,31 +13,34 @@ make -j
 cd ..
 
 # gtest
-wget http://googletest.googlecode.com/files/gtest-1.6.0.zip
-unzip gtest-1.6.0.zip
-rm gtest-1.6.0.zip
-mv gtest-1.6.0 gtest
+wget https://github.com/google/googletest/archive/release-1.6.0.tar.gz
+tar -zxf release-1.6.0.tar.gz 
+rm release-1.6.0.tar.gz 
+mv googletest-release-1.6.0/ gtest
 cd gtest
-./configure --prefix=$PWD
+mkdir mybuild    
+cd mybuild
+cmake $PWD/..
 make -j
+cd ..
 cd ..
 
 # glog
-wget http://google-glog.googlecode.com/files/glog-0.3.3.tar.gz
-tar -xzf glog-0.3.3.tar.gz
-mv glog-0.3.3/ glog
-rm -fr glog-0.3.3.tar.gz
+wget https://github.com/google/glog/archive/v0.3.4.tar.gz
+tar -xzf v0.3.4.tar.gz
+mv glog-0.3.4/ glog
+rm -fr v0.3.4.tar.gz
 cd glog
 ./configure --prefix=$PWD
 make -j
-sudo make install
+make install
 cd ..
 
 # leveldb
-wget https://leveldb.googlecode.com/files/leveldb-1.9.0.tar.gz
-tar -xzf leveldb-1.9.0.tar.gz
-mv leveldb-1.9.0 leveldb
-rm -fr leveldb-1.9.0.tar.gz
+wget https://github.com/google/leveldb/archive/v1.9.tar.gz
+tar -zxf v1.9.tar.gz
+mv leveldb-1.9/ leveldb
+rm -fr v1.9.tar.gz
 cd leveldb
 make -j
 make libmemenv.a
@@ -65,13 +68,14 @@ make install
 cd ..
 
 #gflags
-wget http://gflags.googlecode.com/files/gflags-2.0-no-svn-files.tar.gz
-tar xzf gflags-2.0-no-svn-files.tar.gz 
-rm gflags-2.0-no-svn-files.tar.gz 
-mv gflags-2.0 gflags
+wget https://github.com/gflags/gflags/archive/v2.0.tar.gz
+tar -xzf v2.0.tar.gz
+rm v2.0.tar.gz
+mv gflags-2.0/ gflags
 cd gflags
 ./configure --prefix=$PWD
 make -j
 make install
 cd ..
+
 
