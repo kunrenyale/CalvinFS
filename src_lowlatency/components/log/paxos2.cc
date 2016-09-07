@@ -109,8 +109,10 @@ void Paxos2App::HandleOtherMessages(Header* header, MessageBuffer* message) {
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a Append request. block id is:"<< header->misc_int(0)<<"  count is:"<<header->misc_int(1)<<" from machine:"<<header->from();
 
   } else if (header->rpc() == "NEW-SEQUENCE") { 
-    sequences_other_replicas.Push(message);   
+    sequences_other_replicas.Push(message);
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SEQUENCE. block id is:"<<" from machine:"<<header->from();
   } else if (header->rpc() == "NEW-SEQUENCE-ACK") {
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SEQUENCE-ACK. block id is:"<<" from machine:"<<header->from();
     // Send next sequence to the from-replica
     Scalar s;
     s.ParseFromArray((*message)[0].data(), (*message)[0].size());
