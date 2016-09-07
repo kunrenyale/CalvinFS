@@ -255,7 +255,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a BA
       }
 
     } else if (header->rpc() == "SUBMIT") {
-      CHECK(machine()->machine_id() == 0);
+      CHECK(machine()->machine_id() % (machine()->config().size() / config_->config().block_replication_factor()) == 0);
 
       uint64 block_id = header->misc_int(0);
 

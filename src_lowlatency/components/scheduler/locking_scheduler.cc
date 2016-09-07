@@ -132,7 +132,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action
         lm_.Release(action, action->writeset(i));
       }
     }
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":** scheduler finish running action: " << action->version();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":** scheduler finish running action: " << action->version();
     active_actions_.erase(action->version());
     running_action_count_--;
     safe_version_.store(
