@@ -89,12 +89,11 @@ void CalvinFSConfigMap::Init(const CalvinFSConfig& config) {
 
   // Init replica_schema_
   replica_schema_["/a0"] = 0;
-  replica_schema_["/a1"] = 1;
-  replica_schema_["/a2"] = 2; 
+  replica_schema_["/a1"] = 0;
+  replica_schema_["/a2"] = 0; 
 }
 
 uint32 CalvinFSConfigMap::LookupReplicaByDir(string dir) {
-  printf("dir = %s\n", dir.c_str());
   CHECK(replica_schema_.count(dir) > 0);
   return replica_schema_[dir];
 }

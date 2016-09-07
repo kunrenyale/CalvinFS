@@ -74,7 +74,6 @@ void Paxos2App::Append(uint64 blockid, uint64 count) {
   header->add_misc_int(blockid);
   header->add_misc_int(count);
   machine()->SendMessage(header, new MessageBuffer());
-LOG(ERROR) << "Paxos2 recevie a Append request. block id is:"<< blockid;
 }
 
 void Paxos2App::Start() {
@@ -107,7 +106,7 @@ void Paxos2App::HandleOtherMessages(Header* header, MessageBuffer* message) {
     p->set_first(header->misc_int(0));
     p->set_second(header->misc_int(1));
     count_ += p->second();
-LOG(ERROR) << "++Paxos2 recevie a Append request. block id is:"<< header->misc_int(0);
+//LOG(ERROR) << "++Paxos2 recevie a Append request. block id is:"<< header->misc_int(0)<<"  count is:"<<header->misc_int(1);
 
   } else if (header->rpc() == "NEW-SEQUENCE") { 
     sequences_other_replicas.Push(message);   
@@ -186,7 +185,7 @@ void Paxos2App::RunLeader() {
         
         local_versions_index_table.Put(local_sequences_index, version);
         local_sequences_index++;
-LOG(ERROR) << "Paxos2 proposes a new sequence from local: version:"<< version;
+//LOG(ERROR) << "Paxos2 proposes a new sequence from local: version:"<< version<< " next_version is: "<<next_version;
       }
     } else if (sequences_other_replicas.Size() != 0) {
       sequences_other_replicas.Pop(&m);
@@ -199,7 +198,7 @@ LOG(ERROR) << "Paxos2 proposes a new sequence from local: version:"<< version;
       from_machine = FromScalar<uint32>(s);
 
       isLocal = false;
-LOG(ERROR) << "Paxos2 proposes a new sequence from other replicas: version:"<< version;
+//LOG(ERROR) << "Paxos2 proposes a new sequence from other replicas: version:"<< version << " next_version is: "<<next_version;
     }
 
     atomic<int>* acks = new atomic<int>(1);
@@ -236,7 +235,7 @@ LOG(ERROR) << "Paxos2 proposes a new sequence from other replicas: version:"<< v
 
     // Actually append the request into the log
     log_->Append(version, encoded);
-LOG(ERROR) << "Paxos2: Actually append the request into the log: version:"<< version;
+//LOG(ERROR) << "Paxos2: Actually append the request into the log: version:"<< version;
 
     if (isLocal == true && isFirst == true) {
       // Send the sequence to the LeaderPaxosApp of all the other replicas;
@@ -255,7 +254,7 @@ LOG(ERROR) << "Paxos2: Actually append the request into the log: version:"<< ver
           machine()->SendMessage(header, m);
 
           next_sequences_index.Put(i, 1);
-LOG(ERROR) << "Paxos2: Send NEW-SEQUENCE:";
+//LOG(ERROR) << "Paxos2: Send NEW-SEQUENCE:";
 	}
       }
 
