@@ -77,7 +77,7 @@ int main(int argc, char** argv) {
   if (FLAGS_machine_id % partitions < 3) {
     StartAppProto sap;
     uint32 replica = FLAGS_machine_id / partitions; 
-    for (uint32 i = replica * partitions; i < ((replica+1)*partitions) && (i < replica * partitions + 3); i++) {
+    for (uint32 i = replica * partitions; (i < (replica+1)*partitions) && (i < replica * partitions + 3); i++) {
       sap.add_participants(i);
     }
 
