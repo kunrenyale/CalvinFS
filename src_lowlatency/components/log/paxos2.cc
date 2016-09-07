@@ -116,7 +116,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SE
     // Send next sequence to the from-replica
     Scalar s;
     s.ParseFromArray((*message)[0].data(), (*message)[0].size());
-    uint32 from_replica = FromScalar<uint64>(s);
+    uint32 from_replica = FromScalar<uint32>(s);
     uint64 next_index = 0;
     next_sequences_index.Lookup(from_replica, &next_index);
     uint64 next_sequence_version  = 0;
