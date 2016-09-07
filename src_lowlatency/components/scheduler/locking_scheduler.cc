@@ -33,7 +33,7 @@ void LockingScheduler::MainLoopBody() {
     high_water_mark_ = action->version();
     active_actions_.insert(action->version());
     int ungranted_requests = 0;
-//LOG(ERROR) <<"--Scheduler receive action: " << action->version();
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action: " << action->version();
  
     if (action->single_replica() == false) {
       bool ignore = false;
@@ -132,7 +132,7 @@ void LockingScheduler::MainLoopBody() {
         lm_.Release(action, action->writeset(i));
       }
     }
-//LOG(ERROR) <<"** scheduler finish running action: " << action->version();
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":** scheduler finish running action: " << action->version();
     active_actions_.erase(action->version());
     running_action_count_--;
     safe_version_.store(

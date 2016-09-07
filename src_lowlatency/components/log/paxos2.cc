@@ -106,7 +106,7 @@ void Paxos2App::HandleOtherMessages(Header* header, MessageBuffer* message) {
     p->set_first(header->misc_int(0));
     p->set_second(header->misc_int(1));
     count_ += p->second();
-//LOG(ERROR) << "++Paxos2 recevie a Append request. block id is:"<< header->misc_int(0)<<"  count is:"<<header->misc_int(1);
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a Append request. block id is:"<< header->misc_int(0)<<"  count is:"<<header->misc_int(1)<<" from machine:"<<header->from();
 
   } else if (header->rpc() == "NEW-SEQUENCE") { 
     sequences_other_replicas.Push(message);   
@@ -185,7 +185,7 @@ void Paxos2App::RunLeader() {
         
         local_versions_index_table.Put(local_sequences_index, version);
         local_sequences_index++;
-//LOG(ERROR) << "Paxos2 proposes a new sequence from local: version:"<< version<< " next_version is: "<<next_version;
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new sequence from local: version:"<< version<< " next_version is: "<<next_version;
       }
     } else if (sequences_other_replicas.Size() != 0) {
       sequences_other_replicas.Pop(&m);
@@ -198,7 +198,7 @@ void Paxos2App::RunLeader() {
       from_machine = FromScalar<uint32>(s);
 
       isLocal = false;
-//LOG(ERROR) << "Paxos2 proposes a new sequence from other replicas: version:"<< version << " next_version is: "<<next_version;
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new sequence from other replicas: version:"<< version << " next_version is: "<<next_version;
     }
 
     atomic<int>* acks = new atomic<int>(1);
@@ -235,7 +235,7 @@ void Paxos2App::RunLeader() {
 
     // Actually append the request into the log
     log_->Append(version, encoded);
-//LOG(ERROR) << "Paxos2: Actually append the request into the log: version:"<< version;
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Actually append the request into the log: version:"<< version;
 
     if (isLocal == true && isFirst == true) {
       // Send the sequence to the LeaderPaxosApp of all the other replicas;
@@ -254,7 +254,7 @@ void Paxos2App::RunLeader() {
           machine()->SendMessage(header, m);
 
           next_sequences_index.Put(i, 1);
-//LOG(ERROR) << "Paxos2: Send NEW-SEQUENCE:";
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Send NEW-SEQUENCE:";
 	}
       }
 
@@ -270,7 +270,7 @@ void Paxos2App::RunLeader() {
       m = new MessageBuffer();
       m->Append(ToScalar<uint32>(machine()->machine_id()));
       machine()->SendMessage(header, m);
-LOG(ERROR) << "Paxos2: Send NEW-SEQUENCE-ACK:";
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Send NEW-SEQUENCE-ACK:";
     }
 
   }
@@ -289,6 +289,7 @@ void Paxos2App::RunFollower() {
       }
     }
     if (m->size() == 3) {
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2(Follower): Receive a new proposal:";
       // New proposal.
       uncommitted.push(m);
       // Send ack to leader.
@@ -301,6 +302,7 @@ void Paxos2App::RunFollower() {
       h->set_ack_counter(FromScalar<uint64>(s));
       machine()->SendMessage(h, new MessageBuffer());
     } else {
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2(Follower): Receive a commit message:";
       // Commit message.
       CHECK(!uncommitted.empty());
       delete m;
