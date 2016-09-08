@@ -209,9 +209,9 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new se
       sequences_other_replicas.Pop(&m);
 
       version = next_version;
-      //encoded = ((*m)[0]).ToString();
+      encoded = ((*m)[0]).ToString();
       PairSequence other_sequence;
-      other_sequence.ParseFromArray((*m)[0].data(), (*m)[0].size());
+      other_sequence.ParseFromString(encoded);
       other_sequence.set_misc(version);
       other_sequence.SerializeToString(&encoded);
 
