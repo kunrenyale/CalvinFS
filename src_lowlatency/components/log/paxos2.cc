@@ -110,9 +110,9 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a Append
 
   } else if (header->rpc() == "NEW-SEQUENCE") {
     MessageBuffer* m = new MessageBuffer();
-    m->AppendPart((*message)[0]);
-    m->AppendPart((*message)[1]);
-    m->AppendPart((*message)[2]);
+    m->Append((*message)[0]);
+    m->Append((*message)[1]);
+    m->Append((*message)[2]);
     sequences_other_replicas.Push(m);
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SEQUENCE. block id is:"<<" from machine:"<<header->from();
   } else if (header->rpc() == "NEW-SEQUENCE-ACK") {
