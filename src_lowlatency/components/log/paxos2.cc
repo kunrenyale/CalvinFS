@@ -111,8 +111,12 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a Append
   } else if (header->rpc() == "NEW-SEQUENCE") {
     MessageBuffer* m = new MessageBuffer();
     m->Append((*message)[0]);
-    m->Append((*message)[1]);
-    m->Append((*message)[2]);
+
+    Scalar s;
+    s.ParseFromArray((*message)[1].data(), (*message)[1].size());
+    m->Append(s);
+    s.ParseFromArray((*message)[2].data(), (*message)[2].size());
+    m->Append((s);
     sequences_other_replicas.Push(m);
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SEQUENCE. block id is:"<<" from machine:"<<header->from();
   } else if (header->rpc() == "NEW-SEQUENCE-ACK") {
@@ -198,12 +202,10 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new se
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new sequence from other replicas: size:"<< m->size() << " begin: ";
 
      encoded = ((*m)[0]).ToString();
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new sequence from other replicas: version:"<< version << " begin:1 ";
       Scalar s;
       s.ParseFromArray((*m)[1].data(), (*m)[1].size());
       version = next_version;
       next_version += FromScalar<uint64>(s);
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new sequence from other replicas: version:"<< version << " begin:2 ";
       s.ParseFromArray((*m)[2].data(), (*m)[2].size());
       from_machine = FromScalar<uint32>(s);
       isLocal = false;
