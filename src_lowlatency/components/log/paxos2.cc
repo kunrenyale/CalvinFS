@@ -214,7 +214,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new se
       other_sequence.ParseFromString(encoded);
       other_sequence.set_misc(version);
       other_sequence.SerializeToString(&encoded);
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new sequence from other replicas: version:"<< other_sequence.misc() << " next_version is: "<<next_version<<". from: "<<from_machine;
+
       Scalar s;
       s.ParseFromArray((*m)[1].data(), (*m)[1].size());
 
@@ -222,6 +222,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new se
       s.ParseFromArray((*m)[2].data(), (*m)[2].size());
       from_machine = FromScalar<uint32>(s);
       isLocal = false;
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new sequence from other replicas: version:"<< other_sequence.misc() << " next_version is: "<<next_version<<". from: "<<from_machine;
     }
 
     atomic<int>* acks = new atomic<int>(1);
