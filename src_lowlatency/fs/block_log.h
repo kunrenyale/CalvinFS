@@ -330,6 +330,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log recevie a SUBB
             subbatch_id_ = p->first();
             subbatch_version_ = p->second();
             delete p;
+LOG(ERROR) <<"*********Blocklog subbatch_id:"<< subbatch_id << " subbatch_version_ "<<subbatch_version_;
           } else {
             return false;
           }
