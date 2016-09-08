@@ -35,7 +35,7 @@ V = @
 
 # Set the compiler and compile-time loaded libraries
 CXX           := g++
-LDLIBRARYPATH := LD_LIBRARY_PATH=$(ZEROMQ)/src/.libs:$(PROTOB)/src/.libs:$(GTEST)/lib/.libs:$(GLOG)/.libs:$(LEVELDB):$(GPERF)/.libs:$(GFLAGS)/.libs
+LDLIBRARYPATH := LD_LIBRARY_PATH=$(ZEROMQ)/src/.libs:$(PROTOB)/src/.libs:$(GTEST)/mybuild:$(GLOG)/.libs:$(LEVELDB):$(GPERF)/.libs:$(GFLAGS)/.libs
 
 #-----------------------------------------------
 # OPT MODES
@@ -58,7 +58,7 @@ CXXFLAGS := $(OPT_MODE) -MD -I$(SRCDIR) -I$(OBJDIR) \
             -I$(LEVELDB)/helpers/memenv \
             -Wall -Wno-strict-aliasing -std=c++0x -fno-omit-frame-pointer
 
-LDFLAGS := -lgtest -L$(GTEST)/lib/.libs \
+LDFLAGS := -lgtest -L$(GTEST)/mybuild \
            -lglog -L$(GLOG)/.libs \
            -lgflags -L$(GFLAGS)/.libs \
            -lleveldb -L$(LEVELDB) \
