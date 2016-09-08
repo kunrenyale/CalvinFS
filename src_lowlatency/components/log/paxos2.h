@@ -20,6 +20,7 @@
 
 using std::vector;
 using std::map;
+using std::pair;
 
 class Header;
 class Machine;
@@ -71,7 +72,7 @@ class Paxos2App : public LogApp {
   uint64 local_sequences_index;
 
   // Map the local sequence index to the version.
-  AtomicMap<uint64, uint64> local_versions_index_table;
+  AtomicMap<uint64, pair<uint64, uint64>> local_versions_index_table;
 
   // Map the replica ID to its local running index
   AtomicMap<uint32, uint64> next_sequences_index;

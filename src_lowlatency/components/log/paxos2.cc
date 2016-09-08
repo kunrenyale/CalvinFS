@@ -128,7 +128,8 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SE
 
     uint64 next_index = 0;
     next_sequences_index.Lookup(from_replica, &next_index);
-    uint64 next_sequence_version  = 0;
+
+    pair<uint64, uint64> next_sequence_version;
     bool findnext = local_versions_index_table.Lookup(next_index, &next_sequence_version); 
 
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SEQUENCE-ACK(--before find next). from machine:"<<header->from();
@@ -137,17 +138,15 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SE
       findnext = local_versions_index_table.Lookup(next_index, &next_sequence_version);
     }
 
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SEQUENCE-ACK(--already find next). from machine:"<<header->from()<<". next version is: "<<next_sequence_version;
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SEQUENCE-ACK(--already find next). from machine:"<<header->from()<<". next version is: "<<next_sequence_version.first;
 
     // The number of actions of the current sequence
-    uint64 previous_version = 0;
-    local_versions_index_table.Lookup(next_index - 1, &previous_version);
-    uint64 num_actions = next_sequence_version - previous_version;
+    uint64 num_actions = next_sequence_version.second;
 
     next_sequences_index.Put(from_replica, ++next_index);
  
     Log::Reader* r = log_->GetReader();
-    r->Seek(next_sequence_version);
+    r->Seek(next_sequence_version.first);
 
     Header* header = new Header();
     header->set_from(machine()->machine_id());
@@ -202,14 +201,14 @@ void Paxos2App::RunLeader() {
         sequence_.Clear();
         isLocal = true;
         
-        local_versions_index_table.Put(local_sequences_index, version);
+        local_versions_index_table.Put(local_sequences_index, make_pair(version, next_version - version));
         local_sequences_index++;
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new sequence from local: version:"<< version<< " next_version is: "<<next_version;
       }
     } else if (sequences_other_replicas.Size() != 0) {
       sequences_other_replicas.Pop(&m);
 
-     encoded = ((*m)[0]).ToString();
+      encoded = ((*m)[0]).ToString();
       Scalar s;
       s.ParseFromArray((*m)[1].data(), (*m)[1].size());
       version = next_version;
@@ -259,7 +258,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Actually append 
     if (isLocal == true && isFirst == true) {
       // Send the sequence to the LeaderPaxosApp of all the other replicas;
 
-      for (uint64 i = 0; i < replica_count;i++) {
+      for (uint64 i = 0; i < replica_count; i++) {
         if (i != machine()->machine_id()/partitions_per_replica) {
           Header* header = new Header();
           header->set_from(machine()->machine_id());
@@ -268,7 +267,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Actually append 
           header->set_app(name());
           header->set_rpc("NEW-SEQUENCE");
           m = new MessageBuffer(new string(encoded));
-	  m->Append(ToScalar<uint64>(version));
+	  m->Append(ToScalar<uint64>(next_version - version));
           m->Append(ToScalar<uint32>(machine()->machine_id()));
           machine()->SendMessage(header, m);
 
