@@ -148,6 +148,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SE
     // The number of actions of the current sequence
     uint64 num_actions = next_sequence_version.second;
     ++next_index;
+    next_sequences_index.Erase(from_replica);
     next_sequences_index.Put(from_replica, next_index);
  
     Log::Reader* r = log_->GetReader();
