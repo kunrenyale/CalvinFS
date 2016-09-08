@@ -46,6 +46,7 @@ class SequenceSource : public Source<UInt64Pair*> {
       if (current_->pairs_size() == 0) {
         delete current_;
         current_ = NULL;
+LOG(ERROR) <<"^^^^^^^^^SequenceSource wrong!!!";
       } else {
         index_ = 0;
         offset_ = current_->misc();
