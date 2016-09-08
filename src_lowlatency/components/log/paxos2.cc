@@ -196,11 +196,10 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new se
     } else if (sequences_other_replicas.Size() != 0) {
       sequences_other_replicas.Pop(&m);
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new sequence from other replicas: size:"<< m->size() << " begin: ";
-CHECK(m->size() == 3);
-      Scalar s;
-      s.ParseFromArray((*m)[0].data(), (*m)[0].size());
-      encoded = FromScalar<string>(s);
+
+     encoded = ((*m)[0]).ToString();
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new sequence from other replicas: version:"<< version << " begin:1 ";
+      Scalar s;
       s.ParseFromArray((*m)[1].data(), (*m)[1].size());
       version = next_version;
       next_version += FromScalar<uint64>(s);
