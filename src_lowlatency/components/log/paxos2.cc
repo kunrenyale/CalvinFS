@@ -110,12 +110,15 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a Append
 
   } else if (header->rpc() == "NEW-SEQUENCE") {
 
-PairSequence other_sequence;
+/**PairSequence other_sequence;
 other_sequence.ParseFromArray((*message)[0].data(), (*message)[0].size());
 CHECK(other_sequence.pairs_size() != 0);
 string tmp;
 other_sequence.SerializeToString(&tmp);
-MessageBuffer* m = new MessageBuffer(new string(tmp));
+MessageBuffer* m = new MessageBuffer(new string(tmp));**/
+
+string tmp = ((*m)[0]).ToString();
+MessageBuffer* m = new MessageBuffer(&tmp);
 
     Scalar s;
     s.ParseFromArray((*message)[1].data(), (*message)[1].size());
