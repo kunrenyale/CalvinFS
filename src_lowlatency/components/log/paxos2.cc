@@ -110,15 +110,12 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a Append
 
   } else if (header->rpc() == "NEW-SEQUENCE") {
 
-/**PairSequence other_sequence;
+PairSequence other_sequence;
 other_sequence.ParseFromArray((*message)[0].data(), (*message)[0].size());
 CHECK(other_sequence.pairs_size() != 0);
-string tmp;
-other_sequence.SerializeToString(&tmp);
-MessageBuffer* m = new MessageBuffer(new string(tmp));**/
-
-string tmp = ((*message)[0]).ToString();
-MessageBuffer* m = new MessageBuffer(&tmp);
+//string tmp;
+//other_sequence.SerializeToString(&tmp);
+MessageBuffer* m = new MessageBuffer(other_sequence);
 
     Scalar s;
     s.ParseFromArray((*message)[1].data(), (*message)[1].size());
@@ -217,9 +214,16 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new se
       sequences_other_replicas.Pop(&m);
 
       version = next_version;
-      encoded = ((*m)[0]).ToString();
+
+/**      encoded = ((*m)[0]).ToString();
       PairSequence other_sequence;
       other_sequence.ParseFromString(encoded);
+CHECK(other_sequence.pairs_size() != 0);
+      other_sequence.set_misc(version);
+      other_sequence.SerializeToString(&encoded);**/
+
+      PairSequence other_sequence;
+      other_sequence.ParseFromArray((*m)[0].data(), (*m)[0].size());
 CHECK(other_sequence.pairs_size() != 0);
       other_sequence.set_misc(version);
       other_sequence.SerializeToString(&encoded);
