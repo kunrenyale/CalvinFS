@@ -49,6 +49,7 @@ class SequenceSource : public Source<UInt64Pair*> {
       } else {
         index_ = 0;
         offset_ = current_->misc();
+LOG(ERROR) <<"^^^^^^^^^SequenceSource get a sequence:"<< offset_ << " block_id is: "<<current_->pairs(0).first();
       }
     }
 
