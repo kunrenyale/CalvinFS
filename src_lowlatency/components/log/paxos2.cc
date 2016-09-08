@@ -212,6 +212,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new se
       encoded = ((*m)[0]).ToString();
       PairSequence other_sequence;
       other_sequence.ParseFromString(encoded);
+CHECK(other_sequence.pairs_size() != 0);
       other_sequence.set_misc(version);
       other_sequence.SerializeToString(&encoded);
 
