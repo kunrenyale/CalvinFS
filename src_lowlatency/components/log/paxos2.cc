@@ -116,7 +116,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a Append
     s.ParseFromArray((*message)[1].data(), (*message)[1].size());
     m->Append(s);
     s.ParseFromArray((*message)[2].data(), (*message)[2].size());
-    m->Append((s);
+    m->Append(s);
     sequences_other_replicas.Push(m);
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SEQUENCE. block id is:"<<" from machine:"<<header->from();
   } else if (header->rpc() == "NEW-SEQUENCE-ACK") {
