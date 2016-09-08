@@ -117,7 +117,7 @@ string tmp;
 other_sequence.SerializeToString(&tmp);
 MessageBuffer* m = new MessageBuffer(new string(tmp));**/
 
-string tmp = ((*m)[0]).ToString();
+string tmp = ((*message)[0]).ToString();
 MessageBuffer* m = new MessageBuffer(&tmp);
 
     Scalar s;
