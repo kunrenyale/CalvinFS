@@ -169,8 +169,8 @@ class CalvinFSClientApp : public App {
     Spin(1);
 
     string tld("/a" + UInt64ToString(machine()->machine_id()));
-    int dirs = 2;
-    int files = 2;
+    int dirs = 5;
+    int files = 5;
 
     // Put files into second-level dir.
     double start = GetTime();
