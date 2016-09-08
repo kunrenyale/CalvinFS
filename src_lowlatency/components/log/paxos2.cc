@@ -190,8 +190,8 @@ void Paxos2App::RunLeader() {
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new sequence from local: version:"<< version<< " next_version is: "<<next_version;
       }
     } else if (sequences_other_replicas.Size() != 0) {
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new sequence from other replicas: version:"<< version << " begin: ";
       sequences_other_replicas.Pop(&m);
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new sequence from other replicas: size:"<< m->size() << " begin: ";
 CHECK(m->size() == 3);
       Scalar s;
       s.ParseFromArray((*m)[0].data(), (*m)[0].size());
