@@ -131,7 +131,12 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SE
     uint64 next_sequence_version  = 0;
     bool findnext = local_versions_index_table.Lookup(next_index, &next_sequence_version); 
 
-    CHECK(findnext == true);
+    while (findnext == false) {
+      usleep(5);
+      findnext = local_versions_index_table.Lookup(next_index, &next_sequence_version);
+    }
+
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SEQUENCE-ACK(--already find next). from machine:"<<header->from();
 
     // The number of actions of the current sequence
     uint64 previous_version = 0;
