@@ -109,8 +109,13 @@ void Paxos2App::HandleOtherMessages(Header* header, MessageBuffer* message) {
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a Append request. block id is:"<< header->misc_int(0)<<"  count is:"<<header->misc_int(1)<<" from machine:"<<header->from();
 
   } else if (header->rpc() == "NEW-SEQUENCE") {
-    MessageBuffer* m = new MessageBuffer();
-    m->Append((*message)[0]);
+
+PairSequence other_sequence;
+other_sequence.ParseFromArray((*message)[0].data(), (*message)[0].size());
+CHECK(other_sequence.pairs_size() != 0);
+string tmp;
+other_sequence.SerializeToString(&tmp);
+MessageBuffer* m = new MessageBuffer(new string(tmp));
 
     Scalar s;
     s.ParseFromArray((*message)[1].data(), (*message)[1].size());
