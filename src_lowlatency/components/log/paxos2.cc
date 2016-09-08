@@ -132,8 +132,8 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SE
     uint32 from_replica = FromScalar<uint32>(s);
 
     uint64 next_index = 0;
-    next_sequences_index.Lookup(from_replica, &next_index);
-
+    bool test = next_sequences_index.Lookup(from_replica, &next_index);
+CHECK(test == true);
     pair<uint64, uint64> next_sequence_version;
     bool findnext = local_versions_index_table.Lookup(next_index, &next_sequence_version); 
 
@@ -147,8 +147,8 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SE
 
     // The number of actions of the current sequence
     uint64 num_actions = next_sequence_version.second;
-
-    next_sequences_index.Put(from_replica, ++next_index);
+    ++next_index;
+    next_sequences_index.Put(from_replica, next_index);
  
     Log::Reader* r = log_->GetReader();
     r->Seek(next_sequence_version.first);
@@ -164,7 +164,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SE
     m->Append(ToScalar<uint64>(num_actions));
     m->Append(ToScalar<uint32>(machine()->machine_id()));
     machine()->SendMessage(header, m);
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Send NEW-SEQUENCE(after receive ack) to: "<<from_replica;
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Send NEW-SEQUENCE(after receive ack) to: "<<from_replica<<" . version: "<<r->Version();
   } else {
     LOG(FATAL) << "unknown message type: " << header->rpc();
   }
