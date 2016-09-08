@@ -208,10 +208,16 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new se
     } else if (sequences_other_replicas.Size() != 0) {
       sequences_other_replicas.Pop(&m);
 
-      encoded = ((*m)[0]).ToString();
+      version = next_version;
+      //encoded = ((*m)[0]).ToString();
+      PairSequence other_sequence;
+      other_sequence.ParseFromArray((*m)[0].data(), (*m)[0].size());
+      other_sequence.set_misc(version);
+      other_sequence.SerializeToString(&encoded);
+
       Scalar s;
       s.ParseFromArray((*m)[1].data(), (*m)[1].size());
-      version = next_version;
+
       next_version += FromScalar<uint64>(s);
       s.ParseFromArray((*m)[2].data(), (*m)[2].size());
       from_machine = FromScalar<uint32>(s);
