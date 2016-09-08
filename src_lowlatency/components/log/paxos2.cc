@@ -120,15 +120,18 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a Append
     sequences_other_replicas.Push(m);
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SEQUENCE. block id is:"<<" from machine:"<<header->from();
   } else if (header->rpc() == "NEW-SEQUENCE-ACK") {
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SEQUENCE-ACK. block id is:"<<" from machine:"<<header->from();
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SEQUENCE-ACK. from machine:"<<header->from();
     // Send next sequence to the from-replica
     Scalar s;
     s.ParseFromArray((*message)[0].data(), (*message)[0].size());
     uint32 from_replica = FromScalar<uint32>(s);
+
     uint64 next_index = 0;
     next_sequences_index.Lookup(from_replica, &next_index);
     uint64 next_sequence_version  = 0;
-    local_versions_index_table.Lookup(next_index, &next_sequence_version); 
+    bool findnext = local_versions_index_table.Lookup(next_index, &next_sequence_version); 
+
+    CHECK(findnext == true);
 
     // The number of actions of the current sequence
     uint64 previous_version = 0;
