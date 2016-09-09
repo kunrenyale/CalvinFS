@@ -139,7 +139,7 @@ CHECK(test == true);
 
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SEQUENCE-ACK(--before find next). from machine:"<<header->from();
     while (findnext == false) {
-      usleep(5);
+      usleep(2);
       findnext = local_versions_index_table.Lookup(next_index, &next_sequence_version);
     }
 
