@@ -211,9 +211,7 @@ void Paxos2App::RunLeader() {
         sequence_.SerializeToString(&encoded);
         sequence_.Clear();
         isLocal = true;
-        
-        local_versions_index_table.Put(local_sequences_index, make_pair(version, next_version - version));
-        local_sequences_index++;
+
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new sequence from local: version:"<< version<< " next_version is: "<<next_version;
       }
     } else if (sequences_other_replicas.Size() != 0) {
@@ -279,7 +277,12 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new se
     // Actually append the request into the log
     log_->Append(version, encoded);
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Actually append the request into the log: version:"<< version;
-
+     
+    if (isLocal == true) {
+      local_versions_index_table.Put(local_sequences_index, make_pair(version, next_version - version));
+      local_sequences_index++;
+    }
+   
     if (isLocal == true && isFirst == true) {
       // Send the sequence to the LeaderPaxosApp of all the other replicas;
 
