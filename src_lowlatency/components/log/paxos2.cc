@@ -151,8 +151,9 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SE
     next_sequences_index.Erase(from_replica);
     next_sequences_index.Put(from_replica, next_index);
  
-    Log::Reader* r = log_->GetReader();
-    r->Seek(next_sequence_version.first);
+    Log::Reader* r = readers_for_local_log[from_replica];
+    bool find = r->Seek(next_sequence_version.first);
+    CHECK(find == true);
 
     Header* header = new Header();
     header->set_from(machine()->machine_id());
@@ -181,6 +182,10 @@ void Paxos2App::RunLeader() {
   MessageBuffer* m = NULL;
   bool isFirst = true;
   bool isLocal = false;
+
+  for (uint64 i = 0; i < replica_count; i++) {
+    readers_for_local_log[i] = log_->GetReader();
+  }
 
   while (go_.load()) {
     // Sleep while there are NO requests.

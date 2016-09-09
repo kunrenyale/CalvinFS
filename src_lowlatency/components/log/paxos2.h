@@ -76,6 +76,8 @@ class Paxos2App : public LogApp {
 
   // Map the replica ID to its local running index
   AtomicMap<uint32, uint64> next_sequences_index;
+
+  map<uint32, Log::Reader*> readers_for_local_log;
   
 };
 
