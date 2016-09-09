@@ -156,17 +156,17 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SE
     bool find = r->Seek(next_sequence_version.first);
     CHECK(find == true);
 
-    Header* header = new Header();
-    header->set_from(machine()->machine_id());
-    header->set_to(from_replica);
-    header->set_type(Header::RPC);
-    header->set_app(name());
-    header->set_rpc("NEW-SEQUENCE");
+    Header* header2 = new Header();
+    header2->set_from(machine()->machine_id());
+    header2->set_to(header->from());
+    header2->set_type(Header::RPC);
+    header2->set_app(name());
+    header2->set_rpc("NEW-SEQUENCE");
     MessageBuffer* m = new MessageBuffer();
     m->Append(r->Entry());
     m->Append(ToScalar<uint64>(num_actions));
     m->Append(ToScalar<uint32>(machine()->machine_id()));
-    machine()->SendMessage(header, m);
+    machine()->SendMessage(header2, m);
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Send NEW-SEQUENCE(after receive ack) to: "<<from_replica<<" . version: "<<r->Version();
   } else {
     LOG(FATAL) << "unknown message type: " << header->rpc();
