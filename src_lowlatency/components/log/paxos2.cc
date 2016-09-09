@@ -134,6 +134,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SE
     uint64 next_index = 0;
     bool test = next_sequences_index.Lookup(from_replica, &next_index);
 CHECK(test == true);
+
     pair<uint64, uint64> next_sequence_version;
     bool findnext = local_versions_index_table.Lookup(next_index, &next_sequence_version); 
 
@@ -314,7 +315,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Send NEW-SEQUENC
       header->set_app(name());
       header->set_rpc("NEW-SEQUENCE-ACK");
       m = new MessageBuffer();
-      m->Append(ToScalar<uint32>(machine()->machine_id()));
+      m->Append(ToScalar<uint32>(machine()->machine_id()/partitions_per_replica));
       machine()->SendMessage(header, m);
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Send NEW-SEQUENCE-ACK to: "<<from_machine;
     }
