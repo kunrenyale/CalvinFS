@@ -271,7 +271,7 @@ CHECK(other_sequence.pairs_size() != 0);
 
     // Actually append the request into the log
     log_->Append(version, encoded);
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Actually append the request into the log: version:"<< version;
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Actually append the request into the log: version:"<< version;
      
     if (isLocal == true) {
       local_versions_index_table.Put(local_sequences_index, make_pair(version, next_version - version));

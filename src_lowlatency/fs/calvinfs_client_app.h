@@ -297,7 +297,7 @@ class CalvinFSClientApp : public App {
     // Create subdirs.
     for (int i = 0; i < 100; i++) {
       BackgroundCreateFile(tld + "/b" + IntToString(i), DIR);
-      if (i % 10 == 0) {
+      if (i % 1 == 0) {
         LOG(ERROR) << "[" << machine()->machine_id() << "] "
                    << "LE prep progress A: " << i / 10 << "/" << 10;
       }
@@ -307,7 +307,7 @@ class CalvinFSClientApp : public App {
     // Create files.
     for (int i = 0; i < 100; i++) {
       BackgroundCreateFile(tld + "/b" + IntToString(i) + "/c", DATA);
-      if (i % 10 == 0) {
+      if (i % 1 == 0) {
         LOG(ERROR) << "[" << machine()->machine_id() << "] "
                    << "LE prep progress B: " << i / 10 << "/" << 10;
       }
@@ -315,7 +315,7 @@ class CalvinFSClientApp : public App {
     Spin(1);
 
     // Append to some files.
-    for (int i = 0; i < 100; i++) {
+    /**for (int i = 0; i < 100; i++) {
       while (rand() % 3 == 0) {
         BackgroundAppendStringToFile(
             RandomData(RandomBlockSize()),
@@ -326,7 +326,7 @@ class CalvinFSClientApp : public App {
                    << "LE prep progress C: " << i / 10 << "/" << 10;
       }
     }
-    Spin(1);
+    Spin(1);**/
 
     // Wait for all operations to finish.
     while (capacity_.load() < kMaxCapacity) {
