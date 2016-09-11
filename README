@@ -53,6 +53,9 @@ Currently:
 0-----------FillExperiment()
 1-----------ConflictingAppendExperiment()
 2-----------RandomAppendExperiment()
-3-----------LatencyExperiment()
-4-----------CrashExperiment()
+3-----------LatencyExperimentReadFile()
+4-----------LatencyExperimentCreateFile()
+5-----------LatencyExperimentAppend()
+6-----------LatencyExperimentMix()
+7-----------CrashExperiment()
 

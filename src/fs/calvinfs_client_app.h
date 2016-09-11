@@ -70,10 +70,22 @@ class CalvinFSClientApp : public App {
         break;
 
       case 3:
-        LatencyExperiment();
+        LatencyExperimentReadFile();
         break;
 
       case 4:
+        LatencyExperimentCreateFile();
+        break;
+
+      case 5:
+        LatencyExperimentAppend();
+        break;
+
+      case 6:
+        LatencyExperimentMix();
+        break;
+
+      case 7:
         CrashExperiment();
         break;
 
@@ -322,7 +334,107 @@ class CalvinFSClientApp : public App {
     LOG(ERROR) << "[" << machine()->machine_id() << "] LE prep complete";
   }
 
-  void LatencyExperiment() {
+  void LatencyExperimentReadFile() {
+    // Setup.
+    LatencyExperimentSetup();
+
+    Spin(1);
+    machine()->GlobalBarrier();
+    Spin(1);
+
+    // Begin mix of operations.
+    reporting_ = true;
+    double start = GetTime();
+    for (int i = 0; i < 1000; i++) {
+      BackgroundReadFile(RandomFile());
+
+      if (i % 10 == 0) {
+        LOG(ERROR) << "[" << machine()->machine_id() << "] "
+                   << "LE test progress: " << i / 10 << "/" << 100;
+      }
+    }
+
+    // Wait for all operations to finish.
+    while (capacity_.load() < kMaxCapacity) {
+      usleep(10);
+    }
+    // Report.
+    LOG(ERROR) << "[" << machine()->machine_id() << "] "
+               << "ReadFile workload completed. Elapsed time: "
+               << (GetTime() - start) << " seconds";
+
+    // Write out latency reports.
+    Report();
+  }
+ 
+void LatencyExperimentCreateFile() {
+    // Setup.
+    LatencyExperimentSetup();
+
+    Spin(1);
+    machine()->GlobalBarrier();
+    Spin(1);
+
+    // Begin mix of operations.
+    reporting_ = true;
+    double start = GetTime();
+    for (int i = 0; i < 1000; i++) {
+      BackgroundCreateFile(
+            "/a" + IntToString(rand() % machine()->config().size()) +
+            "/b" + IntToString(rand() % 100) +
+            "/x" + UInt64ToString(1000 + machine()->GetGUID()));
+
+      if (i % 10 == 0) {
+        LOG(ERROR) << "[" << machine()->machine_id() << "] "
+                   << "LE test progress: " << i / 10 << "/" << 100;
+      }
+    }
+    // Wait for all operations to finish.
+    while (capacity_.load() < kMaxCapacity) {
+      usleep(10);
+    }
+    // Report.
+    LOG(ERROR) << "[" << machine()->machine_id() << "] "
+               << "CreateFile workload completed. Elapsed time: "
+               << (GetTime() - start) << " seconds";
+
+    // Write out latency reports.
+    Report();
+  }
+
+void LatencyExperimentAppend() {
+    // Setup.
+    LatencyExperimentSetup();
+
+    Spin(1);
+    machine()->GlobalBarrier();
+    Spin(1);
+
+    // Begin mix of operations.
+    reporting_ = true;
+    double start = GetTime();
+    for (int i = 0; i < 1000; i++) {
+      BackgroundAppendStringToFile(RandomData(RandomBlockSize()), RandomFile());
+
+      if (i % 10 == 0) {
+        LOG(ERROR) << "[" << machine()->machine_id() << "] "
+                   << "LE test progress: " << i / 10 << "/" << 100;
+      }
+    }
+    // Wait for all operations to finish.
+    while (capacity_.load() < kMaxCapacity) {
+      usleep(10);
+    }
+    // Report.
+    LOG(ERROR) << "[" << machine()->machine_id() << "] "
+               << "Append workload completed. Elapsed time: "
+               << (GetTime() - start) << " seconds";
+
+    // Write out latency reports.
+    Report();
+  }
+
+  void LatencyExperimentMix() {
     // Setup.
     LatencyExperimentSetup();
 
@@ -370,7 +482,6 @@ class CalvinFSClientApp : public App {
     // Write out latency reports.
     Report();
   }
-
   void CrashExperimentSetup() {
     Spin(1);
     machine()->GlobalBarrier();
