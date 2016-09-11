@@ -268,7 +268,7 @@ string TopDir(const string& path) {
     return path;
   }
   
-  uint32 offset = string(path, 1).find('/');
+  std::size_t offset = string(path, 1).find('/');
   if (offset == string::npos) {
     return path;
   } else {

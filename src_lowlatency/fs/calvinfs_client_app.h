@@ -315,7 +315,7 @@ class CalvinFSClientApp : public App {
     Spin(1);
 
     // Append to some files.
-    /**for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 100; i++) {
       while (rand() % 3 == 0) {
         BackgroundAppendStringToFile(
             RandomData(RandomBlockSize()),
@@ -326,7 +326,7 @@ class CalvinFSClientApp : public App {
                    << "LE prep progress C: " << i / 10 << "/" << 10;
       }
     }
-    Spin(1);**/
+    Spin(1);
 
     // Wait for all operations to finish.
     while (capacity_.load() < kMaxCapacity) {
