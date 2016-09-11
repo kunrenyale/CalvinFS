@@ -265,6 +265,7 @@ string TopDir(const string& path) {
   // Root dir is a special case.
   if (path.empty()) {
     LOG(FATAL) << "root dir has no topdir";
+    return path;
   }
   
   uint32 offset = string(path, 1).find('/');
@@ -306,15 +307,19 @@ uint32 MetadataStore::LookupReplicaByDir(string dir) {
 
 uint32 MetadataStore::GetMachineForReplica(Action* action) {
   set<uint32> replica_involved;
-  
+  // For now ignore the root ""
   for (int i = 0; i < action->writeset_size(); i++) {
-    uint32 replica = LookupReplicaByDir(action->writeset(i));
-    replica_involved.insert(replica);
+    if (!action->writeset(i).empty()) {
+      uint32 replica = LookupReplicaByDir(action->writeset(i));
+      replica_involved.insert(replica);
+    }
   }
 
   for (int i = 0; i < action->readset_size(); i++) {
-    uint32 replica = LookupReplicaByDir(action->readset(i));
-    replica_involved.insert(replica);
+    if (!action->readset(i).empty()) {
+      uint32 replica = LookupReplicaByDir(action->readset(i));
+      replica_involved.insert(replica);
+    }
   }
 
   CHECK(replica_involved.size() >= 1);

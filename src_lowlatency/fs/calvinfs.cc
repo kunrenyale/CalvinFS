@@ -90,6 +90,7 @@ void CalvinFSConfigMap::Init(const CalvinFSConfig& config) {
 }
 
 uint32 CalvinFSConfigMap::LookupReplicaByDir(string dir) {
+// TODO: Handle root ""
   string num_string = string(dir, 2);
   uint32 num = StringToInt(num_string);
 

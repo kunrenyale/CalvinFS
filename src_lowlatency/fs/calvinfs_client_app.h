@@ -297,7 +297,7 @@ class CalvinFSClientApp : public App {
     // Create subdirs.
     for (int i = 0; i < 100; i++) {
       BackgroundCreateFile(tld + "/b" + IntToString(i), DIR);
-      if (i % 1 == 0) {
+      if (i % 10 == 0) {
         LOG(ERROR) << "[" << machine()->machine_id() << "] "
                    << "LE prep progress A: " << i / 10 << "/" << 10;
       }
@@ -307,7 +307,7 @@ class CalvinFSClientApp : public App {
     // Create files.
     for (int i = 0; i < 100; i++) {
       BackgroundCreateFile(tld + "/b" + IntToString(i) + "/c", DATA);
-      if (i % 1 == 0) {
+      if (i % 10 == 0) {
         LOG(ERROR) << "[" << machine()->machine_id() << "] "
                    << "LE prep progress B: " << i / 10 << "/" << 10;
       }
