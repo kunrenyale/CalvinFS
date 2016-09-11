@@ -280,7 +280,7 @@ class CalvinFSClientApp : public App {
   }
 
   string RandomFile() {
-    return "/a" + IntToString(rand() % machine()->config().size()) +
+    return "/a" + IntToString(machine()->machine_id()) +
            "/b" + IntToString(rand() % 100) + "/c";
   }
 
@@ -382,7 +382,7 @@ void LatencyExperimentCreateFile() {
     double start = GetTime();
     for (int i = 0; i < 1000; i++) {
       BackgroundCreateFile(
-            "/a" + IntToString(rand() % machine()->config().size()) +
+            "/a" + IntToString(machine()->machine_id()) +
             "/b" + IntToString(rand() % 100) +
             "/x" + UInt64ToString(1000 + machine()->GetGUID()));
 
