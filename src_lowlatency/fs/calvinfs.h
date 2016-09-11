@@ -60,9 +60,6 @@ class CalvinFSConfigMap {
   map<pair<uint64, uint64>, uint64> bluckets_;
   map<pair<uint64, uint64>, uint64> metadata_shards_;
 
-
-  // dir -> replica
-  map<string, uint32> replica_schema_;
 };
 
 // One machine, one replica, one blucket, one mds.

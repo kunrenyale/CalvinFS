@@ -87,21 +87,13 @@ void CalvinFSConfigMap::Init(const CalvinFSConfig& config) {
         config.metadata_shards(i).machine();
   }
 
-  // Init replica_schema_
-  replica_schema_["/a0"] = 0;
-  replica_schema_["/a1"] = 0;
-  replica_schema_["/a2"] = 0; 
-  replica_schema_["/a3"] = 1;
-  replica_schema_["/a4"] = 1;
-  replica_schema_["/a5"] = 1; 
-  replica_schema_["/a6"] = 2;
-  replica_schema_["/a7"] = 2;
-  replica_schema_["/a8"] = 2; 
 }
 
 uint32 CalvinFSConfigMap::LookupReplicaByDir(string dir) {
-  CHECK(replica_schema_.count(dir) > 0);
-  return replica_schema_[dir];
+  string num_string = string(dir, 2);
+  uint32 num = StringToInt(num_string);
+
+  return num / config_.metadata_shard_count();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
