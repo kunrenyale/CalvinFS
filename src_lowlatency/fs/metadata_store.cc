@@ -277,15 +277,6 @@ string TopDir(const string& path) {
 
 MetadataStore::MetadataStore(VersionedKVStore* store)
     : store_(store), machine_(NULL), config_(NULL) {
-  // Initialize by inserting an entry for the root directory "/" (actual
-  // representation is "" since trailing slashes are always removed).
-
-    MetadataEntry entry;
-    entry.mutable_permissions();
-    entry.set_type(DIR);
-    string serialized_entry;
-    entry.SerializeToString(&serialized_entry);
-    store_->Put("", serialized_entry, 0);
 }
 
 MetadataStore::~MetadataStore() {
@@ -295,6 +286,17 @@ MetadataStore::~MetadataStore() {
 void MetadataStore::SetMachine(Machine* m) {
   machine_ = m;
   config_ = new CalvinFSConfigMap(machine_);
+
+  // Initialize by inserting an entry for the root directory "/" (actual
+  // representation is "" since trailing slashes are always removed).
+  if (IsLocal("")) {
+    MetadataEntry entry;
+    entry.mutable_permissions();
+    entry.set_type(DIR);
+    string serialized_entry;
+    entry.SerializeToString(&serialized_entry);
+    store_->Put("", serialized_entry, 0);
+  }
 }
 
 int RandomSize() {
