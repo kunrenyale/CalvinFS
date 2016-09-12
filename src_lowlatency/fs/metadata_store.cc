@@ -279,14 +279,13 @@ MetadataStore::MetadataStore(VersionedKVStore* store)
     : store_(store), machine_(NULL), config_(NULL) {
   // Initialize by inserting an entry for the root directory "/" (actual
   // representation is "" since trailing slashes are always removed).
-  if (IsLocal("")) {
+
     MetadataEntry entry;
     entry.mutable_permissions();
     entry.set_type(DIR);
     string serialized_entry;
     entry.SerializeToString(&serialized_entry);
     store_->Put("", serialized_entry, 0);
-  }
 }
 
 MetadataStore::~MetadataStore() {
