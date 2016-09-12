@@ -289,7 +289,7 @@ void MetadataStore::Init() {
   double start = GetTime();
 
   // Update root dir.
-  if (IsLocal("")) {
+  //if (IsLocal("")) {
     MetadataEntry entry;
     entry.mutable_permissions();
     entry.set_type(DIR);
@@ -299,7 +299,7 @@ void MetadataStore::Init() {
     string serialized_entry;
     entry.SerializeToString(&serialized_entry);
     store_->Put("", serialized_entry, 0);
-  }
+  //}
 
   // Add dirs.
   for (int i = 0; i < asize; i++) {
