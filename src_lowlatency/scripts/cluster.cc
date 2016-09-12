@@ -11,9 +11,9 @@ DEFINE_string(config, "calvin.conf", "conf file of Calvin cluster");
 DEFINE_string(calvin_path, "/home/ubuntu/CalvinFS",
               "path to the main calvin directory");
 DEFINE_string(binary, "calvinfs_server", "Calvin binary executable program");
-DEFINE_string(ssh_key1, "-i ~/Calvin_Key.pem", "ssh_key for the first data center");
-DEFINE_string(ssh_key2, "-i ~/Calvin_Key.pem", "ssh_key for the second data center");
-DEFINE_string(ssh_key3, "-i ~/Calvin_Key.pem", "ssh_key for the third data center");
+DEFINE_string(ssh_key1, "-i ~/Virginia.pem", "ssh_key for the first data center(Virginia)");
+DEFINE_string(ssh_key2, "-i ~/Oregon.pem", "ssh_key for the second data center(Oregon)");
+DEFINE_string(ssh_key3, "-i ~/Ireland.pem", "ssh_key for the third data center(Ireland)");
 DEFINE_int32(experiment, 0, "the experiment that you want to run");
 DEFINE_bool(valgrind, false, "Run binaries with valgrind?");
 
