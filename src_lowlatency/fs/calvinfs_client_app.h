@@ -286,33 +286,12 @@ class CalvinFSClientApp : public App {
 
   void LatencyExperimentSetup() {
     Spin(1);
+    metadata_->InitSmall();
+    Spin(1);
     machine()->GlobalBarrier();
     Spin(1);
 
-    // Create top-level dir.
     string tld("/a" + IntToString(machine()->machine_id()));
-    CreateFile(tld, DIR);
-    Spin(1);
-
-    // Create subdirs.
-    for (int i = 0; i < 100; i++) {
-      BackgroundCreateFile(tld + "/b" + IntToString(i), DIR);
-      if (i % 10 == 0) {
-        LOG(ERROR) << "[" << machine()->machine_id() << "] "
-                   << "LE prep progress A: " << i / 10 << "/" << 10;
-      }
-    }
-    Spin(1);
-
-    // Create files.
-    for (int i = 0; i < 100; i++) {
-      BackgroundCreateFile(tld + "/b" + IntToString(i) + "/c", DATA);
-      if (i % 10 == 0) {
-        LOG(ERROR) << "[" << machine()->machine_id() << "] "
-                   << "LE prep progress B: " << i / 10 << "/" << 10;
-      }
-    }
-    Spin(1);
 
     // Append to some files.
     for (int i = 0; i < 100; i++) {

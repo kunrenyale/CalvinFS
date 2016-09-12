@@ -90,7 +90,12 @@ void CalvinFSConfigMap::Init(const CalvinFSConfig& config) {
 }
 
 uint32 CalvinFSConfigMap::LookupReplicaByDir(string dir) {
-// TODO: Handle root ""
+  
+  // Root dir is a special case. Currently root belongs to replica 0
+  if (dir.empty()) {
+    return 0;
+  }
+
   string num_string = string(dir, 2);
   uint32 num = StringToInt(num_string);
 

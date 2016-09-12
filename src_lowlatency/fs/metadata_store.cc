@@ -244,7 +244,7 @@ string ParentDir(const string& path) {
   if (path.empty()) {
     LOG(FATAL) << "root dir has no parent";
   }
-  uint32 offset = path.rfind('/');
+  std::size_t offset = path.rfind('/');
   CHECK_NE(string::npos, offset);     // at least 1 slash required
   CHECK_NE(path.size() - 1, offset);  // filename cannot be empty
   return string(path, 0, offset);
@@ -264,7 +264,6 @@ string FileName(const string& path) {
 string TopDir(const string& path) {
   // Root dir is a special case.
   if (path.empty()) {
-    LOG(FATAL) << "root dir has no topdir";
     return path;
   }
   
@@ -280,12 +279,14 @@ MetadataStore::MetadataStore(VersionedKVStore* store)
     : store_(store), machine_(NULL), config_(NULL) {
   // Initialize by inserting an entry for the root directory "/" (actual
   // representation is "" since trailing slashes are always removed).
-  MetadataEntry entry;
-  entry.mutable_permissions();
-  entry.set_type(DIR);
-  string serialized_entry;
-  entry.SerializeToString(&serialized_entry);
-  store_->Put("", serialized_entry, 0);
+  if (IsLocal("")) {
+    MetadataEntry entry;
+    entry.mutable_permissions();
+    entry.set_type(DIR);
+    string serialized_entry;
+    entry.SerializeToString(&serialized_entry);
+    store_->Put("", serialized_entry, 0);
+  }
 }
 
 MetadataStore::~MetadataStore() {
@@ -307,19 +308,15 @@ uint32 MetadataStore::LookupReplicaByDir(string dir) {
 
 uint32 MetadataStore::GetMachineForReplica(Action* action) {
   set<uint32> replica_involved;
-  // For now ignore the root ""
+
   for (int i = 0; i < action->writeset_size(); i++) {
-    if (!action->writeset(i).empty()) {
-      uint32 replica = LookupReplicaByDir(action->writeset(i));
-      replica_involved.insert(replica);
-    }
+    uint32 replica = LookupReplicaByDir(action->writeset(i));
+    replica_involved.insert(replica);
   }
 
   for (int i = 0; i < action->readset_size(); i++) {
-    if (!action->readset(i).empty()) {
-      uint32 replica = LookupReplicaByDir(action->readset(i));
-      replica_involved.insert(replica);
-    }
+    uint32 replica = LookupReplicaByDir(action->readset(i));
+    replica_involved.insert(replica);
   }
 
   CHECK(replica_involved.size() >= 1);
@@ -354,15 +351,17 @@ void MetadataStore::Init() {
   double start = GetTime();
 
   // Update root dir.
-  MetadataEntry entry;
-  entry.mutable_permissions();
-  entry.set_type(DIR);
-  for (int i = 0; i < 1000; i++) {
-    entry.add_dir_contents("a" + IntToString(i));
+  if (IsLocal("")) {
+    MetadataEntry entry;
+    entry.mutable_permissions();
+    entry.set_type(DIR);
+    for (int i = 0; i < 1000; i++) {
+      entry.add_dir_contents("a" + IntToString(i));
+    }
+    string serialized_entry;
+    entry.SerializeToString(&serialized_entry);
+    store_->Put("", serialized_entry, 0);
   }
-  string serialized_entry;
-  entry.SerializeToString(&serialized_entry);
-  store_->Put("", serialized_entry, 0);
 
   // Add dirs.
   for (int i = 0; i < asize; i++) {
@@ -422,7 +421,7 @@ void MetadataStore::Init() {
 
 void MetadataStore::InitSmall() {
   int asize = machine_->config().size();
-  int bsize = 1000;
+  int bsize = 100;
 
   double start = GetTime();
 

@@ -260,12 +260,14 @@ MetadataStore::MetadataStore(VersionedKVStore* store)
     : store_(store), machine_(NULL), config_(NULL) {
   // Initialize by inserting an entry for the root directory "/" (actual
   // representation is "" since trailing slashes are always removed).
-  MetadataEntry entry;
-  entry.mutable_permissions();
-  entry.set_type(DIR);
-  string serialized_entry;
-  entry.SerializeToString(&serialized_entry);
-  store_->Put("", serialized_entry, 0);
+  if (IsLocal("")) {
+    MetadataEntry entry;
+    entry.mutable_permissions();
+    entry.set_type(DIR);
+    string serialized_entry;
+    entry.SerializeToString(&serialized_entry);
+    store_->Put("", serialized_entry, 0);
+  }
 }
 
 MetadataStore::~MetadataStore() {
@@ -289,15 +291,17 @@ void MetadataStore::Init() {
   double start = GetTime();
 
   // Update root dir.
-  MetadataEntry entry;
-  entry.mutable_permissions();
-  entry.set_type(DIR);
-  for (int i = 0; i < 1000; i++) {
-    entry.add_dir_contents("a" + IntToString(i));
+  if (IsLocal("")) {
+    MetadataEntry entry;
+    entry.mutable_permissions();
+    entry.set_type(DIR);
+    for (int i = 0; i < 1000; i++) {
+      entry.add_dir_contents("a" + IntToString(i));
+    }
+    string serialized_entry;
+    entry.SerializeToString(&serialized_entry);
+    store_->Put("", serialized_entry, 0);
   }
-  string serialized_entry;
-  entry.SerializeToString(&serialized_entry);
-  store_->Put("", serialized_entry, 0);
 
   // Add dirs.
   for (int i = 0; i < asize; i++) {
@@ -357,7 +361,7 @@ void MetadataStore::Init() {
 
 void MetadataStore::InitSmall() {
   int asize = machine_->config().size();
-  int bsize = 1000;
+  int bsize = 100;
 
   double start = GetTime();
 
