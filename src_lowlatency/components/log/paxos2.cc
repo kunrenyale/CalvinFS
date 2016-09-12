@@ -113,8 +113,7 @@ void Paxos2App::HandleOtherMessages(Header* header, MessageBuffer* message) {
 PairSequence other_sequence;
 other_sequence.ParseFromArray((*message)[0].data(), (*message)[0].size());
 CHECK(other_sequence.pairs_size() != 0);
-//string tmp;
-//other_sequence.SerializeToString(&tmp);
+
 MessageBuffer* m = new MessageBuffer(other_sequence);
 
     Scalar s;
@@ -132,9 +131,9 @@ MessageBuffer* m = new MessageBuffer(other_sequence);
     uint32 from_replica = FromScalar<uint32>(s);
 
     uint64 next_index = 0;
-    bool test = next_sequences_index.Lookup(from_replica, &next_index);
+    bool findit = next_sequences_index.Lookup(from_replica, &next_index);
     
-    CHECK(test == true);
+    CHECK(findit == true);
 
     pair<uint64, uint64> next_sequence_version;
     bool findnext = local_versions_index_table.Lookup(next_index, &next_sequence_version); 

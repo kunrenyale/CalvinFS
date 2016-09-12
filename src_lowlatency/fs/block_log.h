@@ -90,7 +90,7 @@ class BlockLogApp : public App {
 
     // Record local replica's paxos machine.
     uint32 replica_count = config_->config().block_replication_factor();
-    uint32 paxos_id = replica_ * (machine()->config().size() / replica_count);
+    local_paxos_leader_ = replica_ * (machine()->config().size() / replica_count);
 
     // Note what machines contain metadata shards on the same replica.
     for (auto it = config_->mds().begin(); it != config_->mds().end(); ++it) {
@@ -104,7 +104,7 @@ class BlockLogApp : public App {
         ->blocks_;
 
     // Get ptr to paxos leader (maybe).
-    if (machine()->machine_id() == paxos_id) {
+    if (machine()->machine_id() == local_paxos_leader_) {
       paxos_leader_ =
           reinterpret_cast<Paxos2App*>(machine()->GetApp("paxos2"));
     }
@@ -112,7 +112,7 @@ class BlockLogApp : public App {
     // Get reader of Paxos output (using closest paxos machine).
     batch_sequence_ =
         new SequenceSource(
-            new RemoteLogSource<PairSequence>(machine(), paxos_id, "paxos2"));
+            new RemoteLogSource<PairSequence>(machine(), local_paxos_leader_, "paxos2"));
 
     // Okay, finally, start main loop!
     going_ = true;
@@ -204,7 +204,7 @@ class BlockLogApp : public App {
     if (header->rpc() == "APPEND") {
       Action* a = new Action();
       a->ParseFromArray((*message)[0].data(), (*message)[0].size());
-      a->set_origin(config_->LookupReplica(machine()->machine_id()));
+      a->set_origin(replica_);
       queue_.Push(a);
 //LOG(ERROR) << "Machine: "<<machine()->machine_id() <<" =>Block log recevie a APPEND request. distinct id is:"<< a->distinct_id()<<" from machine:"<<header->from();
     } else if (header->rpc() == "BATCH") {
@@ -217,10 +217,10 @@ class BlockLogApp : public App {
       batch.ParseFromArray((*message)[0].data(), (*message)[0].size());
 
       //  If (This batch come from this replica) → send SUBMIT to the Sequencer(LogApp) on the master node of the local paxos participants
-      if (config_->LookupReplica(header->from()) == config_->LookupReplica(machine()->machine_id())) {
+      if (config_->LookupReplica(header->from()) == replica_) {
         Header* header = new Header();
         header->set_from(machine()->machine_id());
-        header->set_to(config_->LookupReplica(machine()->machine_id())*(machine()->config().size() / config_->config().block_replication_factor()));  // Local Paxos leader.
+        header->set_to(local_paxos_leader_);  // Local Paxos leader.
         header->set_type(Header::RPC);
         header->set_app(name());
         header->set_rpc("SUBMIT");
@@ -257,7 +257,6 @@ class BlockLogApp : public App {
       }
 
     } else if (header->rpc() == "SUBMIT") {
-      CHECK(machine()->machine_id() % (machine()->config().size() / config_->config().block_replication_factor()) == 0);
 
       uint64 block_id = header->misc_int(0);
 
@@ -317,6 +316,8 @@ class BlockLogApp : public App {
   // Delayed deallocation queue.
   // TODO(agt): Ugh this is horrible, we should replace this with ref counting!
   DelayQueue<string*> to_delete_;
+
+  uint64 local_paxos_leader_;
 
   friend class ActionSource;
   class ActionSource : public Source<Action*> {
