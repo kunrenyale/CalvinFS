@@ -102,7 +102,8 @@ MessageBuffer* CalvinFSClientApp::AppendStringToFile(
   uint64 block_id = machine()->GetGUID() * 2 + (data.size() > 1024 ? 1 : 0);
   blocks_->Put(block_id, data);
 
-  string channel_name = "action-result-" + UInt64ToString(machine()->GetGUID());
+  uint64 distinct_id = machine()->GetGUID();
+  string channel_name = "action-result-" + UInt64ToString(distinct_id);
   auto channel = machine()->DataChannel(channel_name);
   CHECK(!channel->Pop(NULL));
 
@@ -111,6 +112,8 @@ MessageBuffer* CalvinFSClientApp::AppendStringToFile(
   a->set_client_machine(machine()->machine_id());
   a->set_client_channel(channel_name);
   a->set_action_type(MetadataAction::APPEND);
+  a->set_distinct_id(distinct_id);
+
   MetadataAction::AppendInput in;
   in.set_path(path.data(), path.size());
   in.add_data();
