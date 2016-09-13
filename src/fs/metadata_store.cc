@@ -698,7 +698,41 @@ void MetadataStore::Copy_Internal(
     ExecutionContext* context,
     const MetadataAction::CopyInput& in,
     MetadataAction::CopyOutput* out) {
-  LOG(FATAL) << "not implemented";
+
+  // Currently only support Copy: (non-recursive: only succeeds for DATA files and EMPTY directory)
+  MetadataEntry from_entry;
+  if (!context->GetEntry(in.from_path(), &from_entry)) {
+    // File doesn't exist!
+    out->set_success(false);
+    out->add_errors(MetadataAction::FileDoesNotExist);
+  }
+
+  string parent_to_path = ParentDir(in.to_path());
+  MetadataEntry parent_to_entry;
+  if (!context->GetEntry(parent_to_path, &parent_to_entry)) {
+    // File doesn't exist!
+    out->set_success(false);
+    out->add_errors(MetadataAction::FileDoesNotExist);
+  }
+
+  // If file already exists, fail.
+  string filename = FileName(in.to_path());
+  for (int i = 0; i < parent_to_entry.dir_contents_size(); i++) {
+    if (parent_to_entry.dir_contents(i) == filename) {
+      out->set_success(false);
+      out->add_errors(MetadataAction::FileAlreadyExists);
+      return;
+    }
+  }
+
+  // Update parent
+  parent_to_entry.add_dir_contents(filename);
+  context->PutEntry(parent_to_path, parent_to_entry);
+  
+  // Add entry
+  MetadataEntry to_entry;
+  to_entry.CopyFrom(from_entry);
+  context->PutEntry(in.to_path(), to_entry);
 }
 
 void MetadataStore::Rename_Internal(
