@@ -98,7 +98,7 @@ class CalvinFSClientApp : public App {
 //    LatencyExperiment();
 //    CrashExperiment();
   }
-  static const int kMaxCapacity = 100;
+  static const int kMaxCapacity = 10;
 
   virtual void HandleMessage(Header* header, MessageBuffer* message) {
     // INTERNAL metadata lookup
