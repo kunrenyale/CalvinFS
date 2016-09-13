@@ -299,9 +299,9 @@ class CalvinFSClientApp : public App {
             RandomData(RandomBlockSize()),
             tld + "/b" + IntToString(i) + "/c");
       }
-      if (i % 10 == 0) {
+      if (i % 100 == 0) {
         LOG(ERROR) << "[" << machine()->machine_id() << "] "
-                   << "LE prep progress C: " << i / 10 << "/" << 10;
+                   << "LE prep progress C: " << i / 100 << "/" << 10;
       }
     }
     Spin(1);
