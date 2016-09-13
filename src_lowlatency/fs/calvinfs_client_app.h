@@ -181,7 +181,7 @@ class CalvinFSClientApp : public App {
     Spin(1);
 
     string tld("/a" + UInt64ToString(machine()->machine_id()));
-    int dirs = 100;
+    int dirs = 1000;
     int files = 10;
 
     // Put files into second-level dir.
@@ -294,7 +294,7 @@ class CalvinFSClientApp : public App {
     string tld("/a" + IntToString(machine()->machine_id()));
 
     // Append to some files.
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 1000; i++) {
       while (rand() % 3 == 0) {
         BackgroundAppendStringToFile(
             RandomData(RandomBlockSize()),
@@ -359,10 +359,10 @@ void LatencyExperimentCreateFile() {
     // Begin mix of operations.
     reporting_ = true;
     double start = GetTime();
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 10000; i++) {
       BackgroundCreateFile(
             "/a" + IntToString(machine()->machine_id()) +
-            "/b" + IntToString(rand() % 100) +
+            "/b" + IntToString(rand() % 1000) +
             "/x" + UInt64ToString(1000 + machine()->GetGUID()));
 
       if (i % 10 == 0) {

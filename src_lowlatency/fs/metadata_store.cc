@@ -422,7 +422,7 @@ void MetadataStore::Init() {
 
 void MetadataStore::InitSmall() {
   int asize = machine_->config().size();
-  int bsize = 100;
+  int bsize = 1000;
 
   double start = GetTime();
 

@@ -98,7 +98,7 @@ class CalvinFSClientApp : public App {
 //    LatencyExperiment();
 //    CrashExperiment();
   }
-  static const int kMaxCapacity = 50;
+  static const int kMaxCapacity = 100;
 
   virtual void HandleMessage(Header* header, MessageBuffer* message) {
     // INTERNAL metadata lookup
@@ -293,7 +293,7 @@ class CalvinFSClientApp : public App {
     string tld("/a" + IntToString(machine()->machine_id()));
 
     // Append to some files.
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 1000; i++) {
       while (rand() % 3 == 0) {
         BackgroundAppendStringToFile(
             RandomData(RandomBlockSize()),
@@ -357,10 +357,10 @@ void LatencyExperimentCreateFile() {
     // Begin mix of operations.
     reporting_ = true;
     double start = GetTime();
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 10000; i++) {
       BackgroundCreateFile(
-            "/a" + IntToString(rand() % machine()->config().size()) +
-            "/b" + IntToString(rand() % 100) +
+            "/a" + IntToString(machine()->machine_id()) +
+            "/b" + IntToString(rand() % 1000) +
             "/x" + UInt64ToString(1000 + machine()->GetGUID()));
 
       if (i % 10 == 0) {
