@@ -799,7 +799,66 @@ void MetadataStore::Rename_Internal(
     ExecutionContext* context,
     const MetadataAction::RenameInput& in,
     MetadataAction::RenameOutput* out) {
-  LOG(FATAL) << "not implemented";
+  // Currently only support Copy: (non-recursive: only succeeds for DATA files and EMPTY directory)
+  MetadataEntry from_entry;
+  if (!context->GetEntry(in.from_path(), &from_entry)) {
+    // File doesn't exist!
+    out->set_success(false);
+    out->add_errors(MetadataAction::FileDoesNotExist);
+  }
+
+  string parent_from_path = ParentDir(in.from_path());
+  MetadataEntry parent_from_entry;
+  if (!context->GetEntry(parent_from_path, &parent_from_entry)) {
+    // File doesn't exist!
+    out->set_success(false);
+    out->add_errors(MetadataAction::FileDoesNotExist);
+  }
+
+  string parent_to_path = ParentDir(in.to_path());
+  MetadataEntry parent_to_entry;
+  if (!context->GetEntry(parent_to_path, &parent_to_entry)) {
+    // File doesn't exist!
+    out->set_success(false);
+    out->add_errors(MetadataAction::FileDoesNotExist);
+  }
+
+  // If file already exists, fail.
+  string to_filename = FileName(in.to_path());
+  for (int i = 0; i < parent_to_entry.dir_contents_size(); i++) {
+    if (parent_to_entry.dir_contents(i) == to_filename) {
+      out->set_success(false);
+      out->add_errors(MetadataAction::FileAlreadyExists);
+      return;
+    }
+  }
+
+  // Update to_parent (add new dir content)
+  parent_to_entry.add_dir_contents(to_filename);
+  context->PutEntry(parent_to_path, parent_to_entry);
+  
+  // Add to_entry
+  MetadataEntry to_entry;
+  to_entry.CopyFrom(from_entry);
+  context->PutEntry(in.to_path(), to_entry);
+
+  // Update from_parent(Find file and remove it from parent directory.)
+  string from_filename = FileName(in.from_path());
+  for (int i = 0; i < parent_from_entry.dir_contents_size(); i++) {
+    if (parent_from_entry.dir_contents(i) == from_filename) {
+      // Remove reference to target file entry from dir contents.
+      parent_from_entry.mutable_file_parts()
+          ->SwapElements(i, parent_from_entry.dir_contents_size() - 1);
+      parent_from_entry.mutable_file_parts()->RemoveLast();
+
+      // Write updated parent entry.
+      context->PutEntry(parent_from_path, parent_from_entry);
+      return;
+    }
+  }
+
+  // Erase the from_entry
+  context->DeleteEntry(in.from_path());
 }
 
 void MetadataStore::Lookup_Internal(
