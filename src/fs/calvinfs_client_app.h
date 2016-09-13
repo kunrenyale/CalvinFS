@@ -98,7 +98,7 @@ class CalvinFSClientApp : public App {
 //    LatencyExperiment();
 //    CrashExperiment();
   }
-  static const int kMaxCapacity = 100;
+  static const int kMaxCapacity = 50;
 
   virtual void HandleMessage(Header* header, MessageBuffer* message) {
     // INTERNAL metadata lookup
@@ -363,9 +363,9 @@ void LatencyExperimentCreateFile() {
             "/b" + IntToString(rand() % 1000) +
             "/x" + UInt64ToString(1000 + machine()->GetGUID()));
 
-      if (i % 10 == 0) {
+      if (i % 100 == 0) {
         LOG(ERROR) << "[" << machine()->machine_id() << "] "
-                   << "LE test progress: " << i / 10 << "/" << 100;
+                   << "LE test progress: " << i / 100 << "/" << 100;
       }
     }
     // Wait for all operations to finish.
