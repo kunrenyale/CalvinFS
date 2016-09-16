@@ -48,6 +48,8 @@ class CalvinFSConfigMap {
 
   uint64 GetPartitionsPerReplica();
 
+  uint64 GetReplicas();
+
  private:
   void Init(const CalvinFSConfig& config);
 

@@ -38,6 +38,8 @@ class CalvinFSClientApp : public App {
     latencies_["touch"] = new AtomicQueue<double>();
     latencies_["mkdir"] = new AtomicQueue<double>();
     latencies_["append"] = new AtomicQueue<double>();
+    latencies_["copy"] = new AtomicQueue<double>();
+    latencies_["rename"] = new AtomicQueue<double>();
     latencies_["ls"] = new AtomicQueue<double>();
     latencies_["cat0"] = new AtomicQueue<double>();
     latencies_["cat1"] = new AtomicQueue<double>();
@@ -71,33 +73,35 @@ class CalvinFSClientApp : public App {
         break;
 
       case 3:
-        LatencyExperimentReadFile();
+        CopyExperiment();
         break;
 
       case 4:
-        LatencyExperimentCreateFile();
+        RenameExperiment();
         break;
 
       case 5:
-        LatencyExperimentAppend();
+        LatencyExperimentReadFile();
         break;
 
       case 6:
-        LatencyExperimentMix();
+        LatencyExperimentCreateFile();
         break;
 
       case 7:
+        LatencyExperimentAppend();
+        break;
+
+      case 8:
+        LatencyExperimentMix();
+        break;
+
+      case 9:
         CrashExperiment();
         break;
 
     }
 
-    // Run experiments.
-//    FillExperiment();
-//    ConflictingAppendExperiment();
-//    RandomAppendExperiment();
-//    LatencyExperiment();
-//    CrashExperiment();
   }
   static const int kMaxCapacity = 100;
 
@@ -127,6 +131,18 @@ class CalvinFSClientApp : public App {
       machine()->SendReplyMessage(header, AppendStringToFile(
           (*message)[0],
           header->misc_string(0)));
+
+   // EXTERNAL file copy
+   } else if (header->rpc() == "COPY_FILE") {
+     machine()->SendReplyMessage(header, CopyFile(
+         header->misc_string(0),
+         header->misc_string(1)));
+     
+   // EXTERNAL file copy
+   } else if (header->rpc() == "RENAME_FILE") {
+     machine()->SendReplyMessage(header, RenameFile(
+         header->misc_string(0),
+         header->misc_string(1)));
 
     // Callback for recording latency stats
     } else if (header->rpc() == "CB") {
@@ -593,6 +609,78 @@ void LatencyExperimentAppend() {
     }
   }
 
+
+  void CopyExperiment() {
+    uint64 partitions_per_replica = config_->GetPartitionsPerReplica();
+    uint64 replicas_num = config_->GetReplicas();
+    vector<uint64> machines_other_replicas;      
+
+    for (uint64 i = 0; i < partitions_per_replica * replicas_num; i++) {
+      if (i/replicas_num != replica_) {
+        machines_other_replicas.push_back(i);
+      }
+    }
+
+    uint64 size_other_machines = machines_other_replicas.size();
+
+    Spin(1);
+    metadata_->Init();
+    Spin(1);
+    machine()->GlobalBarrier();
+    Spin(1);
+
+    for (int i = 0; i < 1000; i++) {
+      int seed = rand() % 100;
+      
+      // Copy operations inside one data center
+      if (seed < 90) {
+        BackgroundCopyFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/c" + IntToString(rand() % 1000),
+                           "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));
+      } else {
+      // Copy operations that cross data centers
+        BackgroundCopyFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/c" + IntToString(rand() % 1000),
+                           "/a" + IntToString(machines_other_replicas[rand()%size_other_machines]) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));
+      }      
+    }
+    
+  }
+
+  void RenameExperiment() {
+    uint64 partitions_per_replica = config_->GetPartitionsPerReplica();
+    uint64 replicas_num = config_->GetReplicas();
+    vector<uint64> machines_other_replicas;      
+
+    for (uint64 i = 0; i < partitions_per_replica * replicas_num; i++) {
+      if (i/replicas_num != replica_) {
+        machines_other_replicas.push_back(i);
+      }
+    }
+
+    uint64 size_other_machines = machines_other_replicas.size();
+
+    Spin(1);
+    metadata_->Init();
+    Spin(1);
+    machine()->GlobalBarrier();
+    Spin(1);
+
+    for (int i = 0; i < 100; i++) {
+      for (int j = 0; j < 100; j++) {
+        int seed = rand() % 100;
+      
+        // Copy operations inside one data center
+        if (seed < 90) {
+          BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(i) + "/c" + IntToString(j),
+                           "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(i) + "/d" + IntToString(machine()->GetGUID()));
+        } else {
+        // Copy operations that cross data centers
+          BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(i) + "/c" + IntToString(j),
+                           "/a" + IntToString(machines_other_replicas[rand()%size_other_machines]) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));
+        }      
+      }
+    }
+  }
+
   void Report() {
     string report;
     for (auto it = latencies_.begin(); it != latencies_.end(); ++it) {
@@ -624,6 +712,8 @@ void LatencyExperimentAppend() {
   MessageBuffer* AppendStringToFile(const Slice& data, const Slice& path);
   MessageBuffer* ReadFile(const Slice& path);
   MessageBuffer* LS(const Slice& path);
+  MessageBuffer* CopyFile(const Slice& from_path, const Slice& to_path);
+  MessageBuffer* RenameFile(const Slice& from_path, const Slice& to_path);
 
   void BackgroundCreateFile(const Slice& path, FileType type = DATA) {
     Header* header = new Header();
@@ -721,6 +811,57 @@ void LatencyExperimentAppend() {
     }
     machine()->SendMessage(header, new MessageBuffer());
   }
+
+  void BackgroundCopyFile(const Slice& from_path, const Slice& to_path) {
+    Header* header = new Header();
+    header->set_from(machine()->machine_id());
+    header->set_to(machine()->machine_id());
+    header->set_type(Header::RPC);
+    header->set_app(name());
+    header->set_rpc("COPY_FILE");
+    header->add_misc_string(from_path.data(), from_path.size());
+    header->add_misc_string(to_path.data(), to_path.size());
+    if (reporting_ && rand() % 2 == 0) {
+      header->set_callback_app(name());
+      header->set_callback_rpc("CB");
+      header->add_misc_string("copy");
+      header->add_misc_double(GetTime());
+    } else {
+      header->set_ack_counter(reinterpret_cast<uint64>(&capacity_));
+      while (capacity_.load() <= 0) {
+        // Wait for some old operations to complete.
+        usleep(100);
+      }
+      --capacity_;
+    }
+    machine()->SendMessage(header, new MessageBuffer());
+  }
+
+  void BackgroundRenameFile (const Slice& from_path, const Slice& to_path) {
+    Header* header = new Header();
+    header->set_from(machine()->machine_id());
+    header->set_to(machine()->machine_id());
+    header->set_type(Header::RPC);
+    header->set_app(name());
+    header->set_rpc("RENAME_FILE");
+    header->add_misc_string(from_path.data(), from_path.size());
+    header->add_misc_string(to_path.data(), to_path.size());
+    if (reporting_ && rand() % 2 == 0) {
+      header->set_callback_app(name());
+      header->set_callback_rpc("CB");
+      header->add_misc_string("rename");
+      header->add_misc_double(GetTime());
+    } else {
+      header->set_ack_counter(reinterpret_cast<uint64>(&capacity_));
+      while (capacity_.load() <= 0) {
+        // Wait for some old operations to complete.
+        usleep(100);
+      }
+      --capacity_;
+    }
+    machine()->SendMessage(header, new MessageBuffer());
+  }
+
 
   inline Slice RandomData(uint64 size) {
     uint64 start = rand() % (random_data_.size() - size);
