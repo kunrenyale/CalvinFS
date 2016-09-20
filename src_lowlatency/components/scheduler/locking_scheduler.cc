@@ -33,7 +33,7 @@ void LockingScheduler::MainLoopBody() {
     high_water_mark_ = action->version();
     active_actions_.insert(action->version());
     int ungranted_requests = 0;
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action: " << action->version();
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action: " << action->version();
  
     if (action->single_replica() == false) {
       bool ignore = false;
@@ -59,8 +59,10 @@ void LockingScheduler::MainLoopBody() {
 
       if (ignore == true) {
         // Finish this loop
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler ignore this txn: " << action->version();
         return;
       } else if ((action->create_new() == true) && (store_->LocalReplica() != action->origin())) {
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler Send a new action to sequencer: " << action->version();
         // Send a new action to sequencer
         Action* new_action = new Action();
         new_action->CopyFrom(*action);
@@ -132,7 +134,7 @@ void LockingScheduler::MainLoopBody() {
         lm_.Release(action, action->writeset(i));
       }
     }
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":** scheduler finish running action: " << action->version();
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":** scheduler finish running action: " << action->version();
     active_actions_.erase(action->version());
     running_action_count_--;
     safe_version_.store(
