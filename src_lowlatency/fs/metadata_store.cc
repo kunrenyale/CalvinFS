@@ -121,7 +121,7 @@ class DistributedExecutionContext : public ExecutionContext {
     aborted_ = false;
 
     data_channel_version = action->distinct_id();
-
+LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "DistributedExecutionContext received a txn:: version is:"<< version_<<"   data_channel_version:"<<data_channel_version;
     // Look up what replica we're at.
     replica_ = config_->LookupReplica(machine_->machine_id());
 
@@ -172,6 +172,7 @@ class DistributedExecutionContext : public ExecutionContext {
         header->set_type(Header::DATA);
         header->set_data_channel("action-" + UInt64ToString(data_channel_version));
         machine_->SendMessage(header, new MessageBuffer(local_reads));
+LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "DistributedExecutionContext send local read:: version is:"<< version_<<"   data_channel_version:"<<data_channel_version<<"  to:"<<*it;
       }
     }
 
@@ -195,6 +196,7 @@ class DistributedExecutionContext : public ExecutionContext {
       }
       // Close channel.
       machine_->CloseDataChannel("action-" + UInt64ToString(data_channel_version));
+LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "DistributedExecutionContext already got all results: version is:"<< version_<<"   data_channel_version:"<<data_channel_version;
     }
   }
 
