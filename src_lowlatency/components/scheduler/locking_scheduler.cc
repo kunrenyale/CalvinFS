@@ -33,13 +33,14 @@ void LockingScheduler::MainLoopBody() {
     high_water_mark_ = action->version();
     active_actions_.insert(action->version());
     int ungranted_requests = 0;
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action: " << action->version();
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action: " << action->version()<<" distinct id is:"<<action->distinct_id();
  
     if (action->single_replica() == false) {
       bool ignore = false;
       for (int i = 0; i < action->writeset_size(); i++) {
         if (store_->IsLocal(action->writeset(i))) {
           if (store_->LookupReplicaByDir(action->writeset(i)) != action->origin()) {
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler  will ignore this txn: " << action->version()<<" distinct id is:"<<action->distinct_id()<<"--- action->origin() is: "<<action->origin()<<"  But store_->LookupReplicaByDir(action->writeset(i) is: "<<store_->LookupReplicaByDir(action->writeset(i));
             ignore = true;
             break;
           }
@@ -50,6 +51,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action
         for (int i = 0; i < action->readset_size(); i++) {
           if (store_->IsLocal(action->readset(i))) {
             if (store_->LookupReplicaByDir(action->readset(i)) != action->origin()) {
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler  will ignore this txn: " << action->version()<<" distinct id is:"<<action->distinct_id()<<"--- action->origin() is: "<<action->origin()<<"  But store_->LookupReplicaByDir(action->writeset(i) is: "<<store_->LookupReplicaByDir(action->readset(i));
               ignore = true;
               break;
             }
@@ -62,7 +64,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler ignore this txn: " << action->version();
         return;
       } else if ((action->create_new() == true) && (store_->LocalReplica() != action->origin())) {
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler Send a new action to sequencer: " << action->version();
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler Send a new action to sequencer: " << action->version()<<" distinct id is:"<<action->distinct_id();
         // Send a new action to sequencer
         Action* new_action = new Action();
         new_action->CopyFrom(*action);
@@ -134,7 +136,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler Sen
         lm_.Release(action, action->writeset(i));
       }
     }
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":** scheduler finish running action: " << action->version();
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":** scheduler finish running action: " << action->version()<<" distinct id is:"<<action->distinct_id();
     active_actions_.erase(action->version());
     running_action_count_--;
     safe_version_.store(
