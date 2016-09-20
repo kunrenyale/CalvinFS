@@ -192,3 +192,78 @@ MessageBuffer* CalvinFSClientApp::LS(const Slice& path) {
   }
 }
 
+MessageBuffer* CalvinFSClientApp::CopyFile(const Slice& from_path, const Slice& to_path) {
+  uint64 distinct_id = machine()->GetGUID();
+  string channel_name = "action-result-" + UInt64ToString(distinct_id);
+  auto channel = machine()->DataChannel(channel_name);
+  CHECK(!channel->Pop(NULL));
+
+  Action* a = new Action();
+  a->set_client_machine(machine()->machine_id());
+  a->set_client_channel(channel_name);
+  a->set_action_type(MetadataAction::COPY);
+
+  MetadataAction::CopyInput in;
+  in.set_from_path(from_path.data(), from_path.size());
+  in.set_to_path(to_path.data(), to_path.size());
+  in.SerializeToString(a->mutable_input());
+  metadata_->GetRWSets(a);
+  log_->Append(a);
+
+  MessageBuffer* m = NULL;
+  while (!channel->Pop(&m)) {
+    // Wait for action to complete and be sent back.
+    usleep(100);
+  }
+
+  Action result;
+  result.ParseFromArray((*m)[0].data(), (*m)[0].size());
+  delete m;
+  MetadataAction::CopyOutput out;
+  out.ParseFromString(result.output());
+
+  if (out.success()) {
+    return new MessageBuffer();
+  } else {
+    return new MessageBuffer(new string("error creating file/dir\n"));
+  }
+}
+
+MessageBuffer* CalvinFSClientApp::RenameFile(const Slice& from_path, const Slice& to_path) {
+  uint64 distinct_id = machine()->GetGUID();
+  string channel_name = "action-result-" + UInt64ToString(distinct_id);
+  auto channel = machine()->DataChannel(channel_name);
+  CHECK(!channel->Pop(NULL));
+
+  Action* a = new Action();
+  a->set_client_machine(machine()->machine_id());
+  a->set_client_channel(channel_name);
+  a->set_action_type(MetadataAction::RENAME);
+
+  MetadataAction::RenameInput in;
+  in.set_from_path(from_path.data(), from_path.size());
+  in.set_to_path(to_path.data(), to_path.size());
+  in.SerializeToString(a->mutable_input());
+  metadata_->GetRWSets(a);
+  log_->Append(a);
+
+  MessageBuffer* m = NULL;
+  while (!channel->Pop(&m)) {
+    // Wait for action to complete and be sent back.
+    usleep(100);
+  }
+
+  Action result;
+  result.ParseFromArray((*m)[0].data(), (*m)[0].size());
+  delete m;
+  MetadataAction::RenameOutput out;
+  out.ParseFromString(result.output());
+
+  if (out.success()) {
+    return new MessageBuffer();
+  } else {
+    return new MessageBuffer(new string("error creating file/dir\n"));
+  }
+}
+
+

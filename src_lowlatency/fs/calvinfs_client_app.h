@@ -633,7 +633,7 @@ void LatencyExperimentAppend() {
       int seed = rand() % 100;
       
       // Copy operations inside one data center
-      if (seed < 90) {
+      if (seed < 100) {
         BackgroundCopyFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/c" + IntToString(rand() % 1000),
                            "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));
       } else {
