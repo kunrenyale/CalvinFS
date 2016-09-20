@@ -613,10 +613,21 @@ void LatencyExperimentAppend() {
     machine()->GlobalBarrier();
     Spin(1);
 
+    double start = GetTime();
     for (int i = 0; i < 1000; i++) {
-        BackgroundCopyFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/c" + IntToString(rand() % 1000),
+      BackgroundCopyFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/c" + IntToString(rand() % 1000),
                            "/a" + IntToString(rand() % machine()->config().size()) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));
+
+      if (i % 100 == 0) {
+        LOG(ERROR) << "[" << machine()->machine_id() << "] "
+                   << "Test progress : " << i / 100 << "/" << 10;
+      }
     }
+
+    // Report.
+    LOG(ERROR) << "[" << machine()->machine_id() << "] "
+               << "Copyed " <<  "1000 files. Elapsed time: "
+               << (GetTime() - start) << " seconds";
   }
 
   void RenameExperiment() {
@@ -626,12 +637,23 @@ void LatencyExperimentAppend() {
     machine()->GlobalBarrier();
     Spin(1);
 
+    double start = GetTime();
     for (int i = 0; i < 100; i++) {
       for (int j = 0; j < 100; j++) {
           BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(i) + "/c" + IntToString(j),
                            "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(i) + "/d" + IntToString(machine()->GetGUID())); 
       }
+
+      if (i % 10 == 0) {
+        LOG(ERROR) << "[" << machine()->machine_id() << "] "
+                   << "Test progress : " << i / 10 << "/" << 10;
+      }
     }
+
+    // Report.
+    LOG(ERROR) << "[" << machine()->machine_id() << "] "
+               << "Renamed " <<  "1000 files. Elapsed time: "
+               << (GetTime() - start) << " seconds";
   }
 
   void Report() {

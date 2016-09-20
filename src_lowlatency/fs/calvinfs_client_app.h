@@ -629,6 +629,7 @@ void LatencyExperimentAppend() {
     machine()->GlobalBarrier();
     Spin(1);
 
+    double start = GetTime();
     for (int i = 0; i < 1000; i++) {
       int seed = rand() % 100;
       
@@ -640,8 +641,18 @@ void LatencyExperimentAppend() {
       // Copy operations that cross data centers
         BackgroundCopyFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/c" + IntToString(rand() % 1000),
                            "/a" + IntToString(machines_other_replicas[rand()%size_other_machines]) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));
-      }      
+      }
+
+      if (i % 100 == 0) {
+        LOG(ERROR) << "[" << machine()->machine_id() << "] "
+                   << "Test progress : " << i / 100 << "/" << 10;
+      }    
     }
+
+    // Report.
+    LOG(ERROR) << "[" << machine()->machine_id() << "] "
+               << "Copyed " <<  "1000 files. Elapsed time: "
+               << (GetTime() - start) << " seconds";
     
   }
 
@@ -664,6 +675,7 @@ void LatencyExperimentAppend() {
     machine()->GlobalBarrier();
     Spin(1);
 
+    double start = GetTime();
     for (int i = 0; i < 100; i++) {
       for (int j = 0; j < 100; j++) {
         int seed = rand() % 100;
@@ -678,7 +690,17 @@ void LatencyExperimentAppend() {
                            "/a" + IntToString(machines_other_replicas[rand()%size_other_machines]) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));
         }      
       }
+
+      if (i % 10 == 0) {
+        LOG(ERROR) << "[" << machine()->machine_id() << "] "
+                   << "Test progress : " << i / 10 << "/" << 10;
+      }
     }
+
+    // Report.
+    LOG(ERROR) << "[" << machine()->machine_id() << "] "
+               << "Renamed " <<  "1000 files. Elapsed time: "
+               << (GetTime() - start) << " seconds";
   }
 
   void Report() {
