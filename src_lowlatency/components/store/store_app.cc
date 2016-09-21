@@ -69,7 +69,7 @@ uint64 StoreApp::GetHeadMachine(uint64 machine_id) {
 }
 
 uint32 StoreApp::LocalReplica() {
-  return LookupReplica(machine_->machine_id());
+  return store_->LocalReplica();
 }
 
 void StoreApp::Run(Action* action) {
