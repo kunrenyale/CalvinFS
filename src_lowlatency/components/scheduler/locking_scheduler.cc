@@ -39,7 +39,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action
       bool ignore = true;
       set<string> writeset;
       for (int i = 0; i < action->writeset_size(); i++) {
-        if (store_->IsLocal(action->writeset(i)) && store_->LookupReplicaByDir(action->writeset(i)) == action->origin()) {
+        if ((store_->IsLocal(action->writeset(i))) && (store_->LookupReplicaByDir(action->writeset(i)) == action->origin())) {
           if (ignore == true) {
             ignore = false;
           }
@@ -52,7 +52,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action
       }
 
       for (int i = 0; i < action->readset_size(); i++) {
-        if (store_->IsLocal(action->readset(i)) && store_->LookupReplicaByDir(action->readset(i)) == action->origin()) {
+        if ((store_->IsLocal(action->readset(i))) && (store_->LookupReplicaByDir(action->readset(i)) == action->origin())) {
           if (ignore == true) {
             ignore = false;
           }

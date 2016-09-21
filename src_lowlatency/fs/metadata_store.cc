@@ -169,7 +169,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
     for (int i = 0; i < action->readset_size(); i++) {
       uint64 mds = config_->HashFileName(action->readset(i));
       uint64 machine = config_->LookupMetadataShard(mds, replica_);
-      if (machine == machine_->machine_id() && config_->LookupReplicaByDir(TopDir(action->readset(i))) == origin_) {
+      if ((machine == machine_->machine_id()) && (config_->LookupReplicaByDir(TopDir(action->readset(i))) == origin_)) {
         // Local read.
         if (!store_->Get(action->readset(i),
                          version_,
@@ -188,7 +188,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
     for (int i = 0; i < action->writeset_size(); i++) {
       uint64 mds = config_->HashFileName(action->writeset(i));
       uint64 machine = config_->LookupMetadataShard(mds, replica_);
-      if (machine == machine_->machine_id() && config_->LookupReplicaByDir(TopDir(action->writeset(i))) == origin_) {
+      if ((machine == machine_->machine_id()) && (config_->LookupReplicaByDir(TopDir(action->writeset(i))) == origin_)) {
         writer_ = true;
       } else {
         remote_writers.insert(machine);
