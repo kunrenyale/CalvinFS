@@ -178,6 +178,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
         }
         reader_ = true;
       } else {
+LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext(add remote_readers):: version is:"<< version_<<"   data_channel_version:"<<data_channel_version<<"  config_->LookupReplicaByDir(TopDir(action->readset(i)): "<<config_->LookupReplicaByDir(TopDir(action->readset(i)))<<"  . However, origin is: "<<origin_;
         remote_readers.insert(machine);
       }
     }
@@ -191,6 +192,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
       if ((machine == machine_->machine_id()) && (config_->LookupReplicaByDir(TopDir(action->writeset(i))) == origin_)) {
         writer_ = true;
       } else {
+LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext(add remote_writers):: version is:"<< version_<<"   data_channel_version:"<<data_channel_version<<"  config_->LookupReplicaByDir(TopDir(action->writeset(i))): "<<config_->LookupReplicaByDir(TopDir(action->writeset(i)))<<"  . However, origin is: "<<origin_;
         remote_writers.insert(machine);
       }
     }

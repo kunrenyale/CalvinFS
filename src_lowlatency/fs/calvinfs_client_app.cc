@@ -57,6 +57,7 @@ MessageBuffer* CalvinFSClientApp::CreateFile(const Slice& path, FileType type) {
   a->set_client_channel(channel_name);
   a->set_action_type(MetadataAction::CREATE_FILE);
   a->set_distinct_id(distinct_id);
+  a->set_create_new(true);
 
   MetadataAction::CreateFileInput in;
   in.set_path(path.data(), path.size());
@@ -113,6 +114,7 @@ MessageBuffer* CalvinFSClientApp::AppendStringToFile(
   a->set_client_channel(channel_name);
   a->set_action_type(MetadataAction::APPEND);
   a->set_distinct_id(distinct_id);
+  a->set_create_new(true);
 
   MetadataAction::AppendInput in;
   in.set_path(path.data(), path.size());
@@ -232,6 +234,7 @@ MessageBuffer* CalvinFSClientApp::CopyFile(const Slice& from_path, const Slice& 
   a->set_client_channel(channel_name);
   a->set_action_type(MetadataAction::COPY);
   a->set_distinct_id(distinct_id);
+  a->set_create_new(true);
 
   MetadataAction::CopyInput in;
   in.set_from_path(from_path.data(), from_path.size());
@@ -281,6 +284,7 @@ MessageBuffer* CalvinFSClientApp::RenameFile(const Slice& from_path, const Slice
   a->set_client_channel(channel_name);
   a->set_action_type(MetadataAction::RENAME);
   a->set_distinct_id(distinct_id);
+  a->set_create_new(true);
 
   MetadataAction::RenameInput in;
   in.set_from_path(from_path.data(), from_path.size());
