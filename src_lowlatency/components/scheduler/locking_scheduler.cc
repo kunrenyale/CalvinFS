@@ -34,30 +34,37 @@ void LockingScheduler::MainLoopBody() {
     active_actions_.insert(action->version());
     int ungranted_requests = 0;
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action: " << action->version()<<" distinct id is:"<<action->distinct_id();
- 
+
     if (action->single_replica() == false) {
-      bool ignore = false;
+      bool ignore = true;
+      set<string> writeset;
       for (int i = 0; i < action->writeset_size(); i++) {
-        if (store_->IsLocal(action->writeset(i))) {
-          if (store_->LookupReplicaByDir(action->writeset(i)) != action->origin()) {
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler  will ignore this txn: " << action->version()<<" distinct id is:"<<action->distinct_id()<<"--- action->origin() is: "<<action->origin()<<"  But store_->LookupReplicaByDir(action->writeset(i) is: "<<store_->LookupReplicaByDir(action->writeset(i));
-            ignore = true;
-            break;
+        if (store_->IsLocal(action->writeset(i)) && store_->LookupReplicaByDir(action->writeset(i)) == action->origin()) {
+          if (ignore == true) {
+            ignore = false;
+          }
+
+          writeset.insert(action->writeset(i));
+          if (!lm_.WriteLock(action, action->writeset(i))) {
+            ungranted_requests++;
           }
         }
       }
 
-      if (ignore == false) {
-        for (int i = 0; i < action->readset_size(); i++) {
-          if (store_->IsLocal(action->readset(i))) {
-            if (store_->LookupReplicaByDir(action->readset(i)) != action->origin()) {
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler  will ignore this txn: " << action->version()<<" distinct id is:"<<action->distinct_id()<<"--- action->origin() is: "<<action->origin()<<"  But store_->LookupReplicaByDir(action->writeset(i) is: "<<store_->LookupReplicaByDir(action->readset(i));
-              ignore = true;
-              break;
+      for (int i = 0; i < action->readset_size(); i++) {
+        if (store_->IsLocal(action->readset(i)) && store_->LookupReplicaByDir(action->readset(i)) == action->origin()) {
+          if (ignore == true) {
+            ignore = false;
+          }
+
+          if (writeset.count(action->readset(i)) == 0) {
+            if (!lm_.ReadLock(action, action->readset(i))) {
+              ungranted_requests++;
             }
           }
         }
       }
+
 
       if (ignore == true) {
         // Finish this loop
@@ -85,29 +92,29 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler Sen
         new_action->SerializeToString(block);
         machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
       }
-    }   
+    }  else {
 
-
-    // Request write locks. Track requests so we can check that we don't
-    // re-request any as read locks.
-    set<string> writeset;
-    for (int i = 0; i < action->writeset_size(); i++) {
-      if (store_->IsLocal(action->writeset(i))) {
-        writeset.insert(action->writeset(i));
-        if (!lm_.WriteLock(action, action->writeset(i))) {
-          ungranted_requests++;
+      // Request write locks. Track requests so we can check that we don't
+      // re-request any as read locks.
+      set<string> writeset;
+      for (int i = 0; i < action->writeset_size(); i++) {
+        if (store_->IsLocal(action->writeset(i))) {
+          writeset.insert(action->writeset(i));
+          if (!lm_.WriteLock(action, action->writeset(i))) {
+            ungranted_requests++;
+          }
         }
       }
-    }
 
-    // Request read locks.
-    for (int i = 0; i < action->readset_size(); i++) {
-      // Avoid re-requesting shared locks if an exclusive lock is already
-      // requested.
-      if (store_->IsLocal(action->readset(i))) {
-        if (writeset.count(action->readset(i)) == 0) {
-          if (!lm_.ReadLock(action, action->readset(i))) {
-            ungranted_requests++;
+      // Request read locks.
+      for (int i = 0; i < action->readset_size(); i++) {
+        // Avoid re-requesting shared locks if an exclusive lock is already
+        // requested.
+        if (store_->IsLocal(action->readset(i))) {
+          if (writeset.count(action->readset(i)) == 0) {
+            if (!lm_.ReadLock(action, action->readset(i))) {
+              ungranted_requests++;
+            }
           }
         }
       }

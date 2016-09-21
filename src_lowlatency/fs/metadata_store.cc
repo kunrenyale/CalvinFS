@@ -29,6 +29,43 @@ REGISTER_APP(MetadataStoreApp) {
   return new StoreApp(new MetadataStore(new HybridVersionedKVStore()));
 }
 
+
+string ParentDir(const string& path) {
+  // Root dir is a special case.
+  if (path.empty()) {
+    LOG(FATAL) << "root dir has no parent";
+  }
+  std::size_t offset = path.rfind('/');
+  CHECK_NE(string::npos, offset);     // at least 1 slash required
+  CHECK_NE(path.size() - 1, offset);  // filename cannot be empty
+  return string(path, 0, offset);
+}
+
+string FileName(const string& path) {
+  // Root dir is a special case.
+  if (path.empty()) {
+    return path;
+  }
+  uint32 offset = path.rfind('/');
+  CHECK_NE(string::npos, offset);     // at least 1 slash required
+  CHECK_NE(path.size() - 1, offset);  // filename cannot be empty
+  return string(path, offset + 1);
+}
+
+string TopDir(const string& path) {
+  // Root dir is a special case.
+  if (path.empty()) {
+    return path;
+  }
+  
+  std::size_t offset = string(path, 1).find('/');
+  if (offset == string::npos) {
+    return path;
+  } else {
+    return string(path, 0, offset+1);
+  }
+}
+
 ///////////////////////        ExecutionContext        ////////////////////////
 //
 // TODO(agt): The implementation below is a LOCAL execution context.
@@ -119,6 +156,7 @@ class DistributedExecutionContext : public ExecutionContext {
     store_ = store;
     version_ = action->version();
     aborted_ = false;
+    origin_ = action->origin();
 
     data_channel_version = action->distinct_id();
 LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext received a txn:: version is:"<< version_<<"   data_channel_version:"<<data_channel_version;
@@ -131,7 +169,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
     for (int i = 0; i < action->readset_size(); i++) {
       uint64 mds = config_->HashFileName(action->readset(i));
       uint64 machine = config_->LookupMetadataShard(mds, replica_);
-      if (machine == machine_->machine_id()) {
+      if (machine == machine_->machine_id() && config_->LookupReplicaByDir(TopDir(action->readset(i))) == origin_) {
         // Local read.
         if (!store_->Get(action->readset(i),
                          version_,
@@ -150,7 +188,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
     for (int i = 0; i < action->writeset_size(); i++) {
       uint64 mds = config_->HashFileName(action->writeset(i));
       uint64 machine = config_->LookupMetadataShard(mds, replica_);
-      if (machine == machine_->machine_id()) {
+      if (machine == machine_->machine_id() && config_->LookupReplicaByDir(TopDir(action->writeset(i))) == origin_) {
         writer_ = true;
       } else {
         remote_writers.insert(machine);
@@ -206,14 +244,14 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
       for (auto it = writes_.begin(); it != writes_.end(); ++it) {
         uint64 mds = config_->HashFileName(it->first);
         uint64 machine = config_->LookupMetadataShard(mds, replica_);
-        if (machine == machine_->machine_id()) {
+        if (machine == machine_->machine_id() && config_->LookupReplicaByDir(TopDir(it->first)) == origin_) {
           store_->Put(it->first, it->second, version_);
         }
       }
       for (auto it = deletions_.begin(); it != deletions_.end(); ++it) {
         uint64 mds = config_->HashFileName(*it);
         uint64 machine = config_->LookupMetadataShard(mds, replica_);
-        if (machine == machine_->machine_id()) {
+        if (machine == machine_->machine_id() && config_->LookupReplicaByDir(TopDir(*it)) == origin_) {
           store_->Delete(*it, version_);
         }
       }
@@ -237,45 +275,11 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
   bool writer_;
 
   uint64 data_channel_version;
+
+  uint32 origin_;
 };
 
 ///////////////////////          MetadataStore          ///////////////////////
-
-string ParentDir(const string& path) {
-  // Root dir is a special case.
-  if (path.empty()) {
-    LOG(FATAL) << "root dir has no parent";
-  }
-  std::size_t offset = path.rfind('/');
-  CHECK_NE(string::npos, offset);     // at least 1 slash required
-  CHECK_NE(path.size() - 1, offset);  // filename cannot be empty
-  return string(path, 0, offset);
-}
-
-string FileName(const string& path) {
-  // Root dir is a special case.
-  if (path.empty()) {
-    return path;
-  }
-  uint32 offset = path.rfind('/');
-  CHECK_NE(string::npos, offset);     // at least 1 slash required
-  CHECK_NE(path.size() - 1, offset);  // filename cannot be empty
-  return string(path, offset + 1);
-}
-
-string TopDir(const string& path) {
-  // Root dir is a special case.
-  if (path.empty()) {
-    return path;
-  }
-  
-  std::size_t offset = string(path, 1).find('/');
-  if (offset == string::npos) {
-    return path;
-  } else {
-    return string(path, 0, offset+1);
-  }
-}
 
 MetadataStore::MetadataStore(VersionedKVStore* store)
     : store_(store), machine_(NULL), config_(NULL) {
