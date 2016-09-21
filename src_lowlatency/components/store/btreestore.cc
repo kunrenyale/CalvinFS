@@ -74,7 +74,7 @@ uint64 BTreeStore::GetHeadMachine(uint64 machine_id) {
 }
 
 uint32 BTreeStore::LocalReplica() {
-  return 0;
+  return -1;
 }
 
 

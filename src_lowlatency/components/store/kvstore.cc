@@ -58,7 +58,7 @@ uint64 KVStore::GetHeadMachine(uint64 machine_id) {
 }
 
 uint32 KVStore::LocalReplica() {
-  return 0;
+  return -1;
 }
 
 

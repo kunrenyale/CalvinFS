@@ -107,7 +107,7 @@ uint64 LevelDBStore::GetHeadMachine(uint64 machine_id) {
 }
 
 uint32 LevelDBStore::LocalReplica() {
-  return 0;
+  return -1;
 }
 
 bool LevelDBStore::Exists(const string& key) {

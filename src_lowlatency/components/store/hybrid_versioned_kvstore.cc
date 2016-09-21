@@ -49,7 +49,7 @@ uint64 HybridVersionedKVStore::GetHeadMachine(uint64 machine_id) {
 }
 
 uint32 HybridVersionedKVStore::LocalReplica() {
-  return 0;
+  return -1;
 }
 
 void HybridVersionedKVStore::GetRWSets(Action* action) {

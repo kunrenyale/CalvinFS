@@ -217,7 +217,7 @@ uint64 VersionedKVStore::GetHeadMachine(uint64 machine_id) {
 }
 
 uint32 VersionedKVStore::LocalReplica() {
-  return 0;
+  return -1;
 }
 
 bool VersionedKVStore::Get(

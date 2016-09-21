@@ -38,7 +38,7 @@ uint64 TpccStore::GetHeadMachine(uint64 machine_id) {
 }
 
 uint32 TpccStore::LocalReplica() {
-  return 0;
+  return -1;
 }
 
 void TpccStore::GetRWSets(Action* action) {

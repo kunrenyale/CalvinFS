@@ -38,7 +38,7 @@ uint64 MicrobenchmarkStore::GetHeadMachine(uint64 machine_id) {
 }
 
 uint32 MicrobenchmarkStore::LocalReplica() {
-  return 0;
+  return -1;
 }
 
 void MicrobenchmarkStore::GetRWSets(Action* action) {
