@@ -233,6 +233,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a BA
       map<uint64, ActionBatch> subbatches;
       for (int i = 0; i < batch.entries_size(); i++) {
         set<uint64> recipients;
+        uint64 lowest_involved_machine;
         for (int j = 0; j < batch.entries(i).readset_size(); j++) {
           uint64 mds = config_->HashFileName(batch.entries(i).readset(j));
           recipients.insert(config_->LookupMetadataShard(mds, replica_));
@@ -241,8 +242,14 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a BA
           uint64 mds = config_->HashFileName(batch.entries(i).writeset(j));
           recipients.insert(config_->LookupMetadataShard(mds, replica_));
         }
+        
+        lowest_involved_machine = *(recipients.begin());
+        Action tt = batch.entries(i);
+        tt.set_lowest_involved_machine(lowest_involved_machine);
+
         for (auto it = recipients.begin(); it != recipients.end(); ++it) {
-          subbatches[*it].add_entries()->CopyFrom(batch.entries(i));
+          //subbatches[*it].add_entries()->CopyFrom(batch.entries(i));
+          subbatches[*it].add_entries()->CopyFrom(tt);
         }
       }
       for (auto it = mds_.begin(); it != mds_.end(); ++it) {

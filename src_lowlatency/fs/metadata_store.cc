@@ -524,7 +524,6 @@ void MetadataStore::GetRWSets(Action* action) {
     MetadataAction::CopyInput in;
     in.ParseFromString(action->input());
     action->add_readset(in.from_path());
-    action->add_readset(in.to_path());
     action->add_writeset(in.to_path());
     action->add_readset(ParentDir(in.to_path()));
     action->add_writeset(ParentDir(in.to_path()));
@@ -536,7 +535,6 @@ void MetadataStore::GetRWSets(Action* action) {
     action->add_writeset(in.from_path());
     action->add_readset(ParentDir(in.from_path()));
     action->add_writeset(ParentDir(in.from_path()));
-    action->add_readset(in.to_path());
     action->add_writeset(in.to_path());
     action->add_readset(ParentDir(in.to_path()));
     action->add_writeset(ParentDir(in.to_path()));

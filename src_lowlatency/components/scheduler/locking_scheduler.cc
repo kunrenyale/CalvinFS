@@ -36,10 +36,14 @@ void LockingScheduler::MainLoopBody() {
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action: " << action->version()<<" distinct id is:"<<action->distinct_id();
 
     if (action->single_replica() == false) {
+      replica_ = store_->LocalReplica();
+      set<uint32> involved_replicas;
       bool ignore = true;
       set<string> writeset;
       for (int i = 0; i < action->writeset_size(); i++) {
-        if ((store_->IsLocal(action->writeset(i))) && (store_->LookupReplicaByDir(action->writeset(i)) == action->origin())) {
+        uint32 replica = store_->LookupReplicaByDir(action->writeset(i));
+        involved_replicas.insert(replica);
+        if ((store_->IsLocal(action->writeset(i))) && (replica == action->origin())) {
           if (ignore == true) {
             ignore = false;
           }
@@ -52,7 +56,9 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action
       }
 
       for (int i = 0; i < action->readset_size(); i++) {
-        if ((store_->IsLocal(action->readset(i))) && (store_->LookupReplicaByDir(action->readset(i)) == action->origin())) {
+        uint32 replica = store_->LookupReplicaByDir(action->readset(i));
+        involved_replicas.insert(replica);
+        if ((store_->IsLocal(action->readset(i))) && (replica == action->origin())) {
           if (ignore == true) {
             ignore = false;
           }
@@ -71,7 +77,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler aft
         // Finish this loop
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler ignore this txn: " << action->version();
         return;
-      } else if ((action->create_new() == true) && (store_->LocalReplica() != action->origin())) {
+      } else if ((machine()->machine_id() == action->lowest_involved_machine()) && (action->create_new() == true) && (replica_ != action->origin()) && (involved_replicas.find(replica_) !=  involved_replicas.end())) {
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler Send a new action to sequencer: " << action->version()<<" distinct id is:"<<action->distinct_id();
         // Send a new action to sequencer
         Action* new_action = new Action();
