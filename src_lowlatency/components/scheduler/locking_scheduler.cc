@@ -71,7 +71,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action
         }
       }
 
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler after lock: " << action->version()<<" distinct id is:"<<action->distinct_id()<<"  create_new():"<<action->create_new()<<"  LocalReplica is:"<<store_->LocalReplica()<<"   action->origin() is: "<<action->origin();
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler after lock: " << action->version()<<" distinct id is:"<<action->distinct_id()<<"  create_new():"<<action->create_new()<<"  LocalReplica is:"<<store_->LocalReplica()<<"   action->origin() is: "<<action->origin()<<"  .action->lowest_involved_machine() is:"<<action->lowest_involved_machine();
 
       if (ignore == true) {
         // Finish this loop
