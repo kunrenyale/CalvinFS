@@ -683,7 +683,7 @@ void LatencyExperimentAppend() {
         // Copy operations inside one data center
         if (seed < 90) {
           BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(i) + "/c" + IntToString(j),
-                           "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(i) + "/d" + IntToString(machine()->GetGUID()));
+                           "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(i+1) + "/d" + IntToString(machine()->GetGUID()));
         } else {
         // Copy operations that cross data centers
           BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(i) + "/c" + IntToString(j),
