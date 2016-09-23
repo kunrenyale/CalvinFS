@@ -75,7 +75,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler aft
 
       if (ignore == true) {
         // Finish this loop
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler ignore this txn: " << action->version();
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler ignore this txn: " << action->version()<<" distinct id is:"<<action->distinct_id();
         return;
       } else if ((machine()->machine_id() == action->lowest_involved_machine()) && (action->create_new() == true) && (replica_ != action->origin()) && (involved_replicas.find(replica_) !=  involved_replicas.end())) {
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler Send a new action to sequencer: " << action->version()<<" distinct id is:"<<action->distinct_id();
@@ -132,6 +132,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler Sen
     if (ungranted_requests == 0) {
       running_action_count_++;
       store_->RunAsync(action, &completed_);
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ store_->RunAsync(action, &completed_): " << action->version()<<" distinct id is:"<<action->distinct_id();
     }
   }
 
