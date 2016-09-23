@@ -314,6 +314,12 @@ void MetadataStore::SetMachine(Machine* m) {
   machine_ = m;
   config_ = new CalvinFSConfigMap(machine_);
 
+  machine_id_ = machine_->machine_id();
+
+  replica_ = config_->LookupReplica(machine_id_);
+
+  machines_per_replica_ = config_->GetPartitionsPerReplica();
+
   // Initialize by inserting an entry for the root directory "/" (actual
   // representation is "" since trailing slashes are always removed).
   if (IsLocal("")) {
@@ -324,12 +330,6 @@ void MetadataStore::SetMachine(Machine* m) {
     entry.SerializeToString(&serialized_entry);
     store_->Put("", serialized_entry, 0);
   }
-
-  machine_id_ = machine_->machine_id();
-
-  replica_ = config_->LookupReplica(machine_id_);
-
-  machines_per_replica_ = config_->GetPartitionsPerReplica();
 }
 
 int RandomSize() {
