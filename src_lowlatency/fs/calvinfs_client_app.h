@@ -676,12 +676,12 @@ void LatencyExperimentAppend() {
     Spin(1);
 
     double start = GetTime();
-    for (int i = 0; i < 100; i++) {
-      for (int j = 0; j < 100; j++) {
+    for (int i = 0; i < 10; i++) {
+      for (int j = 0; j < 10; j++) {
         int seed = rand() % 100;
       
         // Copy operations inside one data center
-        if (seed < 90) {
+        if (seed < 100) {
           BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(i) + "/c" + IntToString(j),
                            "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(i+1) + "/d" + IntToString(machine()->GetGUID()));
         } else {
