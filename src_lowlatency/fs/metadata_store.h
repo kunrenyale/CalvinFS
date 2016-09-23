@@ -95,6 +95,12 @@ class MetadataStore : public Store {
 
   // Partitioning/replication configuration. Must be set if machine_ != NULL.
   CalvinFSConfigMap* config_;
+
+  uint64 machine_id_;
+
+  uint32 replica_;
+
+  uint64 machines_per_replica_;
 };
 
 #endif  // CALVIN_FS_METADATA_STORE_H_

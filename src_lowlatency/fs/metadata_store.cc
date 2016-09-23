@@ -84,6 +84,18 @@ class ExecutionContext {
         reads_.erase(action->readset(i));
       }
     }
+
+    if (action->readset_size() > 0) {
+      reader_ = true;
+    } else {
+      reader_ = false;
+    }
+
+    if (action->writeset_size() > 0) {
+      writer_ = true;
+    } else {
+      writer_ = false;
+    }
   }
 
   // Destructor installs all writes.
@@ -129,6 +141,13 @@ class ExecutionContext {
     aborted_ = true;
   }
 
+  bool IsWriter() {
+    if (writer_)
+      return true;
+    else
+      return false;
+  }
+
  protected:
   ExecutionContext() {}
   VersionedKVStore* store_;
@@ -137,6 +156,12 @@ class ExecutionContext {
   map<string, string> reads_;
   map<string, string> writes_;
   set<string> deletions_;
+
+  // True iff any reads are at this partition.
+  bool reader_;
+
+  // True iff any writes are at this partition.
+  bool writer_;
 };
 
 ////////////////////      DistributedExecutionContext      /////////////////////
@@ -270,12 +295,6 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
   // Local replica id.
   uint64 replica_;
 
-  // True iff any reads are at this partition.
-  bool reader_;
-
-  // True iff any writes are at this partition.
-  bool writer_;
-
   uint64 data_channel_version;
 
   uint32 origin_;
@@ -305,6 +324,12 @@ void MetadataStore::SetMachine(Machine* m) {
     entry.SerializeToString(&serialized_entry);
     store_->Put("", serialized_entry, 0);
   }
+
+  machine_id_ = machine_->machine_id();
+
+  replica_ = config_->LookupReplica(machine_id_);
+
+  machines_per_replica_ = config_->GetPartitionsPerReplica();
 }
 
 int RandomSize() {
@@ -337,19 +362,21 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
   }
   
   uint32 lowest_replica = *(replica_involved.begin());
-  
-  uint32 partitions = config_->GetPartitionsPerReplica();
-  return lowest_replica * partitions + rand() % partitions;
+
+  if (lowest_replica == replica_) {
+    return machine_id_;
+  } else {
+    return lowest_replica * machines_per_replica_ + rand() % machines_per_replica_;
+  }
 }
 
 uint64 MetadataStore::GetHeadMachine(uint64 machine_id) {
-  uint32 partitions = config_->GetPartitionsPerReplica();
 
-  return (machine_id/partitions) * partitions;
+  return (machine_id/machines_per_replica_) * machines_per_replica_;
 }
 
 uint32 MetadataStore::LocalReplica() {
-  return config_->LookupReplica(machine_->machine_id());
+  return replica_;
 }
 
 void MetadataStore::Init() {
@@ -491,10 +518,10 @@ void MetadataStore::InitSmall() {
 }
 
 bool MetadataStore::IsLocal(const string& path) {
-  return machine_->machine_id() ==
+  return machine_id_ ==
          config_->LookupMetadataShard(
             config_->HashFileName(path),
-            config_->LookupReplica(machine_->machine_id()));
+            replica_);
 }
 
 void MetadataStore::GetRWSets(Action* action) {
@@ -581,6 +608,12 @@ void MetadataStore::Run(Action* action) {
   } else {
     context =
         new DistributedExecutionContext(machine_, config_, store_, action);
+  }
+
+
+  if (!context->IsWriter()) {
+    delete context;
+    return;
   }
 
   // Execute action.

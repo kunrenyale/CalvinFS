@@ -46,6 +46,19 @@ class ExecutionContext {
         reads_.erase(action->readset(i));
       }
     }
+
+    if (action->readset_size() > 0) {
+      reader_ = true;
+    } else {
+      reader_ = false;
+    }
+
+    if (action->writeset_size() > 0) {
+      writer_ = true;
+    } else {
+      writer_ = false;
+    }
+
   }
 
   // Destructor installs all writes.
@@ -87,6 +100,13 @@ class ExecutionContext {
     deletions_.insert(path);
   }
 
+  bool IsWriter() {
+    if (writer_)
+      return true;
+    else
+      return false;
+  }
+
   void Abort() {
     aborted_ = true;
   }
@@ -99,6 +119,12 @@ class ExecutionContext {
   map<string, string> reads_;
   map<string, string> writes_;
   set<string> deletions_;
+
+  // True iff any reads are at this partition.
+  bool reader_;
+
+  // True iff any writes are at this partition.
+  bool writer_;
 };
 
 ////////////////////      DistributedExecutionContext      /////////////////////
@@ -225,11 +251,6 @@ class DistributedExecutionContext : public ExecutionContext {
   // Local replica id.
   uint64 replica_;
 
-  // True iff any reads are at this partition.
-  bool reader_;
-
-  // True iff any writes are at this partition.
-  bool writer_;
 };
 
 ///////////////////////          MetadataStore          ///////////////////////
@@ -513,6 +534,11 @@ void MetadataStore::Run(Action* action) {
   } else {
     context =
         new DistributedExecutionContext(machine_, config_, store_, action);
+  }
+
+  if (!context->IsWriter()) {
+    delete context;
+    return;
   }
 
   // Execute action.
