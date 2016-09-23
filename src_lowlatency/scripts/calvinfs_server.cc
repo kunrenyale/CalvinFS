@@ -91,7 +91,7 @@ int main(int argc, char** argv) {
   }
 
   m.GlobalBarrier();
-  Spin(1);
+  Spin(5);
 
   // Start metadata store app.
   m.AddApp("MetadataStoreApp", "metadata");
