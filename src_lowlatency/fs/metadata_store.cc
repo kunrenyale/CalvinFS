@@ -839,13 +839,15 @@ void MetadataStore::Rename_Internal(
     const MetadataAction::RenameInput& in,
     MetadataAction::RenameOutput* out) {
   // Currently only support Copy: (non-recursive: only succeeds for DATA files and EMPTY directory)
+
+LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal*******From_path: " << in.from_path()<<" to_path:"<<in.to_path();
   MetadataEntry from_entry;
   if (!context->GetEntry(in.from_path(), &from_entry)) {
     // File doesn't exist!
     out->set_success(false);
     out->add_errors(MetadataAction::FileDoesNotExist);
   }
-
+LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (after context->GetEntry(in.from_path(), &from_entry))*******";
   string parent_from_path = ParentDir(in.from_path());
   MetadataEntry parent_from_entry;
   if (!context->GetEntry(parent_from_path, &parent_from_entry)) {
@@ -853,7 +855,7 @@ void MetadataStore::Rename_Internal(
     out->set_success(false);
     out->add_errors(MetadataAction::FileDoesNotExist);
   }
-
+LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (after context->GetEntry(parent_from_path, &parent_from_entry))*******";
   string parent_to_path = ParentDir(in.to_path());
   MetadataEntry parent_to_entry;
   if (!context->GetEntry(parent_to_path, &parent_to_entry)) {
@@ -861,7 +863,7 @@ void MetadataStore::Rename_Internal(
     out->set_success(false);
     out->add_errors(MetadataAction::FileDoesNotExist);
   }
-
+LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (after context->GetEntry(parent_to_path, &parent_to_entry))*******";
   // If file already exists, fail.
   string to_filename = FileName(in.to_path());
   for (int i = 0; i < parent_to_entry.dir_contents_size(); i++) {
@@ -871,16 +873,16 @@ void MetadataStore::Rename_Internal(
       return;
     }
   }
-
+LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (after for (int i = 0; i < parent_to_entry.dir_contents_size(); i++)))*******";
   // Update to_parent (add new dir content)
   parent_to_entry.add_dir_contents(to_filename);
   context->PutEntry(parent_to_path, parent_to_entry);
-  
+LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (after // Update to_parent (add new dir content))*******";  
   // Add to_entry
   MetadataEntry to_entry;
   to_entry.CopyFrom(from_entry);
   context->PutEntry(in.to_path(), to_entry);
-
+LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (after // Add to_entry)*******";  
   // Update from_parent(Find file and remove it from parent directory.)
   string from_filename = FileName(in.from_path());
   for (int i = 0; i < parent_from_entry.dir_contents_size(); i++) {
@@ -895,9 +897,10 @@ void MetadataStore::Rename_Internal(
       return;
     }
   }
-
+LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (after // Update from_parent(Find file and remove it from parent directory.))*******";  
   // Erase the from_entry
   context->DeleteEntry(in.from_path());
+LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (finish)*******"; 
 }
 
 void MetadataStore::Lookup_Internal(
