@@ -46,11 +46,11 @@ class SequenceSource : public Source<UInt64Pair*> {
       if (current_->pairs_size() == 0) {
         delete current_;
         current_ = NULL;
-LOG(ERROR) <<"^^^^^^^^^SequenceSource wrong!!!";
+//LOG(ERROR) <<"^^^^^^^^^SequenceSource wrong!!!";
       } else {
         index_ = 0;
         offset_ = current_->misc();
-LOG(ERROR) <<"^^^^^^^^^SequenceSource get a sequence:"<< offset_ << " block_id is: "<<current_->pairs(0).first();
+//LOG(ERROR) <<"^^^^^^^^^SequenceSource get a sequence:"<< offset_ << " block_id is: "<<current_->pairs(0).first();
       }
     }
 
@@ -206,12 +206,12 @@ class BlockLogApp : public App {
       a->ParseFromArray((*message)[0].data(), (*message)[0].size());
       a->set_origin(replica_);
       queue_.Push(a);
-LOG(ERROR) << "Machine: "<<machine()->machine_id() <<" =>Block log recevie a APPEND request. distinct id is:"<< a->distinct_id()<<" from machine:"<<header->from();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id() <<" =>Block log recevie a APPEND request. distinct id is:"<< a->distinct_id()<<" from machine:"<<header->from();
     } else if (header->rpc() == "BATCH") {
       // Write batch block to local block store.
       uint64 block_id = header->misc_int(0);
       blocks_->Put(block_id, (*message)[0]);
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a BATCH request. block id is:"<< block_id <<" from machine:"<<header->from();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a BATCH request. block id is:"<< block_id <<" from machine:"<<header->from();
       // Parse batch.
       ActionBatch batch;
       batch.ParseFromArray((*message)[0].data(), (*message)[0].size());
@@ -269,13 +269,13 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a BA
 
       uint64 count = header->misc_int(1);
       paxos_leader_->Append(block_id, count);
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log recevie a SUBMIT request. block id is:"<< block_id<<" from machine:"<<header->from();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log recevie a SUBMIT request. block id is:"<< block_id<<" from machine:"<<header->from();
     } else if (header->rpc() == "SUBBATCH") {
       uint64 block_id = header->misc_int(0);
       ActionBatch* batch = new ActionBatch();
       batch->ParseFromArray((*message)[0].data(), (*message)[0].size());
       subbatches_.Put(block_id, batch);
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log recevie a SUBBATCH request. block id is:"<< block_id<<" from machine:"<<header->from();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log recevie a SUBBATCH request. block id is:"<< block_id<<" from machine:"<<header->from();
     } else {
       LOG(FATAL) << "unknown RPC type: " << header->rpc();
     }

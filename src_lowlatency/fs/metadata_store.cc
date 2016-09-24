@@ -184,7 +184,7 @@ class DistributedExecutionContext : public ExecutionContext {
     origin_ = action->origin();
 
     data_channel_version = action->distinct_id();
-LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext received a txn:: version is:"<< version_<<"   data_channel_version:"<<data_channel_version;
+//LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext received a txn:: version is:"<< version_<<"   data_channel_version:"<<data_channel_version;
     // Look up what replica we're at.
     replica_ = config_->LookupReplica(machine_->machine_id());
 
@@ -203,7 +203,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
         }
         reader_ = true;
       } else {
-LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext(add remote_readers):: version is:"<< version_<<"   data_channel_version:"<<data_channel_version<<"  config_->LookupReplicaByDir(TopDir(action->readset(i)): "<<config_->LookupReplicaByDir(TopDir(action->readset(i)))<<"  . However, origin is: "<<origin_;
+//LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext(add remote_readers):: version is:"<< version_<<"   data_channel_version:"<<data_channel_version<<"  config_->LookupReplicaByDir(TopDir(action->readset(i)): "<<config_->LookupReplicaByDir(TopDir(action->readset(i)))<<"  . However, origin is: "<<origin_;
         remote_readers.insert(machine);
       }
     }
@@ -217,7 +217,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
       if ((machine == machine_->machine_id()) && (config_->LookupReplicaByDir(TopDir(action->writeset(i))) == origin_)) {
         writer_ = true;
       } else {
-LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext(add remote_writers):: version is:"<< version_<<"   data_channel_version:"<<data_channel_version<<"  config_->LookupReplicaByDir(TopDir(action->writeset(i))): "<<config_->LookupReplicaByDir(TopDir(action->writeset(i)))<<"  . However, origin is: "<<origin_;
+//LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext(add remote_writers):: version is:"<< version_<<"   data_channel_version:"<<data_channel_version<<"  config_->LookupReplicaByDir(TopDir(action->writeset(i))): "<<config_->LookupReplicaByDir(TopDir(action->writeset(i)))<<"  . However, origin is: "<<origin_;
         remote_writers.insert(machine);
       }
     }
@@ -237,7 +237,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
         header->set_type(Header::DATA);
         header->set_data_channel("action-" + UInt64ToString(data_channel_version));
         machine_->SendMessage(header, new MessageBuffer(local_reads));
-LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext send local read:: version is:"<< version_<<"   data_channel_version:"<<data_channel_version<<"  to:"<<*it;
+//LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext send local read:: version is:"<< version_<<"   data_channel_version:"<<data_channel_version<<"  to:"<<*it;
       }
     }
 
@@ -261,7 +261,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
       }
       // Close channel.
       machine_->CloseDataChannel("action-" + UInt64ToString(data_channel_version));
-LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext already got all results: version is:"<< version_<<"   data_channel_version:"<<data_channel_version;
+//LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext already got all results: version is:"<< version_<<"   data_channel_version:"<<data_channel_version;
     }
   }
 
@@ -615,7 +615,7 @@ void MetadataStore::Run(Action* action) {
     delete context;
     return;
   }
-LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Run:*******(will execute it)" << action->version()<<" distinct id is:"<<action->distinct_id();
+//LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Run:*******(will execute it)" << action->version()<<" distinct id is:"<<action->distinct_id();
   // Execute action.
   MetadataAction::Type type =
       static_cast<MetadataAction::Type>(action->action_type());
@@ -840,14 +840,14 @@ void MetadataStore::Rename_Internal(
     MetadataAction::RenameOutput* out) {
   // Currently only support Copy: (non-recursive: only succeeds for DATA files and EMPTY directory)
 
-LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal*******From_path: " << in.from_path()<<" to_path:"<<in.to_path();
+//LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal*******From_path: " << in.from_path()<<" to_path:"<<in.to_path();
   MetadataEntry from_entry;
   if (!context->GetEntry(in.from_path(), &from_entry)) {
     // File doesn't exist!
     out->set_success(false);
     out->add_errors(MetadataAction::FileDoesNotExist);
   }
-LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (after context->GetEntry(in.from_path(), &from_entry))*******";
+//LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (after context->GetEntry(in.from_path(), &from_entry))*******";
   string parent_from_path = ParentDir(in.from_path());
   MetadataEntry parent_from_entry;
   if (!context->GetEntry(parent_from_path, &parent_from_entry)) {
@@ -855,7 +855,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Renam
     out->set_success(false);
     out->add_errors(MetadataAction::FileDoesNotExist);
   }
-LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (after context->GetEntry(parent_from_path, &parent_from_entry))*******";
+//LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (after context->GetEntry(parent_from_path, &parent_from_entry))*******";
   string parent_to_path = ParentDir(in.to_path());
   MetadataEntry parent_to_entry;
   if (!context->GetEntry(parent_to_path, &parent_to_entry)) {
@@ -863,7 +863,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Renam
     out->set_success(false);
     out->add_errors(MetadataAction::FileDoesNotExist);
   }
-LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (after context->GetEntry(parent_to_path, &parent_to_entry))*******";
+//LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (after context->GetEntry(parent_to_path, &parent_to_entry))*******";
   // If file already exists, fail.
   string to_filename = FileName(in.to_path());
   for (int i = 0; i < parent_to_entry.dir_contents_size(); i++) {
@@ -873,36 +873,36 @@ LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Renam
       return;
     }
   }
-LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (after for (int i = 0; i < parent_to_entry.dir_contents_size(); i++)))*******";
+//LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (after for (int i = 0; i < parent_to_entry.dir_contents_size(); i++)))*******";
   // Update to_parent (add new dir content)
   parent_to_entry.add_dir_contents(to_filename);
   context->PutEntry(parent_to_path, parent_to_entry);
-LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (after // Update to_parent (add new dir content))*******";  
+//LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (after // Update to_parent (add new dir content))*******";  
   // Add to_entry
   MetadataEntry to_entry;
   to_entry.CopyFrom(from_entry);
   context->PutEntry(in.to_path(), to_entry);
-LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (after // Add to_entry)*******";  
+//LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (after // Add to_entry)*******";  
   // Update from_parent(Find file and remove it from parent directory.)
   string from_filename = FileName(in.from_path());
   for (int i = 0; i < parent_from_entry.dir_contents_size(); i++) {
     if (parent_from_entry.dir_contents(i) == from_filename) {
-LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (1)******* i: "<<i<<"   dir_contents_size() is:"<<parent_from_entry.dir_contents_size();  
+//LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (1)******* i: "<<i<<"   dir_contents_size() is:"<<parent_from_entry.dir_contents_size();  
       // Remove reference to target file entry from dir contents.
       parent_from_entry.mutable_dir_contents()->SwapElements(i, parent_from_entry.dir_contents_size() - 1);
-LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (2)*******";  
+//LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (2)*******";  
       parent_from_entry.mutable_dir_contents()->RemoveLast();
-LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (3)*******";  
+//LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (3)*******";  
 
       // Write updated parent entry.
       context->PutEntry(parent_from_path, parent_from_entry);
       return;
     }
   }
-LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (after // Update from_parent(Find file and remove it from parent directory.))*******";  
+//LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (after // Update from_parent(Find file and remove it from parent directory.))*******";  
   // Erase the from_entry
   context->DeleteEntry(in.from_path());
-LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (finish)*******"; 
+//LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (finish)*******"; 
 }
 
 void MetadataStore::Lookup_Internal(
