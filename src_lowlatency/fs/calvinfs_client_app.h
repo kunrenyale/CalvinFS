@@ -634,7 +634,7 @@ void LatencyExperimentAppend() {
       int seed = rand() % 100;
       
       // Copy operations inside one data center
-      if (seed < 100) {
+      if (seed < 0) {
         BackgroundCopyFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/c" + IntToString(rand() % 1000),
                            "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));
       } else {
@@ -651,7 +651,7 @@ void LatencyExperimentAppend() {
 
     // Report.
     LOG(ERROR) << "[" << machine()->machine_id() << "] "
-               << "Copyed " <<  "1000 files. Elapsed time: "
+               << "Copyed " <<  "10000 files. Elapsed time: "
                << (GetTime() - start) << " seconds";
     
   }
@@ -681,7 +681,7 @@ void LatencyExperimentAppend() {
         int seed = rand() % 100;
       
         // Copy operations inside one data center
-        if (seed < 100) {
+        if (seed < 0) {
           BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(i) + "/c" + IntToString(j),
                            "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(i+1) + "/d" + IntToString(machine()->GetGUID()));
         } else {
