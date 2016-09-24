@@ -709,7 +709,7 @@ void MetadataStore::Erase_Internal(
       // Remove reference to target file entry from dir contents.
       parent_entry.mutable_dir_contents()
           ->SwapElements(i, parent_entry.dir_contents_size() - 1);
-      parent_entry.mutable_file_parts()->RemoveLast();
+      parent_entry.mutable_dir_contents()->RemoveLast();
 
       // Write updated parent entry.
       context->PutEntry(parent_path, parent_entry);
@@ -813,7 +813,7 @@ void MetadataStore::Rename_Internal(
       // Remove reference to target file entry from dir contents.
       parent_from_entry.mutable_dir_contents()
           ->SwapElements(i, parent_from_entry.dir_contents_size() - 1);
-      parent_from_entry.mutable_file_parts()->RemoveLast();
+      parent_from_entry.mutable_dir_contents()->RemoveLast();
 
       // Write updated parent entry.
       context->PutEntry(parent_from_path, parent_from_entry);

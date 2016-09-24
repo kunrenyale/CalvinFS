@@ -784,7 +784,7 @@ void MetadataStore::Erase_Internal(
       // Remove reference to target file entry from dir contents.
       parent_entry.mutable_dir_contents()
           ->SwapElements(i, parent_entry.dir_contents_size() - 1);
-      parent_entry.mutable_file_parts()->RemoveLast();
+      parent_entry.mutable_dir_contents()->RemoveLast();
 
       // Write updated parent entry.
       context->PutEntry(parent_path, parent_entry);
@@ -891,7 +891,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Renam
       // Remove reference to target file entry from dir contents.
       parent_from_entry.mutable_dir_contents()->SwapElements(i, parent_from_entry.dir_contents_size() - 1);
 LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (2)*******";  
-      parent_from_entry.mutable_file_parts()->RemoveLast();
+      parent_from_entry.mutable_dir_contents()->RemoveLast();
 LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (3)*******";  
 
       // Write updated parent entry.
