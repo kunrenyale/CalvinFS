@@ -630,7 +630,7 @@ void LatencyExperimentAppend() {
     Spin(1);
 
     double start = GetTime();
-    for (int i = 0; i < 10000; i++) {
+    for (int i = 0; i < 1000; i++) {
       int seed = rand() % 100;
       
       // Copy operations inside one data center
@@ -643,9 +643,9 @@ void LatencyExperimentAppend() {
                            "/a" + IntToString(machines_other_replicas[rand()%size_other_machines]) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));
       }
 
-      if (i % 1000 == 0) {
+      if (i % 100 == 0) {
         LOG(ERROR) << "[" << machine()->machine_id() << "] "
-                   << "Test progress : " << i / 1000 << "/" << 10;
+                   << "Test progress : " << i / 100 << "/" << 10;
       }    
     }
 
