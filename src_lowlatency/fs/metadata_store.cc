@@ -782,7 +782,7 @@ void MetadataStore::Erase_Internal(
   for (int i = 0; i < parent_entry.dir_contents_size(); i++) {
     if (parent_entry.dir_contents(i) == filename) {
       // Remove reference to target file entry from dir contents.
-      parent_entry.mutable_file_parts()
+      parent_entry.mutable_dir_contents()
           ->SwapElements(i, parent_entry.dir_contents_size() - 1);
       parent_entry.mutable_file_parts()->RemoveLast();
 
@@ -889,7 +889,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Renam
     if (parent_from_entry.dir_contents(i) == from_filename) {
 LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (1)******* i: "<<i<<"   dir_contents_size() is:"<<parent_from_entry.dir_contents_size();  
       // Remove reference to target file entry from dir contents.
-      parent_from_entry.mutable_file_parts()->SwapElements(i, parent_from_entry.dir_contents_size() - 1);
+      parent_from_entry.mutable_dir_contents()->SwapElements(i, parent_from_entry.dir_contents_size() - 1);
 LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (2)*******";  
       parent_from_entry.mutable_file_parts()->RemoveLast();
 LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (3)*******";  
