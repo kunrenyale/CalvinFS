@@ -103,7 +103,7 @@ class CalvinFSClientApp : public App {
     }
 
   }
-  static const int kMaxCapacity = 5;
+  static const int kMaxCapacity = 100;
 
   virtual void HandleMessage(Header* header, MessageBuffer* message) {
     // INTERNAL metadata lookup
@@ -630,11 +630,11 @@ void LatencyExperimentAppend() {
     Spin(1);
 
     double start = GetTime();
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 10000; i++) {
       int seed = rand() % 100;
       
       // Copy operations inside one data center
-      if (seed < 0) {
+      if (seed < 100) {
         BackgroundCopyFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/c" + IntToString(rand() % 1000),
                            "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));
       } else {
@@ -643,9 +643,9 @@ void LatencyExperimentAppend() {
                            "/a" + IntToString(machines_other_replicas[rand()%size_other_machines]) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));
       }
 
-      if (i % 10 == 0) {
+      if (i % 1000 == 0) {
         LOG(ERROR) << "[" << machine()->machine_id() << "] "
-                   << "Test progress : " << i / 10 << "/" << 10;
+                   << "Test progress : " << i / 1000 << "/" << 10;
       }    
     }
 
