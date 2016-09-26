@@ -189,7 +189,7 @@ LocalCalvinFS::LocalCalvinFS()
   scheduler_ = reinterpret_cast<Scheduler*>(machine_->GetApp("scheduler"));
 
   // Bind scheduler to store.
-  scheduler_->SetStore("metadata");
+  scheduler_->SetStore("metadata", 0);
 
   // Start log app.
   sap.set_app("LogApp");

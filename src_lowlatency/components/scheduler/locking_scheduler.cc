@@ -36,7 +36,6 @@ void LockingScheduler::MainLoopBody() {
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action: " << action->version()<<" distinct id is:"<<action->distinct_id();
 
     if (action->single_replica() == false) {
-      replica_ = store_->LocalReplica();
       set<uint32> involved_replicas;
       bool ignore = true;
       set<string> writeset;
@@ -77,7 +76,7 @@ void LockingScheduler::MainLoopBody() {
         // Finish this loop
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler ignore this txn: " << action->version()<<" distinct id is:"<<action->distinct_id();
         return;
-      } else if ((machine()->machine_id() == action->lowest_involved_machine()) && (action->create_new() == true) && (replica_ != action->origin()) && (involved_replicas.find(replica_) !=  involved_replicas.end())) {
+      } else if ((machine()->machine_id() == action->lowest_involved_machine()) && (action->create_new() == true) && (local_replica_ != action->origin()) && (involved_replicas.find(local_replica_) !=  involved_replicas.end())) {
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler Send a new action to sequencer: " << action->version()<<" distinct id is:"<<action->distinct_id();
         // Send a new action to sequencer
         Action* new_action = new Action();
@@ -138,17 +137,36 @@ void LockingScheduler::MainLoopBody() {
 
   // Process all actions that have finished running.
   while (completed_.Pop(&action)) {
-    // Release read locks.
-    for (int i = 0; i < action->readset_size(); i++) {
-      if (store_->IsLocal(action->readset(i))) {
-        lm_.Release(action, action->readset(i));
-      }
-    }
 
-    // Release write locks. (Okay to release a lock twice.)
-    for (int i = 0; i < action->writeset_size(); i++) {
-      if (store_->IsLocal(action->writeset(i))) {
-        lm_.Release(action, action->writeset(i));
+    if (action->single_replica() == false) {
+      // Release read locks.
+      for (int i = 0; i < action->readset_size(); i++) {
+        uint32 replica = store_->LookupReplicaByDir(action->readset(i));
+        if ((store_->IsLocal(action->readset(i))) && (replica == action->origin())) {
+          lm_.Release(action, action->readset(i));
+        }
+      }
+
+      // Release write locks. (Okay to release a lock twice.)
+      for (int i = 0; i < action->writeset_size(); i++) {
+        uint32 replica = store_->LookupReplicaByDir(action->writeset(i));
+        if ((store_->IsLocal(action->writeset(i))) && (replica == action->origin())) {
+          lm_.Release(action, action->writeset(i));
+        }
+      }
+    } else {
+      // Release read locks.
+      for (int i = 0; i < action->readset_size(); i++) {
+        if (store_->IsLocal(action->readset(i))) {
+          lm_.Release(action, action->readset(i));
+        }
+      }
+
+      // Release write locks. (Okay to release a lock twice.)
+      for (int i = 0; i < action->writeset_size(); i++) {
+        if (store_->IsLocal(action->writeset(i))) {
+          lm_.Release(action, action->writeset(i));
+        }
       }
     }
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":** scheduler finish running action: " << action->version()<<" distinct id is:"<<action->distinct_id();

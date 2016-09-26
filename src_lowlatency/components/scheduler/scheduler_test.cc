@@ -31,11 +31,11 @@ class SchedulerTest {
 
     // Bind scheduler to store.
     s_ = reinterpret_cast<Scheduler*>(m_.GetApp("scheduler"));
-    s_->SetStore("store");
+    s_->SetStore("store", 0);
   }
 
   void CannotResetStore() {
-    ASSERT_DEATH({ s_->SetStore("foo"); }, "");
+    ASSERT_DEATH({ s_->SetStore("foo", 0); }, "");
   }
 
   // TODO(agt): More tests!

@@ -111,7 +111,7 @@ int main(int argc, char** argv) {
   Spin(1);
 
   // Bind scheduler to store.
-  scheduler_->SetStore("metadata");
+  scheduler_->SetStore("metadata", FLAGS_machine_id / partitions);
 
   LOG(ERROR) << "[" << FLAGS_machine_id << "] bound Scheduler to MetadataStore";
   m.GlobalBarrier();

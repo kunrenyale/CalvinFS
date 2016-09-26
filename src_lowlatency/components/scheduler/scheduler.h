@@ -80,10 +80,11 @@ class Scheduler : public App {
   // to which the scheduler is bound cannot be unset or changed.
   //
   // Requires: machine()->HasApp(store_app_name)
-  void SetStore(const string& store_app_name) {
+  void SetStore(const string& store_app_name, const uint32& replica) {
     CHECK(store_ == NULL);
     CHECK(machine()->GetApp(store_app_name) != NULL);
     store_ = reinterpret_cast<StoreApp*>(machine()->GetApp(store_app_name));
+    local_replica_ = replica;
   }
 
  protected:
@@ -101,6 +102,8 @@ class Scheduler : public App {
 
   // Store on which this scheduler will schedule actions.
   StoreApp* store_;
+
+  uint32 local_replica_;
 };
 
 #endif  // CALVIN_COMPONENTS_SCHEDULER__SCHEDULER_H_
