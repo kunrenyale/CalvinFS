@@ -24,6 +24,8 @@
 using std::map;
 using std::set;
 using std::string;
+using std::pair;
+using std::make_pair;
 
 REGISTER_APP(MetadataStoreApp) {
   return new StoreApp(new MetadataStore(new HybridVersionedKVStore()));
@@ -210,7 +212,8 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
 
     // Figure out what machines are writers.
     writer_ = false;
-    set<uint64> remote_writers;
+    vector<pair<uint64, uint32>> remote_writers;
+    
     for (int i = 0; i < action->writeset_size(); i++) {
       uint64 mds = config_->HashFileName(action->writeset(i));
       uint64 machine = config_->LookupMetadataShard(mds, replica_);
@@ -218,7 +221,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
         writer_ = true;
       } else {
 LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext(add remote_writers):: version is:"<< version_<<"   data_channel_version:"<<data_channel_version<<"  config_->LookupReplicaByDir(TopDir(action->writeset(i))): "<<config_->LookupReplicaByDir(TopDir(action->writeset(i)))<<"  . However, origin is: "<<origin_;
-        remote_writers.insert(machine);
+        remote_writers.push_back(make_pair(machine, config_->LookupReplicaByDir(TopDir(action->writeset(i)))));
       }
     }
 
@@ -233,11 +236,11 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
       for (auto it = remote_writers.begin(); it != remote_writers.end(); ++it) {
         Header* header = new Header();
         header->set_from(machine_->machine_id());
-        header->set_to(*it);
+        header->set_to(it->first);
         header->set_type(Header::DATA);
-        header->set_data_channel("action-" + UInt64ToString(data_channel_version));
+        header->set_data_channel("action-" + UInt32ToString(it->second) + "-" + UInt64ToString(data_channel_version));
         machine_->SendMessage(header, new MessageBuffer(local_reads));
-LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext send local read:: version is:"<< version_<<"   data_channel_version:"<<data_channel_version<<"  to:"<<*it;
+LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext send local read:: version is:"<< version_<<"   data_channel_version:"<<data_channel_version<<"  to:"<<it->first;
       }
     }
 
@@ -245,7 +248,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
     if (writer_) {
       // Get channel.
       AtomicQueue<MessageBuffer*>* channel =
-          machine_->DataChannel("action-" + UInt64ToString(data_channel_version));
+          machine_->DataChannel("action-" + UInt32ToString(origin_) + "-" + UInt64ToString(data_channel_version));
       for (uint32 i = 0; i < remote_readers.size(); i++) {
         MessageBuffer* m = NULL;
         // Get results.
