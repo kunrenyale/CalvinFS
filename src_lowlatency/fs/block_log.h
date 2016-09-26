@@ -46,7 +46,7 @@ class SequenceSource : public Source<UInt64Pair*> {
       if (current_->pairs_size() == 0) {
         delete current_;
         current_ = NULL;
-//LOG(ERROR) <<"^^^^^^^^^SequenceSource wrong!!!";
+LOG(ERROR) <<"^^^^^^^^^SequenceSource wrong!!!";
       } else {
         index_ = 0;
         offset_ = current_->misc();
@@ -206,7 +206,7 @@ class BlockLogApp : public App {
       a->ParseFromArray((*message)[0].data(), (*message)[0].size());
       a->set_origin(replica_);
       queue_.Push(a);
-//LOG(ERROR) << "Machine: "<<machine()->machine_id() <<" =>Block log recevie a APPEND request. distinct id is:"<< a->distinct_id()<<" from machine:"<<header->from();
+LOG(ERROR) << "Machine: "<<machine()->machine_id() <<" =>Block log recevie a APPEND request. distinct id is:"<< a->distinct_id()<<" from machine:"<<header->from();
     } else if (header->rpc() == "BATCH") {
       // Write batch block to local block store.
       uint64 block_id = header->misc_int(0);
