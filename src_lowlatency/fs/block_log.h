@@ -244,7 +244,8 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() <<" =>Block log recevie a APP
         }
         
         lowest_involved_machine = *(recipients.begin());
-        Action tt = batch.entries(i);
+        Action tt;
+        tt.CopyFrom(batch.entries(i));
         tt.set_lowest_involved_machine(lowest_involved_machine);
 
         for (auto it = recipients.begin(); it != recipients.end(); ++it) {
@@ -384,7 +385,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() <<" =>Block log recevie a APP
       *a = subbatch_->mutable_entries()->ReleaseLast();
       (*a)->set_version(subbatch_version_ + (*a)->version_offset());
       (*a)->clear_version_offset();
-
+LOG(ERROR) <<"^^^^^^^^^ActionSource get a txn: distinct_id is: "<<(*a)->distinct_id();
       if (subbatch_->entries_size() == 0) {
         // Okay, NOW the batch is empty.
         delete subbatch_;

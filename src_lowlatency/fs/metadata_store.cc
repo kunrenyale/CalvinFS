@@ -192,7 +192,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
 
     // Figure out what machines are readers (and perform local reads).
     reader_ = false;
-    set<uint64> remote_readers;
+     set<pair<uint64, uint32>> remote_readers;
     for (int i = 0; i < action->readset_size(); i++) {
       uint64 mds = config_->HashFileName(action->readset(i));
       uint64 machine = config_->LookupMetadataShard(mds, replica_);
@@ -206,13 +206,13 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
         reader_ = true;
       } else {
 LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext(add remote_readers):: version is:"<< version_<<"   data_channel_version:"<<data_channel_version<<"  config_->LookupReplicaByDir(TopDir(action->readset(i)): "<<config_->LookupReplicaByDir(TopDir(action->readset(i)))<<"  . However, origin is: "<<origin_;
-        remote_readers.insert(machine);
+        remote_readers.insert(make_pair(machine, config_->LookupReplicaByDir(TopDir(action->readset(i)))));
       }
     }
 
     // Figure out what machines are writers.
     writer_ = false;
-    vector<pair<uint64, uint32>> remote_writers;
+    set<pair<uint64, uint32>> remote_writers;
     
     for (int i = 0; i < action->writeset_size(); i++) {
       uint64 mds = config_->HashFileName(action->writeset(i));
@@ -221,7 +221,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
         writer_ = true;
       } else {
 LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext(add remote_writers):: version is:"<< version_<<"   data_channel_version:"<<data_channel_version<<"  config_->LookupReplicaByDir(TopDir(action->writeset(i))): "<<config_->LookupReplicaByDir(TopDir(action->writeset(i)))<<"  . However, origin is: "<<origin_;
-        remote_writers.push_back(make_pair(machine, config_->LookupReplicaByDir(TopDir(action->writeset(i)))));
+        remote_writers.insert(make_pair(machine, config_->LookupReplicaByDir(TopDir(action->writeset(i)))));
       }
     }
 
