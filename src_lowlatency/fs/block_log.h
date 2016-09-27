@@ -232,6 +232,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() <<" =>Block log recevie a APP
       // Forward sub-batches to relevant readers (same replica only).
       map<uint64, ActionBatch> subbatches;
       for (int i = 0; i < batch.entries_size(); i++) {
+LOG(ERROR) << "Machine: "<<machine()->machine_id() <<" @@@@@Forward sub-batches to relevant readers. distinct id is:"<< batch.entries(i).distinct_id();
         set<uint64> recipients;
         uint64 lowest_involved_machine;
         for (int j = 0; j < batch.entries(i).readset_size(); j++) {
