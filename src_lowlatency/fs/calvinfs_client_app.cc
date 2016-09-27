@@ -260,6 +260,8 @@ MessageBuffer* CalvinFSClientApp::CopyFile(const Slice& from_path, const Slice& 
     usleep(100);
   }
 
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":^^^^^^^^ CalvinFSClientApp::CopyFile completed ^^^^^^  distinct id is:"<<action->distinct_id();
+
   Action result;
   result.ParseFromArray((*m)[0].data(), (*m)[0].size());
   delete m;
@@ -309,6 +311,8 @@ MessageBuffer* CalvinFSClientApp::RenameFile(const Slice& from_path, const Slice
     // Wait for action to complete and be sent back.
     usleep(100);
   }
+
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":^^^^^^^^ CalvinFSClientApp::RenameFile completed ^^^^^^  distinct id is:"<<action->distinct_id();
 
   Action result;
   result.ParseFromArray((*m)[0].data(), (*m)[0].size());
