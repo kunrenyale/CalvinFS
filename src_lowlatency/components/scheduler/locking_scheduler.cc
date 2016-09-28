@@ -25,6 +25,7 @@ REGISTER_APP(LockingScheduler) {
 
 void LockingScheduler::MainLoopBody() {
   Action* action;
+if (running_action_count_ >= 100)
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--In scheduler: running_action_count_ is: " << running_action_count_;
   // Start processing the next incoming action request.
   if (static_cast<int>(active_actions_.size()) < kMaxActiveActions &&
