@@ -47,11 +47,11 @@ class SequenceSource : public Source<UInt64Pair*> {
         delete current_;
         current_ = NULL;
 LOG(ERROR) <<"^^^^^^^^^SequenceSource wrong!!!";
-CHECK(1 == 2);
+
       } else {
         index_ = 0;
         offset_ = current_->misc();
-LOG(ERROR) <<"^^^^^^^^^SequenceSource get a sequence:"<< offset_ << " block_id is: "<<current_->pairs(0).first();
+//LOG(ERROR) <<"^^^^^^^^^SequenceSource get a sequence:"<< offset_ << " block_id is: "<<current_->pairs(0).first();
       }
     }
 
@@ -207,12 +207,12 @@ class BlockLogApp : public App {
       a->ParseFromArray((*message)[0].data(), (*message)[0].size());
       a->set_origin(replica_);
       queue_.Push(a);
-LOG(ERROR) << "Machine: "<<machine()->machine_id() <<" =>Block log recevie a APPEND request. distinct id is:"<< a->distinct_id()<<" from machine:"<<header->from();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id() <<" =>Block log recevie a APPEND request. distinct id is:"<< a->distinct_id()<<" from machine:"<<header->from();
     } else if (header->rpc() == "BATCH") {
       // Write batch block to local block store.
       uint64 block_id = header->misc_int(0);
       blocks_->Put(block_id, (*message)[0]);
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a BATCH request. block id is:"<< block_id <<" from machine:"<<header->from();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a BATCH request. block id is:"<< block_id <<" from machine:"<<header->from();
       // Parse batch.
       ActionBatch batch;
       batch.ParseFromArray((*message)[0].data(), (*message)[0].size());
@@ -233,7 +233,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a BA
       // Forward sub-batches to relevant readers (same replica only).
       map<uint64, ActionBatch> subbatches;
       for (int i = 0; i < batch.entries_size(); i++) {
-LOG(ERROR) << "Machine: "<<machine()->machine_id() <<" @@@@@Forward sub-batches to relevant readers. distinct id is:"<< batch.entries(i).distinct_id();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id() <<" @@@@@Forward sub-batches to relevant readers. distinct id is:"<< batch.entries(i).distinct_id();
         set<uint64> recipients;
         uint64 lowest_involved_machine;
         for (int j = 0; j < batch.entries(i).readset_size(); j++) {
@@ -272,13 +272,13 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() <<" @@@@@Forward sub-batches 
 
       uint64 count = header->misc_int(1);
       paxos_leader_->Append(block_id, count);
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log recevie a SUBMIT request. block id is:"<< block_id<<" from machine:"<<header->from();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log recevie a SUBMIT request. block id is:"<< block_id<<" from machine:"<<header->from();
     } else if (header->rpc() == "SUBBATCH") {
       uint64 block_id = header->misc_int(0);
       ActionBatch* batch = new ActionBatch();
       batch->ParseFromArray((*message)[0].data(), (*message)[0].size());
       subbatches_.Put(block_id, batch);
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log recevie a SUBBATCH request. block id is:"<< block_id<<" from machine:"<<header->from();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log recevie a SUBBATCH request. block id is:"<< block_id<<" from machine:"<<header->from();
     } else {
       LOG(FATAL) << "unknown RPC type: " << header->rpc();
     }
@@ -343,9 +343,8 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log recevie a SUBB
             subbatch_id_ = p->first();
             subbatch_version_ = p->second();
             delete p;
-LOG(ERROR) <<"*********Blocklog subbatch_id:"<< subbatch_id_ << " subbatch_version_ "<<subbatch_version_;
+//LOG(ERROR) <<"*********Blocklog subbatch_id:"<< subbatch_id_ << " subbatch_version_ "<<subbatch_version_;
           } else {
-//LOG(ERROR) <<"*********no available batch";
             return false;
           }
         }
@@ -356,13 +355,13 @@ LOG(ERROR) <<"*********Blocklog subbatch_id:"<< subbatch_id_ << " subbatch_versi
           // Have we received the subbatch corresponding to subbatch_id_?
           if (!log_->subbatches_.Lookup(subbatch_id_, &subbatch_)) {
             // Nope. Gotta try again later.
-LOG(ERROR) <<"*********Have we received the subbatch corresponding to subbatch_id_?";
+//LOG(ERROR) <<"*********Have we received the subbatch corresponding to subbatch_id_?";
             return false;
           } else {
             // Got the subbatch! Is it empty?
             if (subbatch_->entries_size() == 0) {
               // Doh, the batch was empty! Throw it away and keep looking.
-LOG(ERROR) <<"*********Doh, the batch was empty! Throw it away and keep looking.";
+//LOG(ERROR) <<"*********Doh, the batch was empty! Throw it away and keep looking.";
               delete subbatch_;
               log_->subbatches_.Erase(subbatch_id_);
               subbatch_ = NULL;
@@ -370,7 +369,7 @@ LOG(ERROR) <<"*********Doh, the batch was empty! Throw it away and keep looking.
             } else {
               // Okay, got a non-empty subbatch! Reverse the order of elements
               // so we can now repeatedly call ReleaseLast on the entries.
-LOG(ERROR) <<"*********Okay, got a non-empty subbatch! Reverse the order of elements.";
+//LOG(ERROR) <<"*********Okay, got a non-empty subbatch! Reverse the order of elements.";
               for (int i = 0; i < subbatch_->entries_size() / 2; i++) {
                 subbatch_->mutable_entries()->SwapElements(
                     i,
@@ -382,7 +381,7 @@ LOG(ERROR) <<"*********Okay, got a non-empty subbatch! Reverse the order of elem
           }
         } else {
           // Already had a good subbatch. Onward.
-LOG(ERROR) <<"*********Already had a good subbatch. Onward.";
+//LOG(ERROR) <<"*********Already had a good subbatch. Onward.";
           break;
         }
       }
@@ -392,7 +391,7 @@ LOG(ERROR) <<"*********Already had a good subbatch. Onward.";
       *a = subbatch_->mutable_entries()->ReleaseLast();
       (*a)->set_version(subbatch_version_ + (*a)->version_offset());
       (*a)->clear_version_offset();
-LOG(ERROR) <<"^^^^^^^^^ActionSource get a txn: distinct_id is: "<<(*a)->distinct_id();
+//LOG(ERROR) <<"^^^^^^^^^ActionSource get a txn: distinct_id is: "<<(*a)->distinct_id();
       if (subbatch_->entries_size() == 0) {
         // Okay, NOW the batch is empty.
         delete subbatch_;
