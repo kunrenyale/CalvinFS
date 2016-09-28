@@ -345,7 +345,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log recevie a SUBB
             delete p;
 LOG(ERROR) <<"*********Blocklog subbatch_id:"<< subbatch_id_ << " subbatch_version_ "<<subbatch_version_;
           } else {
-LOG(ERROR) <<"*********no available batch";
+//LOG(ERROR) <<"*********no available batch";
             return false;
           }
         }
