@@ -640,8 +640,10 @@ void LatencyExperimentAppend() {
     double start = GetTime();
     for (int i = 0; i < 10; i++) {
       for (int j = 0; j < 100; j++) {
-          BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(i) + "/c" + IntToString(j),
-                           "/a" + IntToString(rand() % machine()->config().size()) + "/b" + IntToString(i+1) + "/d" + IntToString(machine()->GetGUID())); 
+          int a1 = rand() % 1000;
+          int a2 = rand() % 1000;
+          BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a1) + "/c" + IntToString(j),
+                           "/a" + IntToString(rand() % machine()->config().size()) + "/b" + IntToString(a2) + "/d" + IntToString(machine()->GetGUID())); 
       }
 
       if (i % 10 == 0) {

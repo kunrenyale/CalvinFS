@@ -97,13 +97,17 @@ class CalvinFSClientApp : public App {
         break;
 
       case 9:
+        LatencyExperimentRenameFile();
+        break;
+
+      case 10:
         CrashExperiment();
         break;
 
     }
 
   }
-  static const int kMaxCapacity = 5;
+  static const int kMaxCapacity = 50;
 
   virtual void HandleMessage(Header* header, MessageBuffer* message) {
     // INTERNAL metadata lookup
@@ -634,7 +638,7 @@ void LatencyExperimentAppend() {
       int seed = rand() % 100;
       
       // Copy operations inside one data center
-      if (seed < 100) {
+      if (seed < 0) {
         BackgroundCopyFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/c" + IntToString(rand() % 1000),
                            "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));
       } else {
@@ -681,12 +685,17 @@ void LatencyExperimentAppend() {
         int seed = rand() % 100;
       
         // Copy operations inside one data center
-        if (seed < 100) {
-          BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(i) + "/c" + IntToString(j),
-                           "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(i+1) + "/d" + IntToString(machine()->GetGUID()));
+        if (seed < 0) {
+          int a1 = rand() % 1000;
+          int a2 = rand() % 1000;
+          while (a2 == a1) {
+            a2 = rand() % 1000;
+          }
+          BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a1) + "/c" + IntToString(j),
+                           "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a2) + "/d" + IntToString(machine()->GetGUID()));
         } else {
         // Copy operations that cross data centers
-          BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(i) + "/c" + IntToString(j),
+          BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/c" + IntToString(j),
                            "/a" + IntToString(machines_other_replicas[rand()%size_other_machines]) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));
         }      
       }
@@ -701,6 +710,64 @@ void LatencyExperimentAppend() {
     LOG(ERROR) << "[" << machine()->machine_id() << "] "
                << "Renamed " <<  "1000 files. Elapsed time: "
                << (GetTime() - start) << " seconds";
+  }
+
+void LatencyExperimentRenameFile() {
+    // Setup.
+    uint64 partitions_per_replica = config_->GetPartitionsPerReplica();
+    uint64 replicas_num = config_->GetReplicas();
+    vector<uint64> machines_other_replicas;      
+
+    for (uint64 i = 0; i < partitions_per_replica * replicas_num; i++) {
+      if (i/partitions_per_replica != replica_) {
+        machines_other_replicas.push_back(i);
+      }
+    }
+
+    uint64 size_other_machines = machines_other_replicas.size();
+
+    Spin(1);
+    metadata_->Init();
+    Spin(1);
+    machine()->GlobalBarrier();
+    Spin(1);
+
+    // Begin mix of operations.
+    reporting_ = true;
+    double start = GetTime();
+    for (int i = 0; i < 10; i++) {
+      for (int j = 0; j < 100; j++) {
+        int seed = rand() % 100;
+      
+        // Copy operations inside one data center
+        if (seed < 0) {
+          int a1 = rand() % 1000;
+          int a2 = rand() % 1000;
+          while (a2 == a1) {
+            a2 = rand() % 1000;
+          }
+          BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a1) + "/c" + IntToString(j),
+                           "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a2) + "/d" + IntToString(machine()->GetGUID()));
+        } else {
+        // Copy operations that cross data centers
+          BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/c" + IntToString(j),
+                           "/a" + IntToString(machines_other_replicas[rand()%size_other_machines]) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));
+        }      
+      }
+
+      if (i % 2 == 0) {
+        LOG(ERROR) << "[" << machine()->machine_id() << "] "
+                   << "Test progress : " << i / 2 << "/" << 5;
+      }
+    }
+
+    // Report.
+    LOG(ERROR) << "[" << machine()->machine_id() << "] "
+               << "Renamed " <<  "1000 files. Elapsed time: "
+               << (GetTime() - start) << " seconds";
+
+    // Write out latency reports.
+    Report();
   }
 
   void Report() {
