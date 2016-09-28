@@ -630,7 +630,7 @@ void LatencyExperimentAppend() {
     Spin(1);
 
     double start = GetTime();
-    for (int i = 0; i < 40; i++) {
+    for (int i = 0; i < 200; i++) {
       int seed = rand() % 100;
       
       // Copy operations inside one data center
