@@ -18,7 +18,7 @@ using std::atomic;
 class LockingScheduler : public Scheduler {
  private:
   static const int kMaxActiveActions = 1000;
-  static const int kMaxRunningActions = 400;
+  static const int kMaxRunningActions = 500;
 
  public:
   LockingScheduler()
