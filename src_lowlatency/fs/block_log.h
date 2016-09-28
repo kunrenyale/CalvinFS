@@ -345,6 +345,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log recevie a SUBB
             delete p;
 LOG(ERROR) <<"*********Blocklog subbatch_id:"<< subbatch_id_ << " subbatch_version_ "<<subbatch_version_;
           } else {
+LOG(ERROR) <<"*********no available batch";
             return false;
           }
         }
@@ -355,11 +356,13 @@ LOG(ERROR) <<"*********Blocklog subbatch_id:"<< subbatch_id_ << " subbatch_versi
           // Have we received the subbatch corresponding to subbatch_id_?
           if (!log_->subbatches_.Lookup(subbatch_id_, &subbatch_)) {
             // Nope. Gotta try again later.
+LOG(ERROR) <<"*********Have we received the subbatch corresponding to subbatch_id_?";
             return false;
           } else {
             // Got the subbatch! Is it empty?
             if (subbatch_->entries_size() == 0) {
               // Doh, the batch was empty! Throw it away and keep looking.
+LOG(ERROR) <<"*********Doh, the batch was empty! Throw it away and keep looking.";
               delete subbatch_;
               log_->subbatches_.Erase(subbatch_id_);
               subbatch_ = NULL;
@@ -367,6 +370,7 @@ LOG(ERROR) <<"*********Blocklog subbatch_id:"<< subbatch_id_ << " subbatch_versi
             } else {
               // Okay, got a non-empty subbatch! Reverse the order of elements
               // so we can now repeatedly call ReleaseLast on the entries.
+LOG(ERROR) <<"*********Okay, got a non-empty subbatch! Reverse the order of elements.";
               for (int i = 0; i < subbatch_->entries_size() / 2; i++) {
                 subbatch_->mutable_entries()->SwapElements(
                     i,
@@ -378,6 +382,7 @@ LOG(ERROR) <<"*********Blocklog subbatch_id:"<< subbatch_id_ << " subbatch_versi
           }
         } else {
           // Already had a good subbatch. Onward.
+LOG(ERROR) <<"*********Already had a good subbatch. Onward.";
           break;
         }
       }
