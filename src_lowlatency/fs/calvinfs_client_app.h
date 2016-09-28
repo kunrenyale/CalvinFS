@@ -103,7 +103,7 @@ class CalvinFSClientApp : public App {
     }
 
   }
-  static const int kMaxCapacity = 15;
+  static const int kMaxCapacity = 5;
 
   virtual void HandleMessage(Header* header, MessageBuffer* message) {
     // INTERNAL metadata lookup
@@ -634,7 +634,7 @@ void LatencyExperimentAppend() {
       int seed = rand() % 100;
       
       // Copy operations inside one data center
-      if (seed < 0) {
+      if (seed < 100) {
         BackgroundCopyFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/c" + IntToString(rand() % 1000),
                            "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));
       } else {
@@ -681,7 +681,7 @@ void LatencyExperimentAppend() {
         int seed = rand() % 100;
       
         // Copy operations inside one data center
-        if (seed < 0) {
+        if (seed < 100) {
           BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(i) + "/c" + IntToString(j),
                            "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(i+1) + "/d" + IntToString(machine()->GetGUID()));
         } else {
