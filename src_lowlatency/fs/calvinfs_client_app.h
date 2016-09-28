@@ -103,7 +103,7 @@ class CalvinFSClientApp : public App {
     }
 
   }
-  static const int kMaxCapacity = 50;
+  static const int kMaxCapacity = 5;
 
   virtual void HandleMessage(Header* header, MessageBuffer* message) {
     // INTERNAL metadata lookup
@@ -676,7 +676,7 @@ void LatencyExperimentAppend() {
     Spin(1);
 
     double start = GetTime();
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 10; i++) {
       for (int j = 0; j < 100; j++) {
         int seed = rand() % 100;
       
@@ -691,9 +691,9 @@ void LatencyExperimentAppend() {
         }      
       }
 
-      if (i % 10 == 0) {
+      if (i % 2 == 0) {
         LOG(ERROR) << "[" << machine()->machine_id() << "] "
-                   << "Test progress : " << i / 10 << "/" << 10;
+                   << "Test progress : " << i / 2 << "/" << 5;
       }
     }
 

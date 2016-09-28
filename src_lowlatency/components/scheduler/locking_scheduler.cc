@@ -27,7 +27,7 @@ void LockingScheduler::MainLoopBody() {
   Action* action;
 //if (running_action_count_ >= 500)
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--In scheduler: running_action_count_ is: " << running_action_count_;
-CHECK(running_action_count_ < 500);
+CHECK(running_action_count_ < 100);
   // Start processing the next incoming action request.
   if (static_cast<int>(active_actions_.size()) < kMaxActiveActions &&
       running_action_count_ < kMaxRunningActions &&
@@ -35,7 +35,7 @@ CHECK(running_action_count_ < 500);
     high_water_mark_ = action->version();
     active_actions_.insert(action->version());
     int ungranted_requests = 0;
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action: " << action->version()<<" distinct id is:"<<action->distinct_id();
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action: " << action->version()<<" distinct id is:"<<action->distinct_id();
 
     if (action->single_replica() == false) {
       set<uint32> involved_replicas;
