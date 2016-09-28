@@ -638,7 +638,7 @@ void LatencyExperimentAppend() {
     Spin(1);
 
     double start = GetTime();
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 10; i++) {
       for (int j = 0; j < 100; j++) {
           BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(i) + "/c" + IntToString(j),
                            "/a" + IntToString(rand() % machine()->config().size()) + "/b" + IntToString(i+1) + "/d" + IntToString(machine()->GetGUID())); 
