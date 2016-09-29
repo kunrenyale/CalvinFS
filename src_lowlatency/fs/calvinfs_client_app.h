@@ -151,7 +151,8 @@ class CalvinFSClientApp : public App {
     // Callback for recording latency stats
     } else if (header->rpc() == "CB") {
       double end = GetTime();
-      string category = header->misc_string(1);
+      int misc_size = header->misc_string_size();
+      string category = header->misc_string(misc_size-1);
       if (category == "cat") {
         if ((*message)[0] == "metadata lookup error\n") {
           latencies_["cat0"]->Push(
