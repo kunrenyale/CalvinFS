@@ -27,7 +27,7 @@ void LockingScheduler::MainLoopBody() {
   Action* action;
 //if (running_action_count_ >= 500)
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--In scheduler: running_action_count_ is: " << running_action_count_;
-CHECK(running_action_count_ < 2000);
+CHECK(running_action_count_ < 1000);
 CHECK(active_actions_.size() < 1000);
   // Start processing the next incoming action request.
   if (static_cast<int>(active_actions_.size()) < kMaxActiveActions &&
