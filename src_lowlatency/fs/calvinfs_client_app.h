@@ -736,7 +736,7 @@ void LatencyExperimentRenameFile() {
     // Begin mix of operations.
     reporting_ = true;
     double start = GetTime();
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 1; i++) {
       for (int j = 0; j < 100; j++) {
         int seed = rand() % 100;
       
