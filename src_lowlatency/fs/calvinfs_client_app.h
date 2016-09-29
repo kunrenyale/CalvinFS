@@ -107,7 +107,7 @@ class CalvinFSClientApp : public App {
     }
 
   }
-  static const int kMaxCapacity = 300;
+  static const int kMaxCapacity = 250;
 
   virtual void HandleMessage(Header* header, MessageBuffer* message) {
     // INTERNAL metadata lookup
@@ -936,7 +936,7 @@ void LatencyExperimentRenameFile() {
     header->set_rpc("RENAME_FILE");
     header->add_misc_string(from_path.data(), from_path.size());
     header->add_misc_string(to_path.data(), to_path.size());
-    if (reporting_ && rand() % 10 == 0) {
+    if (reporting_ && rand() % 5 == 0) {
       header->set_callback_app(name());
       header->set_callback_rpc("CB");
       header->add_misc_string("rename");
