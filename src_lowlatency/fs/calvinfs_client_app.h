@@ -107,7 +107,7 @@ class CalvinFSClientApp : public App {
     }
 
   }
-  static const int kMaxCapacity = 150;
+  static const int kMaxCapacity = 1000;
 
   virtual void HandleMessage(Header* header, MessageBuffer* message) {
     // INTERNAL metadata lookup
