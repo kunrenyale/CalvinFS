@@ -687,7 +687,7 @@ void LatencyExperimentAppend() {
         int seed = rand() % 100;
       
         // Copy operations inside one data center
-        if (seed < 0) {
+        if (seed < 90) {
           int a1 = rand() % 1000;
           int a2 = rand() % 1000;
           while (a2 == a1) {
