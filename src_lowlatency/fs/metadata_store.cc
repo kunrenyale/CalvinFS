@@ -13,6 +13,7 @@
 #include "components/store/store_app.h"
 #include "components/store/versioned_kvstore.pb.h"
 #include "components/store/hybrid_versioned_kvstore.h"
+#include "components/store/btreestore.h"
 #include "machine/app/app.h"
 #include "machine/machine.h"
 #include "machine/message_buffer.h"
