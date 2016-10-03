@@ -18,6 +18,7 @@ DEFINE_int32(experiment, 0, "the experiment that you want to run");
 DEFINE_int32(clients, 20, "number of concurrent clients on each machine");
 DEFINE_int32(max_active, 1000, "max active actions for locking scheduler");
 DEFINE_int32(max_running, 100, "max running actions for locking scheduler");
+DEFINE_int32(local_percentage, 100, "percentage of actions that are local replica");
 DEFINE_bool(valgrind, false, "Run binaries with valgrind?");
 
 int main(int argc, char** argv) {
@@ -38,7 +39,7 @@ int main(int argc, char** argv) {
     cm.GetTempFiles("report.");
 
   } else if (FLAGS_command == "start") {
-    cm.DeployCluster(GetTime() + 10, FLAGS_experiment, FLAGS_clients, FLAGS_max_active, FLAGS_max_running);
+    cm.DeployCluster(GetTime() + 10, FLAGS_experiment, FLAGS_clients, FLAGS_max_active, FLAGS_max_running, FLAGS_local_percentage);
 
   } else if (FLAGS_command == "kill") {
     cm.KillCluster();

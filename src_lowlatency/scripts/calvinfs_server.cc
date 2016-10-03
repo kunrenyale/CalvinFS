@@ -31,6 +31,7 @@ DEFINE_int32(experiment, 0, "experiment that you want to run");
 DEFINE_int32(clients, 20, "number of concurrent clients on each machine");
 DEFINE_int32(max_active, 1000, "max active actions for locking scheduler");
 DEFINE_int32(max_running, 100, "max running actions for locking scheduler");
+DEFINE_int32(local_percentage, 100, "percentage of actions that are local replica");
 
 int main(int argc, char** argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
@@ -150,7 +151,7 @@ int main(int argc, char** argv) {
   reinterpret_cast<CalvinFSClientApp*>(m.GetApp("client"))
       ->set_start_time(FLAGS_time);
   reinterpret_cast<CalvinFSClientApp*>(m.GetApp("client"))
-      ->set_experiment(FLAGS_experiment, FLAGS_clients); 
+      ->set_experiment(FLAGS_experiment, FLAGS_clients, FLAGS_local_percentage); 
 
   while (!m.Stopped()) {
     usleep(10000);

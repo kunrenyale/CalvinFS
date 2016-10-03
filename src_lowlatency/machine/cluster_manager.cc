@@ -111,7 +111,7 @@ void ClusterManager::Update() {
   threads.clear();
 }
 
-void ClusterManager::DeployCluster(double time, int experiment, int clients, int max_active, int max_running) {
+void ClusterManager::DeployCluster(double time, int experiment, int clients, int max_active, int max_running, int local_percentage) {
   vector<pthread_t> threads;
   // Now ssh into all machines and start 'binary' running.
   for (map<uint64, MachineInfo>::const_iterator it =
@@ -124,7 +124,7 @@ void ClusterManager::DeployCluster(double time, int experiment, int clients, int
          "  'cd " + calvin_path_ + "; " + " bin/scripts/" + binary_ +
          " --machine_id=" + IntToString(it->second.id()) +
          "  --config=" + config_file_ + " --time=" + DoubleToString(time) + " --experiment=" + IntToString(experiment) + " --clients=" + IntToString(clients) +
-         " --max_active=" + IntToString(max_active) + " --max_running=" + IntToString(max_running) + " ' &");
+         " --max_active=" + IntToString(max_active) + " --max_running=" + IntToString(max_running) + " --local_percentage=" + IntToString(local_percentage) + " ' &");
 
     pthread_create(
         &threads[threads.size()-1],

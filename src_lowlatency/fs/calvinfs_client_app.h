@@ -75,11 +75,11 @@ class CalvinFSClientApp : public App {
         break;
 
       case 3:
-        CopyExperiment();
+        CopyExperiment(local_percentage);
         break;
 
       case 4:
-        RenameExperiment();
+        RenameExperiment(local_percentage);
         break;
 
       case 5:
@@ -99,7 +99,7 @@ class CalvinFSClientApp : public App {
         break;
 
       case 9:
-        LatencyExperimentRenameFile();
+        LatencyExperimentRenameFile(local_percentage);
         break;
 
       case 10:
@@ -616,7 +616,7 @@ void LatencyExperimentAppend() {
   }
 
 
-  void CopyExperiment() {
+  void CopyExperiment(int local_percentage) {
     uint64 partitions_per_replica = config_->GetPartitionsPerReplica();
     uint64 replicas_num = config_->GetReplicas();
     vector<uint64> machines_other_replicas;      
@@ -640,7 +640,7 @@ void LatencyExperimentAppend() {
       int seed = rand() % 100;
       
       // Copy operations inside one data center
-      if (seed < 0) {
+      if (seed < local_percentage) {
         BackgroundCopyFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/c" + IntToString(rand() % 1000),
                            "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));
       } else {
@@ -667,7 +667,7 @@ void LatencyExperimentAppend() {
     
   }
 
-  void RenameExperiment() {
+  void RenameExperiment(int local_percentage) {
     uint64 partitions_per_replica = config_->GetPartitionsPerReplica();
     uint64 replicas_num = config_->GetReplicas();
     vector<uint64> machines_other_replicas;      
@@ -692,7 +692,7 @@ void LatencyExperimentAppend() {
         int seed = rand() % 100;
       
         // Copy operations inside one data center
-        if (seed < 90) {
+        if (seed < local_percentage) {
           int a1 = rand() % 1000;
           int a2 = rand() % 1000;
           while (a2 == a1) {
@@ -724,7 +724,7 @@ void LatencyExperimentAppend() {
                << (GetTime() - start) << " seconds";
   }
 
-void LatencyExperimentRenameFile() {
+void LatencyExperimentRenameFile(int local_percentage) {
     // Setup.
     uint64 partitions_per_replica = config_->GetPartitionsPerReplica();
     uint64 replicas_num = config_->GetReplicas();
@@ -752,7 +752,7 @@ void LatencyExperimentRenameFile() {
         int seed = rand() % 100;
       
         // Copy operations inside one data center
-        if (seed < 0) {
+        if (seed < local_percentage) {
           int a1 = rand() % 1000;
           int a2 = rand() % 1000;
           while (a2 == a1) {
@@ -977,9 +977,10 @@ void LatencyExperimentRenameFile() {
   void set_start_time(double t) { start_time_ = t; }
   double start_time_;
 
-  void set_experiment(int e, int c) {experiment = e; kMaxCapacity = c;}
+  void set_experiment(int e, int c, int l) {experiment = e; kMaxCapacity = c; local_percentage = l;}
   int experiment;
   int kMaxCapacity;
+  int local_percentage;
 
   atomic<int> action_count_;
   atomic<int> capacity_;
