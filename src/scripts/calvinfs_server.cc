@@ -28,6 +28,7 @@ DEFINE_string(config, "calvin.conf", "conf file of Calvin cluster");
 DEFINE_int32(machine_id, 0, "machine id");
 DEFINE_double(time, 0, "start time");
 DEFINE_int32(experiment, 0, "experiment that you want to run");
+DEFINE_int32(clients, 20, "number of concurrent clients on each machine");
 
 int main(int argc, char** argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
@@ -145,7 +146,7 @@ int main(int argc, char** argv) {
   reinterpret_cast<CalvinFSClientApp*>(m.GetApp("client"))
       ->set_start_time(FLAGS_time);
   reinterpret_cast<CalvinFSClientApp*>(m.GetApp("client"))
-      ->set_experiment(FLAGS_experiment); 
+      ->set_experiment(FLAGS_experiment, FLAGS_clients); 
 
   while (!m.Stopped()) {
     usleep(10000);

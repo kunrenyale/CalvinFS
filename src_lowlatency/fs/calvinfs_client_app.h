@@ -22,7 +22,7 @@ using std::make_pair;
 class CalvinFSClientApp : public App {
  public:
   CalvinFSClientApp()
-      : capacity_(kMaxCapacity), go_(true), going_(false), reporting_(false) {
+      : go_(true), going_(false), reporting_(false) {
   }
   virtual ~CalvinFSClientApp() {
     go_ = false;
@@ -58,6 +58,8 @@ class CalvinFSClientApp : public App {
            reinterpret_cast<StoreApp*>(machine()->GetApp("metadata"))->store());
 
     Spin(1);
+
+    capacity_ = kMaxCapacity;
 
     switch(experiment) {
       case 0:
@@ -107,7 +109,6 @@ class CalvinFSClientApp : public App {
     }
 
   }
-  static const int kMaxCapacity = 800;
 
   virtual void HandleMessage(Header* header, MessageBuffer* message) {
     // INTERNAL metadata lookup
@@ -961,8 +962,9 @@ void LatencyExperimentRenameFile() {
   void set_start_time(double t) { start_time_ = t; }
   double start_time_;
 
-  void set_experiment(int e) {experiment = e;}
+  void set_experiment(int e, int c) {experiment = e; kMaxCapacity = c;}
   int experiment;
+  int kMaxCapacity;
 
   atomic<int> action_count_;
   atomic<int> capacity_;

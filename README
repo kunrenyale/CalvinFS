@@ -44,7 +44,7 @@ $ cd ~/CalvinFS
 $ bin/scripts/cluster --command="status"  // Check the status of the cluster
 $ bin/scripts/cluster --command="update"  // Use git to get the latest code, and compile it on each machine 
 $ bin/scripts/cluster --command="put-config" // Send the config file to all the machines in the cluster
-$ bin/scripts/cluster --command="start" --experiment=0  // Start the CalvinFS cluster, and run experiments.
+$ bin/scripts/cluster --command="start" --experiment=0  --clients=100 // Start the CalvinFS cluster, and run experiments. --experiments: specify which experiment you want to run; --clients: How many concurrent clients generated on each meachine
 $ bin/scripts/cluster --command="get-data"  // Get experiments result if you enable reporting, it will copy result to the data/ directory. Right now, it is used to get latency results. 
 $ bin/scripts/cluster --command="kill"   // Stop the CalvinFS cluster
 

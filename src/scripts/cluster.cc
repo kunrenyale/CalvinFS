@@ -15,6 +15,7 @@ DEFINE_string(ssh_key1, "-i ~/Virginia.pem", "ssh_key for the first data center(
 DEFINE_string(ssh_key2, "-i ~/Oregon.pem", "ssh_key for the second data center(Oregon)");
 DEFINE_string(ssh_key3, "-i ~/Ireland.pem", "ssh_key for the third data center(Ireland)");
 DEFINE_int32(experiment, 0, "the experiment that you want to run");
+DEFINE_int32(clients, 20, "number of concurrent clients on each machine");
 DEFINE_bool(valgrind, false, "Run binaries with valgrind?");
 
 int main(int argc, char** argv) {
@@ -35,7 +36,7 @@ int main(int argc, char** argv) {
     cm.GetTempFiles("report.");
 
   } else if (FLAGS_command == "start") {
-    cm.DeployCluster(GetTime() + 10, FLAGS_experiment);
+    cm.DeployCluster(GetTime() + 10, FLAGS_experiment, FLAGS_clients);
 
   } else if (FLAGS_command == "kill") {
     cm.KillCluster();
