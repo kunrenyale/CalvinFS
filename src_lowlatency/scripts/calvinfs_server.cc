@@ -29,6 +29,8 @@ DEFINE_int32(machine_id, 0, "machine id");
 DEFINE_double(time, 0, "start time");
 DEFINE_int32(experiment, 0, "experiment that you want to run");
 DEFINE_int32(clients, 20, "number of concurrent clients on each machine");
+DEFINE_int32(max_active, 1000, "max active actions for locking scheduler");
+DEFINE_int32(max_running, 100, "max running actions for locking scheduler");
 
 int main(int argc, char** argv) {
   google::ParseCommandLineFlags(&argc, &argv, true);
@@ -112,6 +114,7 @@ int main(int argc, char** argv) {
   Spin(1);
 
   // Bind scheduler to store.
+  scheduler_->SetParameters(FLAGS_max_active, FLAGS_max_running);
   scheduler_->SetStore("metadata", FLAGS_machine_id / partitions);
 
   LOG(ERROR) << "[" << FLAGS_machine_id << "] bound Scheduler to MetadataStore";

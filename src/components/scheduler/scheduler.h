@@ -39,6 +39,7 @@ class Scheduler : public App {
 
   // Start() repeatedly executes the scheduler's MainLoopBody.
   virtual void Start() {
+    Spin(0.01);
     going_ = true;
     while (go_.load()) {
       MainLoopBody();
@@ -86,6 +87,11 @@ class Scheduler : public App {
     store_ = reinterpret_cast<StoreApp*>(machine()->GetApp(store_app_name));
   }
 
+  void SetParameters(int a, int b) {
+    kMaxActiveActions = a;
+    kMaxRunningActions = b;
+  }
+
  protected:
   // True iff main thread SHOULD run.
   std::atomic<bool> go_;
@@ -101,6 +107,9 @@ class Scheduler : public App {
 
   // Store on which this scheduler will schedule actions.
   StoreApp* store_;
+
+  int kMaxActiveActions;
+  int kMaxRunningActions;
 };
 
 #endif  // CALVIN_COMPONENTS_SCHEDULER__SCHEDULER_H_
