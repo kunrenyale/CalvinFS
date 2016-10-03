@@ -626,6 +626,11 @@ void LatencyExperimentAppend() {
       }
     }
 
+    // Wait for all operations to finish.
+    while (capacity_.load() < kMaxCapacity) {
+      usleep(10);
+    }
+
     // Report.
     LOG(ERROR) << "[" << machine()->machine_id() << "] "
                << "Copyed " <<  "1000 files. Elapsed time: "
@@ -652,6 +657,11 @@ void LatencyExperimentAppend() {
         LOG(ERROR) << "[" << machine()->machine_id() << "] "
                    << "Test progress : " << i / 10 << "/" << 10;
       }
+    }
+
+    // Wait for all operations to finish.
+    while (capacity_.load() < kMaxCapacity) {
+      usleep(10);
     }
 
     // Report.
