@@ -949,7 +949,7 @@ void LatencyExperimentRenameFile(int local_percentage) {
     header->set_rpc("RENAME_FILE");
     header->add_misc_string(from_path.data(), from_path.size());
     header->add_misc_string(to_path.data(), to_path.size());
-    if (reporting_ && rand() % 5 == 0) {
+    if (reporting_ && rand() % 2 == 0) {
       header->set_callback_app(name());
       header->set_callback_rpc("CB");
       header->add_misc_string("rename");
