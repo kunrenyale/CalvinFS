@@ -31,7 +31,7 @@ message Header {
     LOW = 0;
     HIGH = 1;
   }
-  optional Priority priority = 13 [default = LOW];
+  optional Priority priority = 13 [default = HIGH];
 
   // Optional for RPC requests (should NOT appear for CALLBACK invocations):
   //
