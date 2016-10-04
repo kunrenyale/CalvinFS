@@ -140,8 +140,8 @@ void SubPool::HandleMessage(Header* header, MessageBuffer* message) {
 SubPool::SubPool(MessageHandler* handler, int priority) {
   handler_ = handler;
   priority_ = priority;
-  min_idle_ = 8;
-  max_idle_ = 24;
+  min_idle_ = 200;
+  max_idle_ = 400;
   thread_count_ = min_idle_;
   idle_thread_count_ = 0;
   assigned_thread_count_ = thread_count_;
@@ -308,7 +308,7 @@ void* ThreadPool::MonitorThread(void* arg) {
       }
       high->Resize_thread_count(high->Thread_count() + add_thread_count);
       high->assigned_thread_count_ += add_thread_count;
-LOG(ERROR) << ":------------ Need to create more threads, now is: " << high->assigned_thread_count_;
+//LOG(ERROR) << ":------------ Need to create more threads, now is: " << high->assigned_thread_count_;
     } else if (high->idle_thread_count_ > high->max_idle_) {
       // Need to delete some threads
       int delete_thread_count = 2;
@@ -323,7 +323,7 @@ LOG(ERROR) << ":------------ Need to create more threads, now is: " << high->ass
         high->stopped_.erase(deleted_thread);
       }
       high->Resize_thread_count(high->thread_count_ - delete_thread_count);
-LOG(ERROR) << ":------------ Need to delete some threads, now is: " << high->thread_count_ - delete_thread_count;
+//LOG(ERROR) << ":------------ Need to delete some threads, now is: " << high->thread_count_ - delete_thread_count;
     }
 
     // Check low priority threads
