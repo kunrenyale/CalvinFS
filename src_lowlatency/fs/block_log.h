@@ -119,7 +119,7 @@ class BlockLogApp : public App {
     going_ = true;
     while (go_.load()) {
       // Create new batch once per epoch.
-      double next_epoch = GetTime() + 0.005;
+      double next_epoch = GetTime() + 0.01;
 
       // Create batch (iff there are any pending requests).
       int count = queue_.Size();
