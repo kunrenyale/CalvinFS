@@ -73,14 +73,14 @@ void LockingScheduler::MainLoopBody() {
         }
       }
 
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler after lock: " << action->version()<<" distinct id is:"<<action->distinct_id()<<"  create_new():"<<action->create_new()<<"  LocalReplica is:"<<store_->LocalReplica()<<"   action->origin() is: "<<action->origin()<<"  .action->lowest_involved_machine() is:"<<action->lowest_involved_machine();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler after lock: " << action->version()<<" distinct id is:"<<action->distinct_id()<<"  create_new():"<<action->create_new()<<"  LocalReplica is:"<<store_->LocalReplica()<<"   action->origin() is: "<<action->origin()<<"  .action->lowest_involved_machine() is:"<<action->lowest_involved_machine();
 
       if (ignore == true) {
         // Finish this loop
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler ignore this txn: " << action->version()<<" distinct id is:"<<action->distinct_id();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler ignore this txn: " << action->version()<<" distinct id is:"<<action->distinct_id();
         return;
       } else if ((machine()->machine_id() == action->lowest_involved_machine()) && (action->create_new() == true) && (local_replica_ != action->origin()) && (involved_replicas.find(local_replica_) !=  involved_replicas.end())) {
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler Send a new action to sequencer: " << action->version()<<" distinct id is:"<<action->distinct_id();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler Send a new action to sequencer: " << action->version()<<" distinct id is:"<<action->distinct_id();
         // Send a new action to sequencer
         Action* new_action = new Action();
         new_action->CopyFrom(*action);
@@ -134,7 +134,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler Sen
     if (ungranted_requests == 0) {
       running_action_count_++;
       store_->RunAsync(action, &completed_);
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ store_->RunAsync(action, &completed_): " << action->version()<<" distinct id is:"<<action->distinct_id();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ store_->RunAsync(action, &completed_): " << action->version()<<" distinct id is:"<<action->distinct_id();
     }
   }
 
@@ -172,7 +172,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ store_->RunAs
         }
       }
     }
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":** scheduler finish running action: " << action->version()<<" distinct id is:"<<action->distinct_id();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":** scheduler finish running action: " << action->version()<<" distinct id is:"<<action->distinct_id();
     active_actions_.erase(action->version());
     running_action_count_--;
     safe_version_.store(

@@ -687,30 +687,29 @@ void LatencyExperimentAppend() {
     Spin(1);
 
     double start = GetTime();
-    for (int i = 0; i < 10; i++) {
-      for (int j = 0; j < 100; j++) {
-        int seed = rand() % 100;
+
+    for (int j = 0; j < 100; j++) {
+      int seed = rand() % 100;
       
-        // Copy operations inside one data center
-        if (seed < local_percentage) {
-          int a1 = rand() % 1000;
-          int a2 = rand() % 1000;
-          while (a2 == a1) {
-            a2 = rand() % 1000;
-          }
-          BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a1) + "/c" + IntToString(j),
-                           "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a2) + "/d" + IntToString(machine()->GetGUID()));
-        } else {
+      // Copy operations inside one data center
+      if (seed < local_percentage) {
+        int a1 = rand() % 1000;
+        int a2 = rand() % 1000;
+        while (a2 == a1) {
+          a2 = rand() % 1000;
+        }
+        BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a1) + "/c" + IntToString(j),
+                             "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a2) + "/d" + IntToString(machine()->GetGUID()));
+      } else {
         // Copy operations that cross data centers
-          BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/c" + IntToString(j),
-                           "/a" + IntToString(machines_other_replicas[rand()%size_other_machines]) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));
-        }      
+        BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/c" + IntToString(j),
+                             "/a" + IntToString(machines_other_replicas[rand()%size_other_machines]) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));
       }
 
-      if (i % 2 == 0) {
+      if (j % 200 == 0) {
         LOG(ERROR) << "[" << machine()->machine_id() << "] "
-                   << "Test progress : " << i / 2 << "/" << 5;
-      }
+                   << "Test progress : " << i / 200 << "/" << 5;
+      }    
     }
 
     // Wait for all operations to finish.
