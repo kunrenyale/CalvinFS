@@ -688,7 +688,7 @@ void LatencyExperimentAppend() {
 
     double start = GetTime();
 
-    for (int j = 0; j < 100; j++) {
+    for (int j = 0; j < 500; j++) {
       int seed = rand() % 100;
       
       // Copy operations inside one data center
@@ -706,9 +706,9 @@ void LatencyExperimentAppend() {
                              "/a" + IntToString(machines_other_replicas[rand()%size_other_machines]) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));
       }
 
-      if (j % 200 == 0) {
+      if (j % 100 == 0) {
         LOG(ERROR) << "[" << machine()->machine_id() << "] "
-                   << "Test progress : " << j / 200 << "/" << 5;
+                   << "Test progress : " << j / 100 << "/" << 5;
       }    
     }
 
@@ -719,7 +719,7 @@ void LatencyExperimentAppend() {
 
     // Report.
     LOG(ERROR) << "[" << machine()->machine_id() << "] "
-               << "Renamed " <<  "1000 files. Elapsed time: "
+               << "Renamed " <<  "500 files. Elapsed time: "
                << (GetTime() - start) << " seconds";
   }
 
@@ -746,7 +746,7 @@ void LatencyExperimentRenameFile(int local_percentage) {
     // Begin mix of operations.
     reporting_ = true;
     double start = GetTime();
-    for (int j = 0; j < 1000; j++) {
+    for (int j = 0; j < 500; j++) {
       int seed = rand() % 100;
       
       // Copy operations inside one data center
@@ -764,9 +764,9 @@ void LatencyExperimentRenameFile(int local_percentage) {
                            "/a" + IntToString(machines_other_replicas[rand()%size_other_machines]) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));
         }     
 
-        if (j % 200 == 0) {
+        if (j % 100 == 0) {
           LOG(ERROR) << "[" << machine()->machine_id() << "] "
-                   << "Test progress : " << j / 200 << "/" << 5;
+                   << "Test progress : " << j / 100 << "/" << 5;
         } 
     }
 
@@ -777,7 +777,7 @@ void LatencyExperimentRenameFile(int local_percentage) {
 
     // Report.
     LOG(ERROR) << "[" << machine()->machine_id() << "] "
-               << "Renamed " <<  "1000 files. Elapsed time: "
+               << "Renamed " <<  "500 files. Elapsed time: "
                << (GetTime() - start) << " seconds";
 
     // Write out latency reports.

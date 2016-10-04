@@ -645,13 +645,12 @@ void LatencyExperimentAppend() {
     Spin(1);
 
     double start = GetTime();
-    for (int i = 0; i < 10; i++) {
-      for (int j = 0; j < 100; j++) {
-          int a1 = rand() % 1000;
-          int a2 = rand() % 1000;
-          BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a1) + "/c" + IntToString(j),
+
+    for (int j = 0; j < 500; j++) {
+      int a1 = rand() % 1000;
+      int a2 = rand() % 1000;
+      BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a1) + "/c" + IntToString(j),
                            "/a" + IntToString(rand() % machine()->config().size()) + "/b" + IntToString(a2) + "/d" + IntToString(machine()->GetGUID())); 
-      }
 
       if (i % 10 == 0) {
         LOG(ERROR) << "[" << machine()->machine_id() << "] "
@@ -666,7 +665,7 @@ void LatencyExperimentAppend() {
 
     // Report.
     LOG(ERROR) << "[" << machine()->machine_id() << "] "
-               << "Renamed " <<  "10000 files. Elapsed time: "
+               << "Renamed " <<  "500 files. Elapsed time: "
                << (GetTime() - start) << " seconds";
   }
 
