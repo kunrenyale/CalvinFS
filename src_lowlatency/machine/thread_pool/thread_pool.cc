@@ -140,8 +140,8 @@ void SubPool::HandleMessage(Header* header, MessageBuffer* message) {
 SubPool::SubPool(MessageHandler* handler, int priority) {
   handler_ = handler;
   priority_ = priority;
-  min_idle_ = 8;
-  max_idle_ = 24;
+  min_idle_ = 16;
+  max_idle_ = 32;
   thread_count_ = min_idle_;
   idle_thread_count_ = 0;
   assigned_thread_count_ = thread_count_;
