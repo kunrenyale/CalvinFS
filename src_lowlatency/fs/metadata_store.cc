@@ -810,6 +810,7 @@ void MetadataStore::Copy_Internal(
     // File doesn't exist!
     out->set_success(false);
     out->add_errors(MetadataAction::FileDoesNotExist);
+    return;
   }
 
   string parent_to_path = ParentDir(in.to_path());
@@ -818,6 +819,7 @@ void MetadataStore::Copy_Internal(
     // File doesn't exist!
     out->set_success(false);
     out->add_errors(MetadataAction::FileDoesNotExist);
+    return;
   }
 
   // If file already exists, fail.
@@ -852,6 +854,7 @@ void MetadataStore::Rename_Internal(
     // File doesn't exist!
     out->set_success(false);
     out->add_errors(MetadataAction::FileDoesNotExist);
+    return;
   }
 //LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (after context->GetEntry(in.from_path(), &from_entry))*******";
   string parent_from_path = ParentDir(in.from_path());
@@ -860,6 +863,7 @@ void MetadataStore::Rename_Internal(
     // File doesn't exist!
     out->set_success(false);
     out->add_errors(MetadataAction::FileDoesNotExist);
+    return;
   }
 //LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (after context->GetEntry(parent_from_path, &parent_from_entry))*******";
   string parent_to_path = ParentDir(in.to_path());
@@ -868,6 +872,7 @@ void MetadataStore::Rename_Internal(
     // File doesn't exist!
     out->set_success(false);
     out->add_errors(MetadataAction::FileDoesNotExist);
+    return;
   }
 //LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (after context->GetEntry(parent_to_path, &parent_to_entry))*******";
   // If file already exists, fail.
@@ -902,7 +907,7 @@ void MetadataStore::Rename_Internal(
 
       // Write updated parent entry.
       context->PutEntry(parent_from_path, parent_from_entry);
-      return;
+      break;
     }
   }
 //LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Rename_Internal (after // Update from_parent(Find file and remove it from parent directory.))*******";  

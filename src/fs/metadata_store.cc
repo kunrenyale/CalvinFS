@@ -729,6 +729,7 @@ void MetadataStore::Copy_Internal(
     // File doesn't exist!
     out->set_success(false);
     out->add_errors(MetadataAction::FileDoesNotExist);
+    return;
   }
 
   string parent_to_path = ParentDir(in.to_path());
@@ -737,6 +738,7 @@ void MetadataStore::Copy_Internal(
     // File doesn't exist!
     out->set_success(false);
     out->add_errors(MetadataAction::FileDoesNotExist);
+    return;
   }
 
   // If file already exists, fail.
@@ -769,6 +771,7 @@ void MetadataStore::Rename_Internal(
     // File doesn't exist!
     out->set_success(false);
     out->add_errors(MetadataAction::FileDoesNotExist);
+    return;
   }
 
   string parent_from_path = ParentDir(in.from_path());
@@ -777,6 +780,7 @@ void MetadataStore::Rename_Internal(
     // File doesn't exist!
     out->set_success(false);
     out->add_errors(MetadataAction::FileDoesNotExist);
+    return;
   }
 
   string parent_to_path = ParentDir(in.to_path());
@@ -785,6 +789,7 @@ void MetadataStore::Rename_Internal(
     // File doesn't exist!
     out->set_success(false);
     out->add_errors(MetadataAction::FileDoesNotExist);
+    return;
   }
 
   // If file already exists, fail.
@@ -817,7 +822,7 @@ void MetadataStore::Rename_Internal(
 
       // Write updated parent entry.
       context->PutEntry(parent_from_path, parent_from_entry);
-      return;
+      break;
     }
   }
 
