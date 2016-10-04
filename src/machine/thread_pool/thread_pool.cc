@@ -140,8 +140,8 @@ void SubPool::HandleMessage(Header* header, MessageBuffer* message) {
 SubPool::SubPool(MessageHandler* handler, int priority) {
   handler_ = handler;
   priority_ = priority;
-  min_idle_ = 4;
-  max_idle_ = 20;
+  min_idle_ = 8;
+  max_idle_ = 24;
   thread_count_ = min_idle_;
   idle_thread_count_ = 0;
   assigned_thread_count_ = thread_count_;
@@ -285,7 +285,7 @@ void* ThreadPool::MonitorThread(void* arg) {
     // Check high priority threads
     if (high->idle_thread_count_ < high->min_idle_) {
       // Need to create some threads
-      int add_thread_count = 1;
+      int add_thread_count = 2;
       // Set affinity
       cpu_set_t cpuset;
       pthread_attr_t attr;
@@ -311,7 +311,7 @@ void* ThreadPool::MonitorThread(void* arg) {
 
     } else if (high->idle_thread_count_ > high->max_idle_) {
       // Need to delete some threads
-      int delete_thread_count = 1;
+      int delete_thread_count = 2;
       for (int i = 0; i < delete_thread_count; i++) {
         high->queue_.Push(pair<Header*, MessageBuffer*>(NULL, NULL));
         int deleted_thread;
@@ -328,7 +328,7 @@ void* ThreadPool::MonitorThread(void* arg) {
     // Check low priority threads
     if (low->idle_thread_count_ < low->min_idle_) {
       // Need to create some threads
-      int add_thread_count = 1;
+      int add_thread_count = 2;
 
       cpu_set_t cpuset;
       pthread_attr_t attr;
@@ -356,7 +356,7 @@ void* ThreadPool::MonitorThread(void* arg) {
       low->assigned_thread_count_ += add_thread_count;
     } else if (low->idle_thread_count_ > low->max_idle_) {
       // Need to delete some threads
-      int delete_thread_count = 1;
+      int delete_thread_count = 2;
       for (int i = 0; i < delete_thread_count; i++) {
         low->queue_.Push(pair<Header*, MessageBuffer*>(NULL, NULL));
         int deleted_thread;
