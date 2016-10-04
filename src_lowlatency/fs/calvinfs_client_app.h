@@ -687,8 +687,8 @@ void LatencyExperimentAppend() {
     Spin(1);
 
     double start = GetTime();
-    for (int i = 0; i < 4; i++) {
-      for (int j = 0; j < 250; j++) {
+    for (int i = 0; i < 10; i++) {
+      for (int j = 0; j < 100; j++) {
         int seed = rand() % 100;
       
         // Copy operations inside one data center
@@ -707,9 +707,9 @@ void LatencyExperimentAppend() {
         }      
       }
 
-      if (i % 1 == 0) {
+      if (i % 2 == 0) {
         LOG(ERROR) << "[" << machine()->machine_id() << "] "
-                   << "Test progress : " << i / 1 << "/" << 4;
+                   << "Test progress : " << i / 2 << "/" << 5;
       }
     }
 
@@ -747,8 +747,8 @@ void LatencyExperimentRenameFile(int local_percentage) {
     // Begin mix of operations.
     reporting_ = true;
     double start = GetTime();
-    for (int i = 0; i < 4; i++) {
-      for (int j = 0; j < 250; j++) {
+    for (int i = 0; i < 10; i++) {
+      for (int j = 0; j < 100; j++) {
         int seed = rand() % 100;
       
         // Copy operations inside one data center
@@ -767,9 +767,9 @@ void LatencyExperimentRenameFile(int local_percentage) {
         }      
       }
 
-      if (i % 1 == 0) {
+      if (i % 2 == 0) {
         LOG(ERROR) << "[" << machine()->machine_id() << "] "
-                   << "Test progress : " << i / 1 << "/" << 4;
+                   << "Test progress : " << i / 2 << "/" << 5;
       }
     }
 

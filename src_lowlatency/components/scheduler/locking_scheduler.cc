@@ -26,8 +26,8 @@ REGISTER_APP(LockingScheduler) {
 void LockingScheduler::MainLoopBody() {
   Action* action;
 
-CHECK(running_action_count_ < 3000);
-CHECK(active_actions_.size() < 3000);
+//CHECK(running_action_count_ < 3000);
+//CHECK(active_actions_.size() < 3000);
 
   // Start processing the next incoming action request.
   if (static_cast<int>(active_actions_.size()) < kMaxActiveActions &&
