@@ -188,7 +188,7 @@ class DistributedExecutionContext : public ExecutionContext {
     origin_ = action->origin();
 
     data_channel_version = action->distinct_id();
-//LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext received a txn:: version is:"<< version_<<"   data_channel_version:"<<data_channel_version;
+LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext received a txn:: version is:"<< version_<<"   data_channel_version:"<<data_channel_version;
     // Look up what replica we're at.
     replica_ = config_->LookupReplica(machine_->machine_id());
 
@@ -207,7 +207,7 @@ class DistributedExecutionContext : public ExecutionContext {
         }
         reader_ = true;
       } else {
-//LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext(add remote_readers):: version is:"<< version_<<"   data_channel_version:"<<data_channel_version<<"  config_->LookupReplicaByDir(TopDir(action->readset(i)): "<<config_->LookupReplicaByDir(TopDir(action->readset(i)))<<"  . However, origin is: "<<origin_;
+LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext(add remote_readers):: version is:"<< version_<<"   data_channel_version:"<<data_channel_version<<"  config_->LookupReplicaByDir(TopDir(action->readset(i)): "<<config_->LookupReplicaByDir(TopDir(action->readset(i)))<<"  . However, origin is: "<<origin_;
         remote_readers.insert(make_pair(machine, config_->LookupReplicaByDir(TopDir(action->readset(i)))));
       }
     }
@@ -221,9 +221,9 @@ class DistributedExecutionContext : public ExecutionContext {
       uint64 machine = config_->LookupMetadataShard(mds, replica_);
       if ((machine == machine_->machine_id()) && (config_->LookupReplicaByDir(TopDir(action->writeset(i))) == origin_)) {
         writer_ = true;
-//LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext(is local writer):: version is:"<< version_<<"   data_channel_version:"<<data_channel_version<<"  config_->LookupReplicaByDir(TopDir(action->writeset(i))): "<<config_->LookupReplicaByDir(TopDir(action->writeset(i)))<<"  . However, origin is: "<<origin_;
+LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext(is local writer):: version is:"<< version_<<"   data_channel_version:"<<data_channel_version<<"  config_->LookupReplicaByDir(TopDir(action->writeset(i))): "<<config_->LookupReplicaByDir(TopDir(action->writeset(i)))<<"  . However, origin is: "<<origin_;
       } else {
-//LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext(add remote_writers):: version is:"<< version_<<"   data_channel_version:"<<data_channel_version<<"  config_->LookupReplicaByDir(TopDir(action->writeset(i))): "<<config_->LookupReplicaByDir(TopDir(action->writeset(i)))<<"  . However, origin is: "<<origin_;
+LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext(add remote_writers):: version is:"<< version_<<"   data_channel_version:"<<data_channel_version<<"  config_->LookupReplicaByDir(TopDir(action->writeset(i))): "<<config_->LookupReplicaByDir(TopDir(action->writeset(i)))<<"  . However, origin is: "<<origin_;
         remote_writers.insert(make_pair(machine, config_->LookupReplicaByDir(TopDir(action->writeset(i)))));
       }
     }
@@ -243,7 +243,7 @@ class DistributedExecutionContext : public ExecutionContext {
         header->set_type(Header::DATA);
         header->set_data_channel("action-" + UInt32ToString(it->second) + "-" + UInt64ToString(data_channel_version));
         machine_->SendMessage(header, new MessageBuffer(local_reads));
-//LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext send local read:: version is:"<< version_<<"   data_channel_version:"<<data_channel_version<<"  to:"<<it->first;
+LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext send local read:: version is:"<< version_<<"   data_channel_version:"<<data_channel_version<<"  to:"<<it->first;
       }
     }
 
@@ -267,7 +267,7 @@ class DistributedExecutionContext : public ExecutionContext {
       }
       // Close channel.
       machine_->CloseDataChannel("action-" + UInt64ToString(data_channel_version));
-//LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext already got all results: version is:"<< version_<<"   data_channel_version:"<<data_channel_version;
+LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext already got all results: version is:"<< version_<<"   data_channel_version:"<<data_channel_version;
     }
   }
 
