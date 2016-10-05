@@ -197,7 +197,7 @@ class CalvinFSClientApp : public App {
 
   void FillExperiment() {
     Spin(1);
-    metadata_->InitSmall();
+    metadata_->Init();
     Spin(1);
     machine()->GlobalBarrier();
     Spin(1);
@@ -405,7 +405,7 @@ void LatencyExperimentCreateFile() {
     Report();**/
 
     Spin(1);
-    metadata_->InitSmall();
+    metadata_->Init();
     Spin(1);
     machine()->GlobalBarrier();
     Spin(1);

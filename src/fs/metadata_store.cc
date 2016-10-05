@@ -308,7 +308,7 @@ int RandomSize() {
 void MetadataStore::Init() {
   int asize = machine_->config().size();
   int bsize = 1000;
-  int csize = 10000;
+  int csize = 1000;
 
   double start = GetTime();
 
