@@ -371,7 +371,7 @@ class CalvinFSClientApp : public App {
   }
  
 void LatencyExperimentCreateFile() {
-    // Setup.
+   /** // Setup.
     LatencyExperimentSetup();
 
     Spin(1);
@@ -402,7 +402,38 @@ void LatencyExperimentCreateFile() {
                << (GetTime() - start) << " seconds";
 
     // Write out latency reports.
-    Report();
+    Report();**/
+
+    Spin(1);
+    metadata_->Init();
+    Spin(1);
+    machine()->GlobalBarrier();
+    Spin(1);
+
+    string tld("/a" + UInt64ToString(machine()->machine_id()));
+    int dirs = 1000;
+    int files = 10;
+
+    // Put files into second-level dir.
+    reporting_ = true;
+    double start = GetTime();
+    for (int i = 0; i < files; i++) {
+      string file = "/d" + IntToString(i);
+      for (int j = 0; j < dirs; j++) {
+        BackgroundCreateFile(tld + "/b" + IntToString(j) + file);
+      }
+      LOG(ERROR) << "[" << machine()->machine_id() << "] "
+                 << "Added file d" << i << " to " << dirs << " dirs";
+    }
+    // Wait for all operations to finish.
+    while (capacity_.load() < kMaxCapacity) {
+      usleep(10);
+    }
+    // Report.
+    LOG(ERROR) << "[" << machine()->machine_id() << "] "
+               << "Created " << dirs * files << " files. Elapsed time: "
+               << (GetTime() - start) << " seconds";
+
   }
 
 void LatencyExperimentAppend() {
