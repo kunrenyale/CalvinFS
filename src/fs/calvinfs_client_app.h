@@ -432,7 +432,7 @@ void LatencyExperimentCreateFile() {
                << (GetTime() - start) << " seconds";
 
     // Write out latency reports.
-    Report();**/
+    Report();
 
   }
 
