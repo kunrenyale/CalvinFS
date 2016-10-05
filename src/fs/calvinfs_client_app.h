@@ -739,6 +739,9 @@ void LatencyExperimentAppend() {
     LOG(ERROR) << "[" << machine()->machine_id() << "] "
                << "Renamed " <<  "500 files. Elapsed time: "
                << (GetTime() - start) << " seconds";
+
+    // Write out latency reports.
+    Report();
   }
 
 
