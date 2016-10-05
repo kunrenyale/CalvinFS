@@ -98,6 +98,10 @@ class CalvinFSClientApp : public App {
         break;
 
       case 9:
+        LatencyExperimentRenameFile();
+        break;
+
+      case 10:
         CrashExperiment();
         break;
 
@@ -652,9 +656,9 @@ void LatencyExperimentAppend() {
       BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a1) + "/c" + IntToString(j),
                            "/a" + IntToString(rand() % machine()->config().size()) + "/b" + IntToString(a2) + "/d" + IntToString(machine()->GetGUID())); 
 
-      if (i % 10 == 0) {
+      if (j % 100 == 0) {
         LOG(ERROR) << "[" << machine()->machine_id() << "] "
-                   << "Test progress : " << i / 10 << "/" << 10;
+                   << "Test progress : " << j / 100 << "/" << 5;
       }
     }
 
@@ -668,6 +672,41 @@ void LatencyExperimentAppend() {
                << "Renamed " <<  "500 files. Elapsed time: "
                << (GetTime() - start) << " seconds";
   }
+
+  void LatencyExperimentRenameFile() {
+    Spin(1);
+    metadata_->Init();
+    Spin(1);
+    machine()->GlobalBarrier();
+    Spin(1);
+
+
+    reporting_ = true;
+    double start = GetTime();
+
+    for (int j = 0; j < 500; j++) {
+      int a1 = rand() % 1000;
+      int a2 = rand() % 1000;
+      BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a1) + "/c" + IntToString(j),
+                           "/a" + IntToString(rand() % machine()->config().size()) + "/b" + IntToString(a2) + "/d" + IntToString(machine()->GetGUID())); 
+
+      if (j % 100 == 0) {
+        LOG(ERROR) << "[" << machine()->machine_id() << "] "
+                   << "Test progress : " << j / 100 << "/" << 5;
+      }
+    }
+
+    // Wait for all operations to finish.
+    while (capacity_.load() < kMaxCapacity) {
+      usleep(10);
+    }
+
+    // Report.
+    LOG(ERROR) << "[" << machine()->machine_id() << "] "
+               << "Renamed " <<  "500 files. Elapsed time: "
+               << (GetTime() - start) << " seconds";
+  }
+
 
   void Report() {
     string report;
