@@ -654,13 +654,13 @@ void LatencyExperimentAppend() {
     Spin(1);
 
     double start = GetTime();
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 500; i++) {
       BackgroundCopyFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/c" + IntToString(rand() % 1000),
                            "/a" + IntToString(rand() % machine()->config().size()) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));
 
       if (i % 100 == 0) {
         LOG(ERROR) << "[" << machine()->machine_id() << "] "
-                   << "Test progress : " << i / 100 << "/" << 10;
+                   << "Test progress : " << i / 100 << "/" << 5;
       }
     }
 
@@ -671,7 +671,7 @@ void LatencyExperimentAppend() {
 
     // Report.
     LOG(ERROR) << "[" << machine()->machine_id() << "] "
-               << "Copyed " <<  "1000 files. Elapsed time: "
+               << "Copyed " <<  "500 files. Elapsed time: "
                << (GetTime() - start) << " seconds";
   }
 

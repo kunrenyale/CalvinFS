@@ -388,7 +388,7 @@ uint32 MetadataStore::LocalReplica() {
 void MetadataStore::Init() {
   int asize = machine_->config().size();
   int bsize = 1000;
-  int csize = 1000;
+  int csize = 500;
 
   double start = GetTime();
 
@@ -876,13 +876,13 @@ void MetadataStore::Rename_Internal(
 
   // If file already exists, fail.
   string to_filename = FileName(in.to_path());
-  /**for (int i = 0; i < parent_to_entry.dir_contents_size(); i++) {
+  for (int i = 0; i < parent_to_entry.dir_contents_size(); i++) {
     if (parent_to_entry.dir_contents(i) == to_filename) {
       out->set_success(false);
       out->add_errors(MetadataAction::FileAlreadyExists);
       return;
     }
-  }**/
+  }
 
   // Update to_parent (add new dir content)
   parent_to_entry.add_dir_contents(to_filename);

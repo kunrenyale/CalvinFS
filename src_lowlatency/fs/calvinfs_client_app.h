@@ -670,7 +670,7 @@ void LatencyExperimentAppend() {
     Spin(1);
 
     double start = GetTime();
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 500; i++) {
       int seed = rand() % 100;
       
       // Copy operations inside one data center
@@ -685,7 +685,7 @@ void LatencyExperimentAppend() {
 
       if (i % 100 == 0) {
         LOG(ERROR) << "[" << machine()->machine_id() << "] "
-                   << "Test progress : " << i / 100 << "/" << 10;
+                   << "Test progress : " << i / 100 << "/" << 5;
       }    
     }
 
@@ -696,7 +696,7 @@ void LatencyExperimentAppend() {
 
     // Report.
     LOG(ERROR) << "[" << machine()->machine_id() << "] "
-               << "Copyed " <<  "10000 files. Elapsed time: "
+               << "Copyed " <<  "500 files. Elapsed time: "
                << (GetTime() - start) << " seconds";
     
   }
