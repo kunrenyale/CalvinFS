@@ -197,7 +197,7 @@ class CalvinFSClientApp : public App {
 
   void FillExperiment() {
     Spin(1);
-    metadata_->Init();
+    metadata_->InitSmall();
     Spin(1);
     machine()->GlobalBarrier();
     Spin(1);
@@ -405,7 +405,7 @@ void LatencyExperimentCreateFile() {
     Report();**/
 
     Spin(1);
-    metadata_->Init();
+    metadata_->InitSmall();
     Spin(1);
     machine()->GlobalBarrier();
     Spin(1);
@@ -433,6 +433,9 @@ void LatencyExperimentCreateFile() {
     LOG(ERROR) << "[" << machine()->machine_id() << "] "
                << "Created " << dirs * files << " files. Elapsed time: "
                << (GetTime() - start) << " seconds";
+
+    // Write out latency reports.
+    Report();
 
   }
 
