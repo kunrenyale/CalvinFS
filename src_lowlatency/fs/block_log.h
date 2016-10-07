@@ -233,9 +233,8 @@ class BlockLogApp : public App {
       // Forward sub-batches to relevant readers (same replica only).
       map<uint64, ActionBatch> subbatches;
       for (int i = 0; i < batch.entries_size(); i++) {
-//LOG(ERROR) << "Machine: "<<machine()->machine_id() <<" @@@@@Forward sub-batches to relevant readers. distinct id is:"<< batch.entries(i).distinct_id();
         set<uint64> recipients;
-        uint64 lowest_involved_machine;
+        uint32 involved_machines;
         for (int j = 0; j < batch.entries(i).readset_size(); j++) {
           uint64 mds = config_->HashFileName(batch.entries(i).readset(j));
           recipients.insert(config_->LookupMetadataShard(mds, replica_));
@@ -245,10 +244,10 @@ class BlockLogApp : public App {
           recipients.insert(config_->LookupMetadataShard(mds, replica_));
         }
         
-        lowest_involved_machine = *(recipients.begin());
+        involved_machines = recipients.size();
         Action tt;
         tt.CopyFrom(batch.entries(i));
-        tt.set_lowest_involved_machine(lowest_involved_machine);
+        tt.set_involved_machines(involved_machines);
 
         for (auto it = recipients.begin(); it != recipients.end(); ++it) {
           //subbatches[*it].add_entries()->CopyFrom(batch.entries(i));
@@ -279,6 +278,28 @@ class BlockLogApp : public App {
       batch->ParseFromArray((*message)[0].data(), (*message)[0].size());
       subbatches_.Put(block_id, batch);
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log recevie a SUBBATCH request. block id is:"<< block_id<<" from machine:"<<header->from();
+    } else if (header->rpc() == "CREATE_NEW") { 
+      uint64 distinct_id = header->misc_int(0);
+      uint32 cnt = header->misc_int(1);
+      uint32 current;
+      if (create_new_actions_.Lookup(distinct_id, &current) == true) {
+        if (current == cnt - 1) {
+          Action* a = new Action();
+          a->ParseFromArray((*message)[0].data(), (*message)[0].size());
+          a->set_origin(replica_);
+          queue_.Push(a);
+          create_new_actions_.Erase(distinct_id);
+        }
+      } else {
+        create_new_actions_.Put(distinct_id, 1);
+        if (cnt == 1) {
+          Action* a = new Action();
+          a->ParseFromArray((*message)[0].data(), (*message)[0].size());
+          a->set_origin(replica_);
+          queue_.Push(a);
+          create_new_actions_.Erase(distinct_id);
+        }
+      }
     } else {
       LOG(FATAL) << "unknown RPC type: " << header->rpc();
     }
@@ -328,6 +349,8 @@ class BlockLogApp : public App {
   DelayQueue<string*> to_delete_;
 
   uint64 local_paxos_leader_;
+
+  AtomicMap<uint64, uint32> create_new_actions_;
 
   friend class ActionSource;
   class ActionSource : public Source<Action*> {

@@ -61,7 +61,7 @@ message Action {
   // Action status used by VLL scheduler.(FREE or BLOCKED)
   optional int32 action_status = 61;
 
-  optional uint64 lowest_involved_machine = 62;
+  optional uint32 involved_machines = 62;
   
   enum ActionStatus {
     FREE = 0;
