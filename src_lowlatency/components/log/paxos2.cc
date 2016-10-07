@@ -149,8 +149,8 @@ MessageBuffer* m = new MessageBuffer(other_sequence);
     // The number of actions of the current sequence
     uint64 num_actions = next_sequence_version.second;
     ++next_index;
-    next_sequences_index.Erase(from_replica);
-    next_sequences_index.Put(from_replica, next_index);
+
+    next_sequences_index.EraseAndPut(from_replica, next_index);
  
     Log::Reader* r = readers_for_local_log[from_replica];
     bool find = r->Seek(next_sequence_version.first);

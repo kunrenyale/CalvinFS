@@ -161,6 +161,12 @@ class AtomicMap {
     map_.insert(std::make_pair(k, v));
   }
 
+  inline void EraseAndPut(const K& k, const V& v) {
+    WriteLock l(&mutex_);
+    map_.erase(k);
+    map_.insert(std::make_pair(k, v));
+  }
+
   inline void Erase(const K& k) {
     WriteLock l(&mutex_);
     map_.erase(k);
