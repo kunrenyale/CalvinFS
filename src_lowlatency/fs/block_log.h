@@ -280,27 +280,28 @@ class BlockLogApp : public App {
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log recevie a SUBBATCH request. block id is:"<< block_id<<" from machine:"<<header->from();
     } else if (header->rpc() == "CREATE_NEW") {
       { 
-        Lock l(&create_new_action_mutex_);
+        //Lock l(&create_new_action_mutex_);
         uint64 distinct_id = header->misc_int(0);
         uint32 cnt = header->misc_int(1);
         uint32 current;
         if (create_new_actions_.Lookup(distinct_id, &current) == true) {
-          create_new_actions_.EraseAndPut(distinct_id, current+1);
-          if (current == cnt) {
+          if (current == cnt - 1) {
             Action* a = new Action();
             a->ParseFromArray((*message)[0].data(), (*message)[0].size());
             a->set_origin(replica_);
             queue_.Push(a);
             create_new_actions_.Erase(distinct_id);
+          } else {
+            create_new_actions_.EraseAndPut(distinct_id, current+1);
           }
         } else {
-          create_new_actions_.Put(distinct_id, 1);
           if (cnt == 1) {
             Action* a = new Action();
             a->ParseFromArray((*message)[0].data(), (*message)[0].size());
             a->set_origin(replica_);
             queue_.Push(a);
-            create_new_actions_.Erase(distinct_id);
+          } else {
+            create_new_actions_.Put(distinct_id, 1);
           }
         }
       }
