@@ -280,7 +280,7 @@ class BlockLogApp : public App {
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log recevie a SUBBATCH request. block id is:"<< block_id<<" from machine:"<<header->from();
     } else if (header->rpc() == "CREATE_NEW") {
       { 
-        //Lock l(&create_new_action_mutex_);
+        Lock l(&create_new_action_mutex_);
         uint64 distinct_id = header->misc_int(0);
         uint32 cnt = header->misc_int(1);
         uint32 current;
