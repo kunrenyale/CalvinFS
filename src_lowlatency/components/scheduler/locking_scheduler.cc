@@ -32,6 +32,7 @@ void LockingScheduler::MainLoopBody() {
   if (static_cast<int>(active_actions_.size()) < kMaxActiveActions &&
       running_action_count_ < kMaxRunningActions &&
       action_requests_->Get(&action)) {
+usleep(100);
     high_water_mark_ = action->version();
     active_actions_.insert(action->version());
     int ungranted_requests = 0;
