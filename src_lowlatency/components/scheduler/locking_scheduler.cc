@@ -226,7 +226,7 @@ void LockingScheduler::MainLoopBody() {
   // Start executing all actions that have newly acquired all their locks.
   while (lm_.Ready(&action)) {
 
-    
+       running_action_count_++;   
     store_->RunAsync(action, &completed_);
   }
 }
