@@ -29,12 +29,11 @@ void LockingScheduler::MainLoopBody() {
 //CHECK(active_actions_.size() < 3000);
 
   // Start processing the next incoming action request.
-  if (static_cast<int>(active_actions_.size()) < kMaxActiveActions &&
-      running_action_count_ < kMaxRunningActions &&
+  if (running_action_count_ < kMaxRunningActions &&
       action_requests_->Get(&action)) {
 
     high_water_mark_ = action->version();
-    active_actions_.insert(action->version());
+
     int ungranted_requests = 0;
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action: " << action->version()<<" distinct id is:"<<action->distinct_id();
 
@@ -214,12 +213,9 @@ void LockingScheduler::MainLoopBody() {
       }
     }
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":** scheduler finish running action: " << action->version()<<" distinct id is:"<<action->distinct_id();
-    active_actions_.erase(action->version());
+
     running_action_count_--;
-    safe_version_.store(
-        active_actions_.empty()
-        ? (high_water_mark_ + 1)
-        : *active_actions_.begin());
+
   }
 
   // Start executing all actions that have newly acquired all their locks.
