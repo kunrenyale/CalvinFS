@@ -32,7 +32,7 @@ void LockingScheduler::MainLoopBody() {
   if (static_cast<int>(active_actions_.size()) < kMaxActiveActions &&
       running_action_count_ < kMaxRunningActions &&
       action_requests_->Get(&action)) {
-usleep(100);
+
     high_water_mark_ = action->version();
     active_actions_.insert(action->version());
     int ungranted_requests = 0;
@@ -41,10 +41,12 @@ usleep(100);
     if (action->single_replica() == false) {
       bool ignore = true;
       set<string> writeset;
+      bool count_before = false;
       for (int i = 0; i < action->writeset_size(); i++) {
         uint32 replica = store_->LookupReplicaByDir(action->writeset(i));
-        if (replica == local_replica_) {
+        if (replica == local_replica_ && count_before == false) {
           actions_involved_replica_.insert(action->distinct_id());
+          count_before = true;
         }
         if ((store_->IsLocal(action->writeset(i))) && (replica == action->origin())) {
           if (ignore == true) {
@@ -60,8 +62,9 @@ usleep(100);
 
       for (int i = 0; i < action->readset_size(); i++) {
         uint32 replica = store_->LookupReplicaByDir(action->readset(i));
-        if (replica == local_replica_) {
+        if (replica == local_replica_ && count_before == false) {
           actions_involved_replica_.insert(action->distinct_id());
+          count_before = true;
         }
         if ((store_->IsLocal(action->readset(i))) && (replica == action->origin())) {
           if (ignore == true) {
