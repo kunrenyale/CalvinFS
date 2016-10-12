@@ -114,7 +114,35 @@ void LockingScheduler::MainLoopBody() {
 
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler ignore this txn: " << action->version()<<" distinct id is:"<<action->distinct_id();
         return;
-      } 
+      } else {
+                   if (action->single_replica() == false && action->create_new() == true && local_replica_ != action->origin() && actions_involved_replica_.find(action->distinct_id()) !=  actions_involved_replica_.end()) {
+        uint64 this_machine = machine()->machine_id();
+        uint64 machine_sent = store_->GetHeadMachine(this_machine);
+        Header* header = new Header();
+        header->set_from(this_machine);
+        header->set_to(machine_sent);
+
+        header->add_misc_int(action->distinct_id());
+        header->add_misc_int(action->involved_machines());
+        header->set_type(Header::RPC);
+        header->set_app("blocklog");
+        header->set_rpc("CREATE_NEW");
+
+        Action* new_action = new Action();
+        new_action->CopyFrom(*action);
+        new_action->clear_client_machine();
+        new_action->clear_client_channel();
+        new_action->clear_origin();
+        new_action->set_create_new(false);
+        string* block = new string();
+        new_action->SerializeToString(block);
+
+        machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
+
+        actions_involved_replica_.erase(action->distinct_id());
+      }
+
+      }
     }  else {
 
       // Request write locks. Track requests so we can check that we don't
@@ -146,33 +174,6 @@ void LockingScheduler::MainLoopBody() {
     // If all read and write locks were immediately acquired, this action
     // is ready to run.
     if (ungranted_requests == 0) {
-      if (action->single_replica() == false && action->create_new() == true && local_replica_ != action->origin() && actions_involved_replica_.find(action->distinct_id()) !=  actions_involved_replica_.end()) {
-        uint64 this_machine = machine()->machine_id();
-        uint64 machine_sent = store_->GetHeadMachine(this_machine);
-        Header* header = new Header();
-        header->set_from(this_machine);
-        header->set_to(machine_sent);
-
-        header->add_misc_int(action->distinct_id());
-        header->add_misc_int(action->involved_machines());
-        header->set_type(Header::RPC);
-        header->set_app("blocklog");
-        header->set_rpc("CREATE_NEW");
-
-        Action* new_action = new Action();
-        new_action->CopyFrom(*action);
-        new_action->clear_client_machine();
-        new_action->clear_client_channel();
-        new_action->clear_origin();
-        new_action->set_create_new(false);
-        string* block = new string();
-        new_action->SerializeToString(block);
-
-        machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
-
-        actions_involved_replica_.erase(action->distinct_id());
-      }
-
       running_action_count_++;
       store_->RunAsync(action, &completed_);
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ store_->RunAsync(action, &completed_): " << action->version()<<" distinct id is:"<<action->distinct_id();
@@ -224,32 +225,7 @@ void LockingScheduler::MainLoopBody() {
 
   // Start executing all actions that have newly acquired all their locks.
   while (lm_.Ready(&action)) {
-    if (action->single_replica() == false && action->create_new() == true && local_replica_ != action->origin() && actions_involved_replica_.find(action->distinct_id()) !=  actions_involved_replica_.end()) {
-      uint64 this_machine = machine()->machine_id();
-      uint64 machine_sent = store_->GetHeadMachine(this_machine);
-      Header* header = new Header();
-      header->set_from(this_machine);
-      header->set_to(machine_sent);
 
-      header->add_misc_int(action->distinct_id());
-      header->add_misc_int(action->involved_machines());
-      header->set_type(Header::RPC);
-      header->set_app("blocklog");
-      header->set_rpc("CREATE_NEW");
-
-      Action* new_action = new Action();
-      new_action->CopyFrom(*action);
-      new_action->clear_client_machine();
-      new_action->clear_client_channel();
-      new_action->clear_origin();
-      new_action->set_create_new(false);
-      string* block = new string();
-      new_action->SerializeToString(block);
-
-      machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
-
-      actions_involved_replica_.erase(action->distinct_id());
-    }
     
     store_->RunAsync(action, &completed_);
   }
