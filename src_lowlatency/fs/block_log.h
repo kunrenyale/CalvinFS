@@ -236,12 +236,16 @@ class BlockLogApp : public App {
         set<uint64> recipients;
         uint32 involved_machines;
         for (int j = 0; j < batch.entries(i).readset_size(); j++) {
-          uint64 mds = config_->HashFileName(batch.entries(i).readset(j));
-          recipients.insert(config_->LookupMetadataShard(mds, replica_));
+          if (config_->LookupReplicaByDir(batch.entries(i).readset(j)) == batch.entries(i).origin()) {
+            uint64 mds = config_->HashFileName(batch.entries(i).readset(j));
+            recipients.insert(config_->LookupMetadataShard(mds, replica_));
+          }
         }
         for (int j = 0; j < batch.entries(i).writeset_size(); j++) {
-          uint64 mds = config_->HashFileName(batch.entries(i).writeset(j));
-          recipients.insert(config_->LookupMetadataShard(mds, replica_));
+          if (config_->LookupReplicaByDir(batch.entries(i).writeset(j)) == batch.entries(i).origin()) {
+            uint64 mds = config_->HashFileName(batch.entries(i).writeset(j));
+            recipients.insert(config_->LookupMetadataShard(mds, replica_));
+          }
         }
         
         involved_machines = recipients.size();
