@@ -23,6 +23,20 @@ using std::map;
 using std::pair;
 using std::make_pair;
 
+string TopDir(const string& path) {
+  // Root dir is a special case.
+  if (path.empty()) {
+    return path;
+  }
+  
+  std::size_t offset = string(path, 1).find('/');
+  if (offset == string::npos) {
+    return path;
+  } else {
+    return string(path, 0, offset+1);
+  }
+}
+
 CalvinFSConfigMap::CalvinFSConfigMap(const CalvinFSConfig& config) {
   Init(config);
 }
@@ -95,12 +109,13 @@ void CalvinFSConfigMap::Init(const CalvinFSConfig& config) {
 
 uint32 CalvinFSConfigMap::LookupReplicaByDir(string dir) {
   
+  string top_dir = TopDir(dir);
   // Root dir is a special case. Currently root belongs to replica 0
-  if (dir.empty()) {
+  if (top_dir.empty()) {
     return 0;
   }
 
-  string num_string = string(dir, 2);
+  string num_string = string(top_dir, 2);
   uint32 num = StringToInt(num_string);
 
   return num / config_.metadata_shard_count();

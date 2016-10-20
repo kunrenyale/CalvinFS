@@ -56,19 +56,6 @@ string FileName(const string& path) {
   return string(path, offset + 1);
 }
 
-string TopDir(const string& path) {
-  // Root dir is a special case.
-  if (path.empty()) {
-    return path;
-  }
-  
-  std::size_t offset = string(path, 1).find('/');
-  if (offset == string::npos) {
-    return path;
-  } else {
-    return string(path, 0, offset+1);
-  }
-}
 
 ///////////////////////        ExecutionContext        ////////////////////////
 //
@@ -198,7 +185,7 @@ class DistributedExecutionContext : public ExecutionContext {
     for (int i = 0; i < action->readset_size(); i++) {
       uint64 mds = config_->HashFileName(action->readset(i));
       uint64 machine = config_->LookupMetadataShard(mds, replica_);
-      if ((machine == machine_->machine_id()) && (config_->LookupReplicaByDir(TopDir(action->readset(i))) == origin_)) {
+      if ((machine == machine_->machine_id()) && (config_->LookupReplicaByDir(action->readset(i)) == origin_)) {
         // Local read.
         if (!store_->Get(action->readset(i),
                          version_,
@@ -207,8 +194,8 @@ class DistributedExecutionContext : public ExecutionContext {
         }
         reader_ = true;
       } else {
-//LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext(add remote_readers):: version is:"<< version_<<"   data_channel_version:"<<data_channel_version<<"  config_->LookupReplicaByDir(TopDir(action->readset(i)): "<<config_->LookupReplicaByDir(TopDir(action->readset(i)))<<"  . However, origin is: "<<origin_;
-        remote_readers.insert(make_pair(machine, config_->LookupReplicaByDir(TopDir(action->readset(i)))));
+//LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext(add remote_readers):: version is:"<< version_<<"   data_channel_version:"<<data_channel_version<<"  config_->LookupReplicaByDir(action->readset(i): "<<config_->LookupReplicaByDir(action->readset(i))<<"  . However, origin is: "<<origin_;
+        remote_readers.insert(make_pair(machine, config_->LookupReplicaByDir(action->readset(i))));
       }
     }
 
@@ -219,12 +206,12 @@ class DistributedExecutionContext : public ExecutionContext {
     for (int i = 0; i < action->writeset_size(); i++) {
       uint64 mds = config_->HashFileName(action->writeset(i));
       uint64 machine = config_->LookupMetadataShard(mds, replica_);
-      if ((machine == machine_->machine_id()) && (config_->LookupReplicaByDir(TopDir(action->writeset(i))) == origin_)) {
+      if ((machine == machine_->machine_id()) && (config_->LookupReplicaByDir(action->writeset(i)) == origin_)) {
         writer_ = true;
-//LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext(is local writer):: version is:"<< version_<<"   data_channel_version:"<<data_channel_version<<"  config_->LookupReplicaByDir(TopDir(action->writeset(i))): "<<config_->LookupReplicaByDir(TopDir(action->writeset(i)))<<"  . However, origin is: "<<origin_;
+//LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext(is local writer):: version is:"<< version_<<"   data_channel_version:"<<data_channel_version<<"  config_->LookupReplicaByDir(action->writeset(i)): "<<config_->LookupReplicaByDir(action->writeset(i))<<"  . However, origin is: "<<origin_;
       } else {
-//LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext(add remote_writers):: version is:"<< version_<<"   data_channel_version:"<<data_channel_version<<"  config_->LookupReplicaByDir(TopDir(action->writeset(i))): "<<config_->LookupReplicaByDir(TopDir(action->writeset(i)))<<"  . However, origin is: "<<origin_;
-        remote_writers.insert(make_pair(machine, config_->LookupReplicaByDir(TopDir(action->writeset(i)))));
+//LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext(add remote_writers):: version is:"<< version_<<"   data_channel_version:"<<data_channel_version<<"  config_->LookupReplicaByDir(action->writeset(i)): "<<config_->LookupReplicaByDir(action->writeset(i))<<"  . However, origin is: "<<origin_;
+        remote_writers.insert(make_pair(machine, config_->LookupReplicaByDir(action->writeset(i))));
       }
     }
 
@@ -277,14 +264,14 @@ class DistributedExecutionContext : public ExecutionContext {
       for (auto it = writes_.begin(); it != writes_.end(); ++it) {
         uint64 mds = config_->HashFileName(it->first);
         uint64 machine = config_->LookupMetadataShard(mds, replica_);
-        if (machine == machine_->machine_id() && config_->LookupReplicaByDir(TopDir(it->first)) == origin_) {
+        if (machine == machine_->machine_id() && config_->LookupReplicaByDir(it->first) == origin_) {
           store_->Put(it->first, it->second, version_);
         }
       }
       for (auto it = deletions_.begin(); it != deletions_.end(); ++it) {
         uint64 mds = config_->HashFileName(*it);
         uint64 machine = config_->LookupMetadataShard(mds, replica_);
-        if (machine == machine_->machine_id() && config_->LookupReplicaByDir(TopDir(*it)) == origin_) {
+        if (machine == machine_->machine_id() && config_->LookupReplicaByDir(*it) == origin_) {
           store_->Delete(*it, version_);
         }
       }
@@ -343,7 +330,7 @@ int RandomSize() {
 }
 
 uint32 MetadataStore::LookupReplicaByDir(string dir) {
-  return config_->LookupReplicaByDir(TopDir(dir));
+  return config_->LookupReplicaByDir(dir);
 }
 
 uint32 MetadataStore::GetMachineForReplica(Action* action) {
