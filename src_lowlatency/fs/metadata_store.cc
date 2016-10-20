@@ -638,7 +638,7 @@ void MetadataStore::Run(Action* action) {
     MetadataAction::RenameInput in;
     MetadataAction::RenameOutput out;
     in.ParseFromString(action->input());
-    //Rename_Internal(context, in, &out);
+    Rename_Internal(context, in, &out);
     out.SerializeToString(action->mutable_output());
 
   } else if (type == MetadataAction::LOOKUP) {
