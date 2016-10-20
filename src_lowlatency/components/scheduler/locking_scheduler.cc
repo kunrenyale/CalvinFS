@@ -146,11 +146,11 @@ void LockingScheduler::MainLoopBody() {
 
       running_action_count_++;
       store_->RunAsync(action, &completed_);
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ Get Lock immediately: " << action->version()<<" distinct id is:"<<action->distinct_id();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ Get Lock immediately: " << action->version()<<" distinct id is:"<<action->distinct_id();
     } 
-else {
+/**else {
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ BLOCK: " << action->version()<<" distinct id is:"<<action->distinct_id();
-}
+}**/
   }
 
   // Process all actions that have finished running.
