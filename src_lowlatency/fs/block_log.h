@@ -9,6 +9,7 @@
 #include <google/protobuf/repeated_field.h>
 #include <set>
 #include <vector>
+#include <tr1/unordered_map>
 
 #include "common/types.h"
 #include "components/log/log.h"
@@ -22,6 +23,8 @@
 
 using std::set;
 using std::vector;
+using std::make_pair;
+using std::tr1::unordered_map;
 
 class Header;
 class Machine;
@@ -115,22 +118,61 @@ class BlockLogApp : public App {
         new SequenceSource(
             new RemoteLogSource<PairSequence>(machine(), local_paxos_leader_, "paxos2"));
 
+    delay_time_ = 0.1;
+    batch_cnt_ = 0;
+   
+    uint64 delayed_batch_cnt = delay_time_/0.005;
+
     // Okay, finally, start main loop!
     going_ = true;
     while (go_.load()) {
       // Create new batch once per epoch.
       double next_epoch = GetTime() + 0.005;
+  
+      batch_cnt_++;
 
       // Create batch (iff there are any pending requests).
       int count = queue_.Size();
-      if (count != 0) {
+      if (count != 0 || delay_txns_.find(batch_cnt_) != delay_txns_.end()) {
         ActionBatch batch;
+        int actual_offset = 0;
+        // Handle new actions
         for (int i = 0; i < count; i++) {
           Action* a = NULL;
           queue_.Pop(&a);
-          a->set_version_offset(i);
+          
+          // Delay multi-replicas action, and add a fake action
+          if (a->single_replica() == false) {
+            uint64 active_batch_cnt = batch_cnt_ + delayed_batch_cnt;
+            if (delay_txns_.find(active_batch_cnt) == delay_txns_.end()) {
+              vector<Action*> actions;
+              actions.push_back(a);
+              //delay_txns_.insert(make_pair<uint64, vector<Action*>>(active_batch_cnt, actions));
+              delay_txns_[active_batch_cnt] = actions;
+            } else {
+              vector<Action*> actions = delay_txns_[active_batch_cnt];
+              actions.push_back(a);
+              //delay_txns_.insert(make_pair<uint64, vector<Action*>>(active_batch_cnt, actions));
+              delay_txns_[active_batch_cnt] = actions;
+            }
+
+            // TODO: add a fake multi-replicas action
+          }
+
+          a->set_version_offset(actual_offset++);
 	  a->set_origin(config_->LookupReplica(machine()->machine_id()));
           batch.mutable_entries()->AddAllocated(a);
+        }
+
+        // Add the old multi-replicas actions into batch
+        if (delay_txns_.find(batch_cnt_) != delay_txns_.end()) {
+          vector<Action*> actions = delay_txns_[batch_cnt_];
+          for (uint32 i = 0; i < actions.size(); i++) {
+            Action* a = actions[i];
+            a->set_version_offset(actual_offset++);
+	    a->set_origin(config_->LookupReplica(machine()->machine_id()));
+            batch.mutable_entries()->AddAllocated(a);
+          }
         }
 
         // Avoid multiple allocation.
@@ -360,6 +402,11 @@ class BlockLogApp : public App {
   uint64 local_paxos_leader_;
 
   AtomicMap<uint64, uint32> create_new_actions_;
+
+  double delay_time_;
+  unordered_map<uint64, vector<Action*> > delay_txns_;
+  uint64 batch_cnt_;
+
 
   friend class ActionSource;
   class ActionSource : public Source<Action*> {
