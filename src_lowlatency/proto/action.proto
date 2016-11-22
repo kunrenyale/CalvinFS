@@ -55,13 +55,16 @@ message Action {
   // For some cross-replica actions, need to create a new action to guarantee deterministic order
   optional bool create_new = 44 [default = true];
 
+  repeated uint32 involved_replicas = 45;
+
+  optional bool fake_action = 46 [default = false];
+
   // Miscellaneous data.
   repeated Scalar misc = 51;
   
   // Action status used by VLL scheduler.(FREE or BLOCKED)
   optional int32 action_status = 61;
 
-  optional uint32 involved_machines = 62;
   
   enum ActionStatus {
     FREE = 0;

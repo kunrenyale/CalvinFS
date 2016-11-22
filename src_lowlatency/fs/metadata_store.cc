@@ -354,6 +354,11 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
     action->set_single_replica(false);  
   }
   
+  for (set<uint32>::iterator it=replica_involved.begin(); it!=replica_involved.end(); ++it) {
+    action->add_involved_replicas(*it);
+  }
+  
+  
   uint32 lowest_replica = *(replica_involved.begin());
 
   if (lowest_replica == replica_) {

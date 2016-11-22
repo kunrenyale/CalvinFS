@@ -168,6 +168,11 @@ MessageBuffer* m = new MessageBuffer(other_sequence);
     m->Append(ToScalar<uint32>(machine()->machine_id()));
     machine()->SendMessage(header2, m);
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Send NEW-SEQUENCE(after receive ack) to: "<<from_replica<<" . version: "<<r->Version();
+  }  else if (header->rpc() == "FAKEACTIONBATCH") {
+    uint64 block_id = header->misc_int(0);
+    ActionBatch* batch = new ActionBatch();
+    batch->ParseFromArray((*message)[0].data(), (*message)[0].size());
+    fakebatches_.Put(block_id, batch);
   } else {
     LOG(FATAL) << "unknown message type: " << header->rpc();
   }

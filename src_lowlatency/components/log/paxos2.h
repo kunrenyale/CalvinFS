@@ -17,6 +17,7 @@
 #include "machine/app/app.h"
 #include "proto/start_app.pb.h"
 #include "proto/scalar.pb.h"
+#include "proto/action.pb.h"
 
 using std::vector;
 using std::map;
@@ -78,6 +79,9 @@ class Paxos2App : public LogApp {
   AtomicMap<uint32, uint64> next_sequences_index;
 
   map<uint32, Log::Reader*> readers_for_local_log;
+
+  // fake multi-replicas actions batch received.
+  AtomicMap<uint64, ActionBatch*> fakebatches_;
   
 };
 

@@ -156,7 +156,12 @@ class BlockLogApp : public App {
               delay_txns_[active_batch_cnt] = actions;
             }
 
-            // TODO: add a fake multi-replicas action
+            // Add a fake multi-replicas action
+            a->set_version_offset(actual_offset++);
+	    a->set_origin(config_->LookupReplica(machine()->machine_id()));
+            a->set_fake_action(true);
+            batch.mutable_entries()->AddAllocated(a);
+
           }
 
           a->set_version_offset(actual_offset++);
@@ -173,6 +178,8 @@ class BlockLogApp : public App {
 	    a->set_origin(config_->LookupReplica(machine()->machine_id()));
             batch.mutable_entries()->AddAllocated(a);
           }
+
+          delay_txns_.erase(batch_cnt_);
         }
 
         // Avoid multiple allocation.
@@ -276,7 +283,11 @@ class BlockLogApp : public App {
       map<uint64, ActionBatch> subbatches;
       for (int i = 0; i < batch.entries_size(); i++) {
         set<uint64> recipients;
-        uint32 involved_machines;
+        
+        if (batch.entries(i).fake_action() == true) {
+          continue;
+        }
+
         for (int j = 0; j < batch.entries(i).readset_size(); j++) {
           if (config_->LookupReplicaByDir(batch.entries(i).readset(j)) == batch.entries(i).origin()) {
             uint64 mds = config_->HashFileName(batch.entries(i).readset(j));
@@ -289,17 +300,12 @@ class BlockLogApp : public App {
             recipients.insert(config_->LookupMetadataShard(mds, replica_));
           }
         }
-        
-        involved_machines = recipients.size();
-        Action tt;
-        tt.CopyFrom(batch.entries(i));
-        tt.set_involved_machines(involved_machines);
 
         for (auto it = recipients.begin(); it != recipients.end(); ++it) {
-          //subbatches[*it].add_entries()->CopyFrom(batch.entries(i));
-          subbatches[*it].add_entries()->CopyFrom(tt);
+          subbatches[*it].add_entries()->CopyFrom(batch.entries(i));
         }
       }
+
       for (auto it = mds_.begin(); it != mds_.end(); ++it) {
         header = new Header();
         header->set_from(machine()->machine_id());
@@ -310,6 +316,28 @@ class BlockLogApp : public App {
         header->add_misc_int(block_id);
         machine()->SendMessage(header, new MessageBuffer(subbatches[*it]));
       }
+
+
+      // Forward "fake multi-replica action" to the head node 
+      if (config_->LookupReplica(header->from()) != config_->LookupReplica(machine()->machine_id())) {
+        ActionBatch fake_action_batch;
+        for (int i = 0; i < batch.entries_size(); i++) {
+          if (batch.entries(i).fake_action() == true) {
+            fake_action_batch.add_entries()->CopyFrom(batch.entries(i));
+          }
+        }
+
+        // Send to the head node
+        header = new Header();
+        header->set_from(machine()->machine_id());
+        header->set_to(local_paxos_leader_);
+        header->set_type(Header::RPC);
+        header->set_app("paxos2");
+        header->set_rpc("FAKEACTIONBATCH");
+        header->add_misc_int(block_id);
+        machine()->SendMessage(header, new MessageBuffer(fake_action_batch));
+      }
+      
 
     } else if (header->rpc() == "SUBMIT") {
 

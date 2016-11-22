@@ -41,13 +41,9 @@ void LockingScheduler::MainLoopBody() {
     if (action->single_replica() == false) {
       bool ignore = true;
       set<string> writeset;
-      bool count_before = false;
+
       for (int i = 0; i < action->writeset_size(); i++) {
         uint32 replica = store_->LookupReplicaByDir(action->writeset(i));
-        if (replica == local_replica_ && count_before == false) {
-          actions_involved_replica_.insert(action->distinct_id());
-          count_before = true;
-        }
         if ((store_->IsLocal(action->writeset(i))) && (replica == action->origin())) {
           if (ignore == true) {
             ignore = false;
@@ -62,10 +58,7 @@ void LockingScheduler::MainLoopBody() {
 
       for (int i = 0; i < action->readset_size(); i++) {
         uint32 replica = store_->LookupReplicaByDir(action->readset(i));
-        if (replica == local_replica_ && count_before == false) {
-          actions_involved_replica_.insert(action->distinct_id());
-          count_before = true;
-        }
+
         if ((store_->IsLocal(action->readset(i))) && (replica == action->origin())) {
           if (ignore == true) {
             ignore = false;
@@ -117,32 +110,6 @@ void LockingScheduler::MainLoopBody() {
     // If all read and write locks were immediately acquired, this action
     // is ready to run.
     if (ungranted_requests == 0) {
-      if (action->single_replica() == false && action->create_new() == true && local_replica_ != action->origin() && actions_involved_replica_.find(action->distinct_id()) !=  actions_involved_replica_.end()) {
-        uint64 this_machine = machine()->machine_id();
-        uint64 machine_sent = store_->GetHeadMachine(this_machine);
-        Header* header = new Header();
-        header->set_from(this_machine);
-        header->set_to(machine_sent);
-
-        header->add_misc_int(action->distinct_id());
-        header->add_misc_int(action->involved_machines());
-        header->set_type(Header::RPC);
-        header->set_app("blocklog");
-        header->set_rpc("CREATE_NEW");
-
-        Action* new_action = new Action();
-        new_action->CopyFrom(*action);
-        new_action->clear_client_machine();
-        new_action->clear_client_channel();
-        new_action->clear_origin();
-        new_action->set_create_new(false);
-        string* block = new string();
-        new_action->SerializeToString(block);
-
-        machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
-
-        actions_involved_replica_.erase(action->distinct_id());
-      }
 
       running_action_count_++;
       store_->RunAsync(action, &completed_);
@@ -198,32 +165,6 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ BLOCK: " << a
 
   // Start executing all actions that have newly acquired all their locks.
   while (lm_.Ready(&action)) {
-    if (action->single_replica() == false && action->create_new() == true && local_replica_ != action->origin() && actions_involved_replica_.find(action->distinct_id()) !=  actions_involved_replica_.end()) {
-      uint64 this_machine = machine()->machine_id();
-      uint64 machine_sent = store_->GetHeadMachine(this_machine);
-      Header* header = new Header();
-      header->set_from(this_machine);
-      header->set_to(machine_sent);
-
-      header->add_misc_int(action->distinct_id());
-      header->add_misc_int(action->involved_machines());
-      header->set_type(Header::RPC);
-      header->set_app("blocklog");
-      header->set_rpc("CREATE_NEW");
-
-      Action* new_action = new Action();
-      new_action->CopyFrom(*action);
-      new_action->clear_client_machine();
-      new_action->clear_client_channel();
-      new_action->clear_origin();
-      new_action->set_create_new(false);
-      string* block = new string();
-      new_action->SerializeToString(block);
-
-      machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
-
-      actions_involved_replica_.erase(action->distinct_id());
-    }
     
     running_action_count_++;
     store_->RunAsync(action, &completed_);
