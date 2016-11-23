@@ -234,7 +234,6 @@ MessageBuffer* CalvinFSClientApp::CopyFile(const Slice& from_path, const Slice& 
   a->set_client_channel(channel_name);
   a->set_action_type(MetadataAction::COPY);
   a->set_distinct_id(distinct_id);
-  a->set_create_new(true);
 
   MetadataAction::CopyInput in;
   in.set_from_path(from_path.data(), from_path.size());
