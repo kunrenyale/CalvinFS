@@ -205,6 +205,7 @@ void Paxos2App::RunLeader() {
     string encoded;
     uint64 version;
     uint32 from_machine = machine()->machine_id();
+    PairSequence other_sequence;
 
     if (count_.load() != 0) {
       // Propose a new sequence.
@@ -225,7 +226,6 @@ void Paxos2App::RunLeader() {
 
       version = next_version;
 
-      PairSequence other_sequence;
       other_sequence.ParseFromArray((*m)[0].data(), (*m)[0].size());
 CHECK(other_sequence.pairs_size() != 0);
       other_sequence.set_misc(version);
@@ -240,6 +240,30 @@ CHECK(other_sequence.pairs_size() != 0);
       isLocal = false;
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new sequence from other replicas: version:"<< other_sequence.misc() << " next_version is: "<<next_version<<". from: "<<from_machine;
     }
+
+
+    // Append new actions, only need to handle remoted sequences
+    if (isLocal == false) {
+      ActionBatch* subbatch_;
+      Action* a;
+      for (int i = 0; i < other_sequence.pairs_size();i++) {
+        uint64 subbatch_id_ = other_sequence.pairs(i).first();
+        fakebatches_.Lookup(subbatch_id_, &subbatch_);
+
+        if (subbatch_->entries_size() == 0) {
+          continue;
+        }
+              
+        for (int i = 0; i < subbatch_->entries_size() / 2; i++) {
+          subbatch_->mutable_entries()->SwapElements(i, subbatch_->entries_size()-1-i);
+        }
+        
+        for (int i = 0; i < subbatch_->entries_size() / 2; i++) {
+          a = subbatch_->mutable_entries()->ReleaseLast();
+        }
+      }
+    }
+  
 
     atomic<int>* acks = new atomic<int>(1);
     ack_ptrs.insert(acks);
