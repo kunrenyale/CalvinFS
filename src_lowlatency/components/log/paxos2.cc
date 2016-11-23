@@ -245,7 +245,7 @@ CHECK(other_sequence.pairs_size() != 0);
     // Append new actions, only need to handle remoted sequences
     if (isLocal == false) {
       ActionBatch* subbatch_;
-      Action* a;
+      Action* new_action;
       for (int i = 0; i < other_sequence.pairs_size();i++) {
         uint64 subbatch_id_ = other_sequence.pairs(i).first();
         fakebatches_.Lookup(subbatch_id_, &subbatch_);
@@ -259,7 +259,28 @@ CHECK(other_sequence.pairs_size() != 0);
         }
         
         for (int i = 0; i < subbatch_->entries_size() / 2; i++) {
-          a = subbatch_->mutable_entries()->ReleaseLast();
+          new_action = subbatch_->mutable_entries()->ReleaseLast();
+
+          Header* header = new Header();
+          header->set_from(tmachine()->machine_id());
+          header->set_to(machine()->machine_id());
+
+          header->add_misc_int(action->distinct_id());
+          header->add_misc_int(action->involved_machines());
+          header->set_type(Header::RPC);
+          header->set_app("blocklog");
+          header->set_rpc("CREATE_NEW");
+          
+          
+          new_action->set_fake_action(false);
+          new_action->clear_client_machine();
+          new_action->clear_client_channel();
+          new_action->clear_origin();
+          new_action->set_create_new(false);
+          string* block = new string();
+          new_action->SerializeToString(block);
+
+          machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
         }
       }
     }
