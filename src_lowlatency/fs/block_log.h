@@ -135,7 +135,7 @@ class BlockLogApp : public App {
       int count = queue_.Size();
       if (count != 0 || delay_txns_.find(batch_cnt_) != delay_txns_.end()) {
         ActionBatch batch;
-        int actual_offset = 0;
+        uint64 actual_offset = 0;
         // Handle new actions
         for (int i = 0; i < count; i++) {
           Action* a = NULL;
@@ -157,7 +157,7 @@ class BlockLogApp : public App {
             }
 
             // Add a fake multi-replicas action
-            a->set_version_offset(actual_offset++);
+            //a->set_version_offset(actual_offset++);
 	    a->set_origin(config_->LookupReplica(machine()->machine_id()));
             a->set_fake_action(true);
             batch.mutable_entries()->AddAllocated(a);
@@ -201,6 +201,7 @@ class BlockLogApp : public App {
           header->set_app(name());
           header->set_rpc("BATCH");
           header->add_misc_int(block_id);
+          header->add_misc_int(actual_offset);
           machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
         }
 
@@ -260,6 +261,7 @@ class BlockLogApp : public App {
     } else if (header->rpc() == "BATCH") {
       // Write batch block to local block store.
       uint64 block_id = header->misc_int(0);
+      uint64 batch_size = header->misc_int(1);
       blocks_->Put(block_id, (*message)[0]);
 //LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a BATCH request. block id is:"<< block_id <<" from machine:"<<header->from();
       // Parse batch.
@@ -275,7 +277,7 @@ class BlockLogApp : public App {
         header->set_app(name());
         header->set_rpc("SUBMIT");
         header->add_misc_int(block_id);
-        header->add_misc_int(batch.entries_size());
+        header->add_misc_int(batch_size);
         machine()->SendMessage(header, new MessageBuffer());
       }
 
@@ -332,7 +334,7 @@ class BlockLogApp : public App {
         header->set_from(machine()->machine_id());
         header->set_to(local_paxos_leader_);
         header->set_type(Header::RPC);
-        header->set_app("paxos2");
+        header->set_app(name());
         header->set_rpc("FAKEACTIONBATCH");
         header->add_misc_int(block_id);
         machine()->SendMessage(header, new MessageBuffer(fake_action_batch));
@@ -352,33 +354,61 @@ class BlockLogApp : public App {
       batch->ParseFromArray((*message)[0].data(), (*message)[0].size());
       subbatches_.Put(block_id, batch);
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log recevie a SUBBATCH request. block id is:"<< block_id<<" from machine:"<<header->from();
-    } else if (header->rpc() == "CREATE_NEW") {
-      { 
-        Lock l(&create_new_action_mutex_);
-        uint64 distinct_id = header->misc_int(0);
-        uint32 cnt = header->misc_int(1);
-        uint32 current;
-        if (create_new_actions_.Lookup(distinct_id, &current) == true) {
-          if (current == cnt - 1) {
-            Action* a = new Action();
-            a->ParseFromArray((*message)[0].data(), (*message)[0].size());
-            a->set_origin(replica_);
-            queue_.Push(a);
-            create_new_actions_.Erase(distinct_id);
-          } else {
-            create_new_actions_.EraseAndPut(distinct_id, current+1);
-          }
-        } else {
-          if (cnt == 1) {
-            Action* a = new Action();
-            a->ParseFromArray((*message)[0].data(), (*message)[0].size());
-            a->set_origin(replica_);
-            queue_.Push(a);
-          } else {
-            create_new_actions_.Put(distinct_id, 1);
-          }
+    } else if (header->rpc() == "FAKEACTIONBATCH") {
+      uint64 block_id = header->misc_int(0);
+      ActionBatch* batch = new ActionBatch();
+      batch->ParseFromArray((*message)[0].data(), (*message)[0].size());
+      fakebatches_.Put(block_id, batch);
+    } else if (header->rpc() == "APPEND_MULTIREPLICA_ACTIONS") {
+      MessageBuffer* m = NULL;
+      PairSequence sequence;
+
+      paxos_leader_->GetRemoteSequence(&m);
+      CHECK(m != NULL);
+
+      sequence.ParseFromArray((*m)[0].data(), (*m)[0].size());
+
+      ActionBatch* subbatch_ = NULL;
+      Action* new_action;
+
+      for (int i = 0; i < sequence.pairs_size();i++) {
+        uint64 subbatch_id_ = sequence.pairs(i).first();
+
+        bool got_it;
+        do {
+          got_it = fakebatches_.Lookup(subbatch_id_, &subbatch_);
+        } while (got_it == false);
+
+        if (subbatch_->entries_size() == 0) {
+          continue;
         }
+              
+        for (int i = 0; i < subbatch_->entries_size() / 2; i++) {
+          subbatch_->mutable_entries()->SwapElements(i, subbatch_->entries_size()-1-i);
+        }
+        
+        for (int i = 0; i < subbatch_->entries_size(); i++) {
+          new_action = subbatch_->mutable_entries()->ReleaseLast();                 
+          new_action->set_fake_action(false);
+          new_action->clear_client_machine();
+          new_action->clear_client_channel();
+          new_action->set_origin(replica_);
+          queue_.Push(new_action);
+        }
+
+        delete subbatch_;
+        subbatch_ = NULL;
+        fakebatches_.Erase(subbatch_id_);
       }
+
+      // Send ack to paxos_leader.
+      header->set_type(Header::ACK);
+      Scalar s;
+      s.ParseFromArray((*message)[0].data(), (*message)[0].size());
+      header->set_ack_counter(FromScalar<uint64>(s));
+      machine()->SendMessage(header, new MessageBuffer());   
+      
+
     } else {
       LOG(FATAL) << "unknown RPC type: " << header->rpc();
     }
@@ -412,7 +442,6 @@ class BlockLogApp : public App {
 
   // Number of votes for each batch (used only by machine 0).
   map<uint64, int> batch_votes_;
-  Mutex create_new_action_mutex_;
 
   // Subbatches received.
   AtomicMap<uint64, ActionBatch*> subbatches_;
@@ -429,12 +458,12 @@ class BlockLogApp : public App {
 
   uint64 local_paxos_leader_;
 
-  AtomicMap<uint64, uint32> create_new_actions_;
-
   double delay_time_;
   unordered_map<uint64, vector<Action*> > delay_txns_;
   uint64 batch_cnt_;
 
+  // fake multi-replicas actions batch received.
+  AtomicMap<uint64, ActionBatch*> fakebatches_;
 
   friend class ActionSource;
   class ActionSource : public Source<Action*> {

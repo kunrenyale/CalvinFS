@@ -37,6 +37,7 @@ class Paxos2App : public LogApp {
   virtual void Start();
   virtual void Stop();
   void Append(uint64 blockid, uint64 count = 1);
+  void GetRemoteSequence(MessageBuffer** result);
 
  protected:
   virtual void HandleOtherMessages(Header* header, MessageBuffer* message);
@@ -79,9 +80,6 @@ class Paxos2App : public LogApp {
   AtomicMap<uint32, uint64> next_sequences_index;
 
   map<uint32, Log::Reader*> readers_for_local_log;
-
-  // fake multi-replicas actions batch received.
-  AtomicMap<uint64, ActionBatch*> fakebatches_;
   
 };
 

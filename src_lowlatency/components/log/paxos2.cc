@@ -76,6 +76,11 @@ void Paxos2App::Append(uint64 blockid, uint64 count) {
   machine()->SendMessage(header, new MessageBuffer());
 }
 
+void Paxos2App::GetRemoteSequence(MessageBuffer** result) {
+  bool get_it = sequences_other_replicas.Front(result);
+  CHECK(get_it == true);
+}
+
 void Paxos2App::Start() {
   going_ = true;
   replica_count = (machine()->config().size() >= 3) ? 3 : 1;
@@ -168,11 +173,6 @@ MessageBuffer* m = new MessageBuffer(other_sequence);
     m->Append(ToScalar<uint32>(machine()->machine_id()));
     machine()->SendMessage(header2, m);
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Send NEW-SEQUENCE(after receive ack) to: "<<from_replica<<" . version: "<<r->Version();
-  }  else if (header->rpc() == "FAKEACTIONBATCH") {
-    uint64 block_id = header->misc_int(0);
-    ActionBatch* batch = new ActionBatch();
-    batch->ParseFromArray((*message)[0].data(), (*message)[0].size());
-    fakebatches_.Put(block_id, batch);
   } else {
     LOG(FATAL) << "unknown message type: " << header->rpc();
   }
@@ -192,6 +192,7 @@ void Paxos2App::RunLeader() {
   for (uint64 i = 0; i < replica_count; i++) {
     readers_for_local_log[i] = log_->GetReader();
   }
+
 
   while (go_.load()) {
     // Sleep while there are NO requests.
@@ -222,8 +223,23 @@ void Paxos2App::RunLeader() {
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new sequence from local: version:"<< version<< " next_version is: "<<next_version;
       }
     } else if (sequences_other_replicas.Size() != 0) {
-      sequences_other_replicas.Pop(&m);
+      atomic<int>* ack = new atomic<int>(0);
 
+      Header* header = new Header();
+      header->set_from(machine()->machine_id());
+      header->set_to(machine()->machine_id());
+      header->set_type(Header::RPC);
+      header->set_app("blocklog");
+      header->set_rpc("APPEND_MULTIREPLICA_ACTIONS");
+
+      machine()->SendMessage(header, new MessageBuffer(ToScalar<uint64>(reinterpret_cast<uint64>(ack))));
+
+          // Collect Ack.
+      while (ack->load() < 1) {
+        usleep(10);
+      }
+
+      sequences_other_replicas.Pop(&m);
       version = next_version;
 
       other_sequence.ParseFromArray((*m)[0].data(), (*m)[0].size());
@@ -242,53 +258,8 @@ CHECK(other_sequence.pairs_size() != 0);
     }
 
 
-    // Append new actions, only need to handle remoted sequences
-    if (isLocal == false) {
-      ActionBatch* subbatch_ = NULL;
-      Action* new_action;
-      for (int i = 0; i < other_sequence.pairs_size();i++) {
-        uint64 subbatch_id_ = other_sequence.pairs(i).first();
-        
-        bool got_it;
-        do {
-          got_it = fakebatches_.Lookup(subbatch_id_, &subbatch_);
-        } while (got_it == false);
 
-        if (subbatch_->entries_size() == 0) {
-          continue;
-        }
-              
-        for (int i = 0; i < subbatch_->entries_size() / 2; i++) {
-          subbatch_->mutable_entries()->SwapElements(i, subbatch_->entries_size()-1-i);
-        }
-        
-        for (int i = 0; i < subbatch_->entries_size(); i++) {
-          new_action = subbatch_->mutable_entries()->ReleaseLast();
-
-          Header* header = new Header();
-          header->set_from(machine()->machine_id());
-          header->set_to(machine()->machine_id());
-          header->set_type(Header::RPC);
-          header->set_app("blocklog");
-          header->set_rpc("APPEND");
-                  
-          new_action->set_fake_action(false);
-          new_action->clear_client_machine();
-          new_action->clear_client_channel();
-          new_action->clear_origin();
-          string* block = new string();
-          new_action->SerializeToString(block);
-
-          machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
-        }
-
-        delete subbatch_;
-        subbatch_ = NULL;
-        fakebatches_.Erase(subbatch_id_);
-      }
-    }
-  
-
+    // Propose a new sequence.
     atomic<int>* acks = new atomic<int>(1);
     ack_ptrs.insert(acks);
     for (uint32 i = 1; i < participants_.size(); i++) {
