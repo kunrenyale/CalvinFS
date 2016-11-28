@@ -140,7 +140,7 @@ class BlockLogApp : public App {
         for (int i = 0; i < count; i++) {
           Action* a = NULL;
           queue_.Pop(&a);
-          
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block_log got an action.  distinct_id:"<<a->distinct_id();          
           // Delay multi-replicas action, and add a fake action
           if (a->single_replica() == false) {
             uint64 active_batch_cnt = batch_cnt_ + delayed_batch_cnt;
