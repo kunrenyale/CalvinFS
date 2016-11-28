@@ -359,6 +359,7 @@ class BlockLogApp : public App {
       ActionBatch* batch = new ActionBatch();
       batch->ParseFromArray((*message)[0].data(), (*message)[0].size());
       fakebatches_.Put(block_id, batch);
+
     } else if (header->rpc() == "APPEND_MULTIREPLICA_ACTIONS") {
       MessageBuffer* m = NULL;
       PairSequence sequence;
@@ -377,6 +378,7 @@ class BlockLogApp : public App {
         bool got_it;
         do {
           got_it = fakebatches_.Lookup(subbatch_id_, &subbatch_);
+          usleep(10);
         } while (got_it == false);
 
         if (subbatch_->entries_size() == 0) {
