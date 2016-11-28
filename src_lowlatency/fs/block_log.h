@@ -267,9 +267,10 @@ class BlockLogApp : public App {
       // Parse batch.
       ActionBatch batch;
       batch.ParseFromArray((*message)[0].data(), (*message)[0].size());
+      uint64 message_from_ = header->from();
 
       //  If (This batch come from this replica) → send SUBMIT to the Sequencer(LogApp) on the master node of the local paxos participants
-      if (config_->LookupReplica(header->from()) == replica_) {
+      if (config_->LookupReplica(message_from_) == replica_) {
         Header* header = new Header();
         header->set_from(machine()->machine_id());
         header->set_to(local_paxos_leader_);  // Local Paxos leader.
@@ -321,7 +322,7 @@ class BlockLogApp : public App {
 
 
       // Forward "fake multi-replica action" to the head node 
-      if (config_->LookupReplica(header->from()) != config_->LookupReplica(machine()->machine_id())) {
+      if (config_->LookupReplica(message_from_) != config_->LookupReplica(machine()->machine_id())) {
         ActionBatch fake_action_batch;
         for (int i = 0; i < batch.entries_size(); i++) {
           if (batch.entries(i).fake_action() == true) {
