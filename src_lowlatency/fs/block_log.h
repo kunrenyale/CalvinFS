@@ -409,7 +409,7 @@ class BlockLogApp : public App {
       s.ParseFromArray((*message)[0].data(), (*message)[0].size());
       header->set_ack_counter(FromScalar<uint64>(s));
       machine()->SendMessage(header, new MessageBuffer());   
-      
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log send back a APPEND_MULTIREPLICA_ACTIONS request.  from machine:"<<header->from();     
 
     } else {
       LOG(FATAL) << "unknown RPC type: " << header->rpc();

@@ -231,8 +231,9 @@ void Paxos2App::RunLeader() {
       header->set_type(Header::RPC);
       header->set_app("blocklog");
       header->set_rpc("APPEND_MULTIREPLICA_ACTIONS");
-
-      machine()->SendMessage(header, new MessageBuffer(ToScalar<uint64>(reinterpret_cast<uint64>(ack))));
+      MessageBuffer* n = new MessageBuffer();
+      n->Append(ToScalar<uint64>(reinterpret_cast<uint64>(ack)));
+      machine()->SendMessage(header, n);
 
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 is waiting for the ack: version:"<< version<< " next_version is: "<<next_version;
 
