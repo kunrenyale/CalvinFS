@@ -145,11 +145,13 @@ class BlockLogApp : public App {
           if (a->single_replica() == false) {
             uint64 active_batch_cnt = batch_cnt_ + delayed_batch_cnt;
             if (delay_txns_.find(active_batch_cnt) == delay_txns_.end()) {
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Delay multi-replicas action, and add a fake action(first).  distinct_id:"<<a->distinct_id();
               vector<Action*> actions;
               actions.push_back(a);
               //delay_txns_.insert(make_pair<uint64, vector<Action*>>(active_batch_cnt, actions));
               delay_txns_[active_batch_cnt] = actions;
             } else {
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Delay multi-replicas action, and add a fake action(not first).  distinct_id:"<<a->distinct_id();
               vector<Action*> actions = delay_txns_[active_batch_cnt];
               actions.push_back(a);
               //delay_txns_.insert(make_pair<uint64, vector<Action*>>(active_batch_cnt, actions));
@@ -157,7 +159,6 @@ class BlockLogApp : public App {
             }
 
             // Add a fake multi-replicas action
-            //a->set_version_offset(actual_offset++);
 	    a->set_origin(config_->LookupReplica(machine()->machine_id()));
             a->set_fake_action(true);
             batch.mutable_entries()->AddAllocated(a);
@@ -177,6 +178,7 @@ class BlockLogApp : public App {
             a->set_version_offset(actual_offset++);
 	    a->set_origin(config_->LookupReplica(machine()->machine_id()));
             batch.mutable_entries()->AddAllocated(a);
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the old multi-replicas actions into batch.  distinct_id:"<<a->distinct_id();
           }
 
           delay_txns_.erase(batch_cnt_);
@@ -187,8 +189,7 @@ class BlockLogApp : public App {
         batch.SerializeToString(block);
 
         // Choose block_id.
-        uint64 block_id =
-            machine()->GetGUID() * 2 + (block->size() > 1024 ? 1 : 0);
+        uint64 block_id = machine()->GetGUID() * 2 + (block->size() > 1024 ? 1 : 0);
 
         // Send batch to block stores.
         for (uint64 i = 0; i < config_->config().block_replication_factor();
@@ -375,7 +376,7 @@ class BlockLogApp : public App {
 
       for (int i = 0; i < sequence.pairs_size();i++) {
         uint64 subbatch_id_ = sequence.pairs(i).first();
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  begin batch_id:"<<subbatch_id_;   
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  begin batch_id:"<<subbatch_id_;   
         bool got_it;
         do {
           got_it = fakebatches_.Lookup(subbatch_id_, &subbatch_);
@@ -397,12 +398,13 @@ class BlockLogApp : public App {
           new_action->clear_client_channel();
           new_action->set_origin(replica_);
           queue_.Push(new_action);
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  append a action:"<<new_action->distinct_id();   
         }
 
         delete subbatch_;
         subbatch_ = NULL;
         fakebatches_.Erase(subbatch_id_);
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  finish batch_id:"<<subbatch_id_;   
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  finish batch_id:"<<subbatch_id_;   
       }
 
       // Send ack to paxos_leader.
