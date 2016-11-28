@@ -359,7 +359,7 @@ class BlockLogApp : public App {
       ActionBatch* batch = new ActionBatch();
       batch->ParseFromArray((*message)[0].data(), (*message)[0].size());
       fakebatches_.Put(block_id, batch);
-
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received FAKEACTIONBATCH request.  batch_id:"<<block_id;  
     } else if (header->rpc() == "APPEND_MULTIREPLICA_ACTIONS") {
       MessageBuffer* m = NULL;
       PairSequence sequence;
@@ -374,7 +374,7 @@ class BlockLogApp : public App {
 
       for (int i = 0; i < sequence.pairs_size();i++) {
         uint64 subbatch_id_ = sequence.pairs(i).first();
-
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  begin batch_id:"<<subbatch_id;   
         bool got_it;
         do {
           got_it = fakebatches_.Lookup(subbatch_id_, &subbatch_);
@@ -401,6 +401,7 @@ class BlockLogApp : public App {
         delete subbatch_;
         subbatch_ = NULL;
         fakebatches_.Erase(subbatch_id_);
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  finish batch_id:"<<subbatch_id;   
       }
 
       // Send ack to paxos_leader.
