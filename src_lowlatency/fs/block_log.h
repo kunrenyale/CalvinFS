@@ -404,11 +404,15 @@ class BlockLogApp : public App {
       }
 
       // Send ack to paxos_leader.
-      header->set_type(Header::ACK);
+      Header* h = new Header();
+      h->set_from(machine()->machine_id());
+      h->set_to(machine()->machine_id());
+      h->set_type(Header::ACK);
+
       Scalar s;
       s.ParseFromArray((*message)[0].data(), (*message)[0].size());
-      header->set_ack_counter(FromScalar<uint64>(s));
-      machine()->SendMessage(header, new MessageBuffer());   
+      h->set_ack_counter(FromScalar<uint64>(s));
+      machine()->SendMessage(h, new MessageBuffer());   
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log send back a APPEND_MULTIREPLICA_ACTIONS request.  from machine:"<<header->from();     
 
     } else {
