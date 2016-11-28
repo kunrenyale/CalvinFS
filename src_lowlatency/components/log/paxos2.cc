@@ -235,7 +235,7 @@ void Paxos2App::RunLeader() {
       n->Append(ToScalar<uint64>(reinterpret_cast<uint64>(ack)));
       machine()->SendMessage(header, n);
 
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 is waiting for the ack: version:"<< version<< " next_version is: "<<next_version;
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 is waiting for the ack: version:"<< version<< " next_version is: "<<next_version;
 
           // Collect Ack.
       while (ack->load() < 1) {
@@ -258,7 +258,7 @@ CHECK(other_sequence.pairs_size() != 0);
       s.ParseFromArray((*m)[2].data(), (*m)[2].size());
       from_machine = FromScalar<uint32>(s);
       isLocal = false;
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new sequence from other replicas: version:"<< other_sequence.misc() << " next_version is: "<<next_version<<". from: "<<from_machine;
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new sequence from other replicas: version:"<< other_sequence.misc() << " next_version is: "<<next_version<<". from: "<<from_machine;
     }
 
 

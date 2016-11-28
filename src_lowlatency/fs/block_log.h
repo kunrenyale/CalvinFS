@@ -360,7 +360,7 @@ class BlockLogApp : public App {
       ActionBatch* batch = new ActionBatch();
       batch->ParseFromArray((*message)[0].data(), (*message)[0].size());
       fakebatches_.Put(block_id, batch);
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received FAKEACTIONBATCH request.  batch_id:"<<block_id;  
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received FAKEACTIONBATCH request.  batch_id:"<<block_id;  
     } else if (header->rpc() == "APPEND_MULTIREPLICA_ACTIONS") {
       MessageBuffer* m = NULL;
       PairSequence sequence;
@@ -375,7 +375,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received FAKEA
 
       for (int i = 0; i < sequence.pairs_size();i++) {
         uint64 subbatch_id_ = sequence.pairs(i).first();
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  begin batch_id:"<<subbatch_id_;   
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  begin batch_id:"<<subbatch_id_;   
         bool got_it;
         do {
           got_it = fakebatches_.Lookup(subbatch_id_, &subbatch_);
@@ -402,7 +402,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEN
         delete subbatch_;
         subbatch_ = NULL;
         fakebatches_.Erase(subbatch_id_);
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  finish batch_id:"<<subbatch_id_;   
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  finish batch_id:"<<subbatch_id_;   
       }
 
       // Send ack to paxos_leader.
@@ -415,7 +415,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEN
       s.ParseFromArray((*message)[0].data(), (*message)[0].size());
       h->set_ack_counter(FromScalar<uint64>(s));
       machine()->SendMessage(h, new MessageBuffer());   
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log send back a APPEND_MULTIREPLICA_ACTIONS request.  from machine:"<<header->from();     
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log send back a APPEND_MULTIREPLICA_ACTIONS request.  from machine:"<<header->from();     
 
     } else {
       LOG(FATAL) << "unknown RPC type: " << header->rpc();

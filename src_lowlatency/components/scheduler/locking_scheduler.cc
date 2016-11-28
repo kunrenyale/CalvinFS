@@ -36,19 +36,14 @@ void LockingScheduler::MainLoopBody() {
     high_water_mark_ = action->version();
     active_actions_.insert(action->version());
     int ungranted_requests = 0;
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action: " << action->version()<<" distinct id is:"<<action->distinct_id();
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action: " << action->version()<<" distinct id is:"<<action->distinct_id();
 
     if (action->single_replica() == false) {
-      bool ignore = true;
       set<string> writeset;
 
       for (int i = 0; i < action->writeset_size(); i++) {
         uint32 replica = store_->LookupReplicaByDir(action->writeset(i));
         if ((store_->IsLocal(action->writeset(i))) && (replica == action->origin())) {
-          if (ignore == true) {
-            ignore = false;
-          }
-
           writeset.insert(action->writeset(i));
           if (!lm_.WriteLock(action, action->writeset(i))) {
             ungranted_requests++;
@@ -60,10 +55,6 @@ void LockingScheduler::MainLoopBody() {
         uint32 replica = store_->LookupReplicaByDir(action->readset(i));
 
         if ((store_->IsLocal(action->readset(i))) && (replica == action->origin())) {
-          if (ignore == true) {
-            ignore = false;
-          }
-
           if (writeset.count(action->readset(i)) == 0) {
             if (!lm_.ReadLock(action, action->readset(i))) {
               ungranted_requests++;
@@ -73,12 +64,6 @@ void LockingScheduler::MainLoopBody() {
       }
 
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler after lock: " << action->version()<<" distinct id is:"<<action->distinct_id()<<"  create_new():"<<action->create_new()<<"  LocalReplica is:"<<store_->LocalReplica()<<"   action->origin() is: "<<action->origin()<<"  .action->lowest_involved_machine() is:"<<action->lowest_involved_machine();
-
-      if (ignore == true) {
-        // Finish this loop
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ scheduler ignore this txn: " << action->version()<<" distinct id is:"<<action->distinct_id();
-        return;
-      } 
     }  else {
 
       // Request write locks. Track requests so we can check that we don't
