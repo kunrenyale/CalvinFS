@@ -374,7 +374,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received FAKEA
 
       for (int i = 0; i < sequence.pairs_size();i++) {
         uint64 subbatch_id_ = sequence.pairs(i).first();
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  begin batch_id:"<<subbatch_id;   
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  begin batch_id:"<<subbatch_id_;   
         bool got_it;
         do {
           got_it = fakebatches_.Lookup(subbatch_id_, &subbatch_);
@@ -401,7 +401,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEN
         delete subbatch_;
         subbatch_ = NULL;
         fakebatches_.Erase(subbatch_id_);
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  finish batch_id:"<<subbatch_id;   
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  finish batch_id:"<<subbatch_id_;   
       }
 
       // Send ack to paxos_leader.
