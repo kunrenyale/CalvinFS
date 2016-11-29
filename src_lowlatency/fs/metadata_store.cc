@@ -347,7 +347,6 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
   }
 
   CHECK(replica_involved.size() >= 1);
-CHECK(replica_involved.size() > 1);
 
   if (replica_involved.size() == 1) {
     action->set_single_replica(true);
