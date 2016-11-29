@@ -160,7 +160,7 @@ class BlockLogApp : public App {
         // Add the old multi-replicas actions into batch
         if (delay_txns_.find(batch_cnt_) != delay_txns_.end()) {
           ActionBatch actions = delay_txns_[batch_cnt_];
-
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>before Add the old multi-replicas actions into batch.  batch size:"<<actions.entries_size();
           for (int i = 0; i < actions.entries_size(); i++) {
             Action a = actions.entries(i);
             a.set_version_offset(actual_offset++);
@@ -171,6 +171,8 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the old multi-repl
 
           delay_txns_.erase(batch_cnt_);
         }
+
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Blocklog: before send BATCH, block_id is:";
 
         // Avoid multiple allocation.
         string* block = new string();
