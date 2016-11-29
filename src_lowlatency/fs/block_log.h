@@ -9,7 +9,6 @@
 #include <google/protobuf/repeated_field.h>
 #include <set>
 #include <vector>
-#include <tr1/unordered_map>
 
 #include "common/types.h"
 #include "components/log/log.h"
@@ -24,7 +23,6 @@
 using std::set;
 using std::vector;
 using std::make_pair;
-using std::tr1::unordered_map;
 
 class Header;
 class Machine;
@@ -144,20 +142,9 @@ class BlockLogApp : public App {
           // Delay multi-replicas action, and add a fake action
           if (a->single_replica() == false) {
             uint64 active_batch_cnt = batch_cnt_ + delayed_batch_cnt;
-            if (delay_txns_.find(active_batch_cnt) == delay_txns_.end()) {
-//LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Delay multi-replicas action, and add a fake action(first).  distinct_id:"<<a->distinct_id();
-              vector<Action*> actions;
-              actions.push_back(a);
-              //delay_txns_.insert(make_pair<uint64, vector<Action*>>(active_batch_cnt, actions));
-              delay_txns_[active_batch_cnt] = actions;
-            } else {
-//LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Delay multi-replicas action, and add a fake action(not first).  distinct_id:"<<a->distinct_id();
-              vector<Action*> actions = delay_txns_[active_batch_cnt];
-              actions.push_back(a);
-              //delay_txns_.insert(make_pair<uint64, vector<Action*>>(active_batch_cnt, actions));
-              delay_txns_[active_batch_cnt] = actions;
-            }
 
+            delay_txns_[active_batch_cnt].add_entries()->CopyFrom(*a);
+  
             // Add a fake multi-replicas action
 	    a->set_origin(config_->LookupReplica(machine()->machine_id()));
             a->set_fake_action(true);
@@ -172,13 +159,14 @@ class BlockLogApp : public App {
 
         // Add the old multi-replicas actions into batch
         if (delay_txns_.find(batch_cnt_) != delay_txns_.end()) {
-          vector<Action*> actions = delay_txns_[batch_cnt_];
-          for (uint32 i = 0; i < actions.size(); i++) {
-            Action* a = actions[i];
-            a->set_version_offset(actual_offset++);
-	    a->set_origin(config_->LookupReplica(machine()->machine_id()));
-            batch.mutable_entries()->AddAllocated(a);
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the old multi-replicas actions into batch.  distinct_id:"<<a->distinct_id();
+          ActionBatch actions = delay_txns_[batch_cnt_];
+
+          for (int i = 0; i < actions.entries_size(); i++) {
+            Action a = actions.entries(i);
+            a.set_version_offset(actual_offset++);
+	    a.set_origin(config_->LookupReplica(machine()->machine_id()));
+            batch.mutable_entries()->AddAllocated(&a);
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the old multi-replicas actions into batch.  distinct_id:"<<a.distinct_id();
           }
 
           delay_txns_.erase(batch_cnt_);
@@ -469,7 +457,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEN
   uint64 local_paxos_leader_;
 
   double delay_time_;
-  unordered_map<uint64, vector<Action*> > delay_txns_;
+  map<uint64, ActionBatch> delay_txns_;
   uint64 batch_cnt_;
 
   // fake multi-replicas actions batch received.
