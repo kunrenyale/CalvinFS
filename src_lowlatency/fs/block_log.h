@@ -172,12 +172,12 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the old multi-repl
           delay_txns_.erase(batch_cnt_);
         }
 
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Blocklog: before send BATCH, block_id is:";
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Blocklog: 1. before send BATCH, block_id is:";
 
         // Avoid multiple allocation.
         string* block = new string();
         batch.SerializeToString(block);
-
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Blocklog: 2. before send BATCH, block_id is:";
         // Choose block_id.
         uint64 block_id = machine()->GetGUID() * 2 + (block->size() > 1024 ? 1 : 0);
 
@@ -186,14 +186,14 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Blocklog: before send 
              i++) {
           Header* header = new Header();
           header->set_from(machine()->machine_id());
-          header->set_to(
-              config_->LookupBlucket(config_->HashBlockID(block_id), i));
+          header->set_to(config_->LookupBlucket(config_->HashBlockID(block_id), i));
           header->set_type(Header::RPC);
           header->set_app(name());
           header->set_rpc("BATCH");
           header->add_misc_int(block_id);
           header->add_misc_int(actual_offset);
           machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Blocklog: 3. send BATCH to: "<<config_->LookupBlucket(config_->HashBlockID(block_id), i);
         }
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Blocklog: send BATCH, block_id is:"<<block_id<<"  size is :"<<actual_offset;
         // Scheduler block for eventual deallocation.
