@@ -332,6 +332,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the faked multi-re
         header->set_rpc("FAKEACTIONBATCH");
         header->add_misc_int(block_id);
         machine()->SendMessage(header, new MessageBuffer(fake_action_batch));
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " Send FAKEACTIONBATCH . block id: "<<block_id<<"  size(): "<<fake_action_batch.entries_size();
       }
       
 
@@ -353,7 +354,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the faked multi-re
       ActionBatch* batch = new ActionBatch();
       batch->ParseFromArray((*message)[0].data(), (*message)[0].size());
       fakebatches_.Put(block_id, batch);
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received FAKEACTIONBATCH request.  batch_id:"<<block_id;  
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received FAKEACTIONBATCH request.  batch_id:"<<block_id<<"  size is:"<<batch->entries_size();  
     } else if (header->rpc() == "APPEND_MULTIREPLICA_ACTIONS") {
       MessageBuffer* m = NULL;
       PairSequence sequence;
@@ -364,16 +365,18 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received FAKEA
       sequence.ParseFromArray((*m)[0].data(), (*m)[0].size());
 
       ActionBatch* subbatch_ = NULL;
-      Action* new_action;
+      Action** new_action = NULL;
 
       for (int i = 0; i < sequence.pairs_size();i++) {
         uint64 subbatch_id_ = sequence.pairs(i).first();
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  begin batch_id:"<<subbatch_id_<<"  size is:"<<sequence.pairs(i).second();
+
         bool got_it;
         do {
           got_it = fakebatches_.Lookup(subbatch_id_, &subbatch_);
           usleep(10);
         } while (got_it == false);
+
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  begin batch_id:"<<subbatch_id_<<"  size is:"<<subbatch_->entries_size();
 
         if (subbatch_->entries_size() == 0) {
           continue;
@@ -384,14 +387,13 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEN
         }
         
         for (int i = 0; i < subbatch_->entries_size(); i++) {
-          new_action = subbatch_->mutable_entries()->ReleaseLast();                 
-          new_action->set_fake_action(false);
-          new_action->clear_client_machine();
-          new_action->clear_client_channel();
-          new_action->set_origin(replica_);
-          new_action->set_new_generated(true);
-          queue_.Push(new_action);
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  append a action:"<<new_action->distinct_id();   
+          *new_action = subbatch_->mutable_entries()->ReleaseLast();                 
+          (*new_action)->set_fake_action(false);
+          (*new_action)->clear_client_machine();
+          (*new_action)->clear_client_channel();
+          (*new_action)->set_new_generated(true);
+          queue_.Push(*new_action);
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  append a action:"<<(*new_action)->distinct_id();   
         }
 
         delete subbatch_;
