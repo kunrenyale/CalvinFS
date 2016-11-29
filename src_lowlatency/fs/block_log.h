@@ -314,8 +314,8 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the old multi-repl
         ActionBatch fake_action_batch;
         for (int i = 0; i < batch.entries_size(); i++) {
           if (batch.entries(i).fake_action() == true) {
-            for (int i = 0; i < batch.entries(i).involved_replicas_size(); i++) {
-              if (batch.entries(i).involved_replicas(i) == replica_) {
+            for (int j = 0; j < batch.entries(i).involved_replicas_size(); j++) {
+              if (batch.entries(i).involved_replicas(j) == replica_) {
                  fake_action_batch.add_entries()->CopyFrom(batch.entries(i));
                  break;
               }
