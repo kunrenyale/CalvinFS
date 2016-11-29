@@ -116,7 +116,7 @@ class BlockLogApp : public App {
         new SequenceSource(
             new RemoteLogSource<PairSequence>(machine(), local_paxos_leader_, "paxos2"));
 
-    delay_time_ = 0.1;
+    delay_time_ = 0.01;
     batch_cnt_ = 0;
    
     uint64 delayed_batch_cnt = delay_time_/0.005;
