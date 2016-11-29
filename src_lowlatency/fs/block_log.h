@@ -140,7 +140,7 @@ class BlockLogApp : public App {
           queue_.Pop(&a);
 //LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block_log got an action.  distinct_id:"<<a->distinct_id();          
           // Delay multi-replicas action, and add a fake action
-          if (a->single_replica() == false) {
+          if (a->single_replica() == false && a->new_generated() == false) {
             uint64 active_batch_cnt = batch_cnt_ + delayed_batch_cnt;
 
             delay_txns_[active_batch_cnt].add_entries()->CopyFrom(*a);
@@ -160,7 +160,6 @@ class BlockLogApp : public App {
         // Add the old multi-replicas actions into batch
         if (delay_txns_.find(batch_cnt_) != delay_txns_.end()) {
           ActionBatch actions = delay_txns_[batch_cnt_];
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>before Add the old multi-replicas actions into batch.  batch size:"<<actions.entries_size();
           for (int i = 0; i < actions.entries_size(); i++) {
             Action* a = new Action();
             a->CopyFrom(actions.entries(i));
@@ -173,12 +172,10 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the old multi-repl
           delay_txns_.erase(batch_cnt_);
         }
 
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Blocklog: 1. before send BATCH, block_id is:";
-
         // Avoid multiple allocation.
         string* block = new string();
         batch.SerializeToString(block);
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Blocklog: 2. before send BATCH, block_id is:";
+
         // Choose block_id.
         uint64 block_id = machine()->GetGUID() * 2 + (block->size() > 1024 ? 1 : 0);
 
@@ -194,9 +191,8 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Blocklog: 2. before se
           header->add_misc_int(block_id);
           header->add_misc_int(actual_offset);
           machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Blocklog: 3. send BATCH to: "<<config_->LookupBlucket(config_->HashBlockID(block_id), i);
         }
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Blocklog: send BATCH, block_id is:"<<block_id<<"  size is :"<<actual_offset;
+
         // Scheduler block for eventual deallocation.
         to_delete_.Push(block);
       }
@@ -388,6 +384,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEN
           new_action->clear_client_machine();
           new_action->clear_client_channel();
           new_action->set_origin(replica_);
+          new_action->set_new_generated(true);
           queue_.Push(new_action);
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  append a action:"<<new_action->distinct_id();   
         }

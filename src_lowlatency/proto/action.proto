@@ -52,11 +52,12 @@ message Action {
 
   required uint64 distinct_id = 43;
  
-  // For some cross-replica actions, need to create a new action to guarantee deterministic order
-  optional bool create_new = 44 [default = true];
+  // whether the action is the new_generated cross-replica action
+  optional bool new_generated = 44 [default = false];
 
   repeated uint32 involved_replicas = 45;
 
+  // For some cross-replica actions, need to create a new action to guarantee deterministic order
   optional bool fake_action = 46 [default = false];
 
   // Miscellaneous data.
