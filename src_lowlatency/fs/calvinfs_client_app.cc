@@ -284,6 +284,8 @@ MessageBuffer* CalvinFSClientApp::RenameFile(const Slice& from_path, const Slice
   a->set_action_type(MetadataAction::RENAME);
   a->set_distinct_id(distinct_id);
 
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":^^^^^^^^ CalvinFSClientApp:: begin RenameFile ^^^^^^  distinct id is:"<<distinct_id;
+
   MetadataAction::RenameInput in;
   in.set_from_path(from_path.data(), from_path.size());
   in.set_to_path(to_path.data(), to_path.size());

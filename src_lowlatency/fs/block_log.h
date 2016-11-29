@@ -315,6 +315,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the old multi-repl
           if (batch.entries(i).fake_action() == true) {
             for (int j = 0; j < batch.entries(i).involved_replicas_size(); j++) {
               if (batch.entries(i).involved_replicas(j) == replica_) {
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the faked multi-replicas actions into batch.  distinct_id:"<<batch.entries(i).distinct_id();
                  fake_action_batch.add_entries()->CopyFrom(batch.entries(i));
                  break;
               }

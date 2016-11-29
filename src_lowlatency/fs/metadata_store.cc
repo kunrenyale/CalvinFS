@@ -347,11 +347,12 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
   }
 
   CHECK(replica_involved.size() >= 1);
+CHECK(replica_involved.size() > 1);
 
   if (replica_involved.size() == 1) {
     action->set_single_replica(true);
   } else {
-    action->set_single_replica(false);  
+    action->set_single_replica(false);
   }
   
   for (set<uint32>::iterator it=replica_involved.begin(); it!=replica_involved.end(); ++it) {
