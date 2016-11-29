@@ -382,18 +382,18 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEN
           continue;
         }
               
-        for (int i = 0; i < subbatch_->entries_size() / 2; i++) {
-          subbatch_->mutable_entries()->SwapElements(i, subbatch_->entries_size()-1-i);
+        for (int j = 0; j < subbatch_->entries_size() / 2; j++) {
+          subbatch_->mutable_entries()->SwapElements(j, subbatch_->entries_size()-1-j);
         }
         
-        for (int i = 0; i < subbatch_->entries_size(); i++) {
+        for (int j = 0; j < subbatch_->entries_size(); j++) {
           new_action = subbatch_->mutable_entries()->ReleaseLast();                 
           new_action->set_fake_action(false);
           new_action->clear_client_machine();
           new_action->clear_client_channel();
           new_action->set_new_generated(true);
           queue_.Push(new_action);
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  append a action:"<<new_action->distinct_id();   
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  append a action:"<<new_action->distinct_id()<<" batch size is:"<<subbatch_->entries_size();   
         }
 
         delete subbatch_;
