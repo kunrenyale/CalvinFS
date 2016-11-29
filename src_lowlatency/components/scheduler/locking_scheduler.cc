@@ -25,9 +25,6 @@ REGISTER_APP(LockingScheduler) {
 void LockingScheduler::MainLoopBody() {
   Action* action;
 
-//CHECK(running_action_count_ < 3000);
-//CHECK(active_actions_.size() < 3000);
-
   // Start processing the next incoming action request.
   if (static_cast<int>(active_actions_.size()) < kMaxActiveActions &&
       running_action_count_ < kMaxRunningActions &&
@@ -36,7 +33,7 @@ void LockingScheduler::MainLoopBody() {
     high_water_mark_ = action->version();
     active_actions_.insert(action->version());
     int ungranted_requests = 0;
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action: " << action->version()<<" distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action: " << action->version()<<" distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin();
 
     if (action->single_replica() == false) {
       set<string> writeset;
@@ -139,7 +136,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ BLOCK: " << a
         }
       }
     }
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":** scheduler finish running action: " << action->version()<<" distinct id is:"<<action->distinct_id();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":** scheduler finish running action: " << action->version()<<" distinct id is:"<<action->distinct_id();
     active_actions_.erase(action->version());
     running_action_count_--;
     safe_version_.store(
