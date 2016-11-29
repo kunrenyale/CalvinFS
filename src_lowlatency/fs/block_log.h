@@ -146,13 +146,13 @@ class BlockLogApp : public App {
             delay_txns_[active_batch_cnt].add_entries()->CopyFrom(*a);
   
             // Add a fake multi-replicas action
-	    a->set_origin(config_->LookupReplica(machine()->machine_id()));
+	    a->set_origin(replica_);
             a->set_fake_action(true);
             batch.mutable_entries()->AddAllocated(a);
 
           } else {
             a->set_version_offset(actual_offset++);
-	    a->set_origin(config_->LookupReplica(machine()->machine_id()));
+	    a->set_origin(replica_);
             batch.mutable_entries()->AddAllocated(a);
           }
         }
@@ -164,7 +164,7 @@ class BlockLogApp : public App {
             Action* a = new Action();
             a->CopyFrom(actions.entries(i));
             a->set_version_offset(actual_offset++);
-	    a->set_origin(config_->LookupReplica(machine()->machine_id()));
+	    a->set_origin(replica_);
             batch.mutable_entries()->AddAllocated(a);
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the old multi-replicas actions into batch.  distinct_id:"<<a->distinct_id();
           }
@@ -219,7 +219,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the old multi-repl
 
   // Takes ownership of '*entry'.
   virtual void Append(Action* entry) {
-    entry->set_origin(config_->LookupReplica(machine()->machine_id()));
+    entry->set_origin(replica_);
     queue_.Push(entry);
   }
 
@@ -227,7 +227,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the old multi-repl
     CHECK(count == 1);
     Action* a = new Action();
     a->ParseFromArray(entry.data(), entry.size());
-    a->set_origin(config_->LookupReplica(machine()->machine_id()));
+    a->set_origin(replica_);
     queue_.Push(a);
   }
 
@@ -310,11 +310,16 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the old multi-repl
 
 
       // Forward "fake multi-replica action" to the head node 
-      if (config_->LookupReplica(message_from_) != config_->LookupReplica(machine()->machine_id())) {
+      if (config_->LookupReplica(message_from_) != replica_) {
         ActionBatch fake_action_batch;
         for (int i = 0; i < batch.entries_size(); i++) {
           if (batch.entries(i).fake_action() == true) {
-            fake_action_batch.add_entries()->CopyFrom(batch.entries(i));
+            for (int i = 0; i < batch.entries(i).involved_replicas_size(); i++) {
+              if (batch.entries(i).involved_replicas(i) == replica_) {
+                 fake_action_batch.add_entries()->CopyFrom(batch.entries(i));
+                 break;
+              }
+            }
           }
         }
 

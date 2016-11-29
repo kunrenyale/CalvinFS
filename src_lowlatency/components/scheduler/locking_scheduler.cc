@@ -139,7 +139,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ BLOCK: " << a
         }
       }
     }
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":** scheduler finish running action: " << action->version()<<" distinct id is:"<<action->distinct_id();
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":** scheduler finish running action: " << action->version()<<" distinct id is:"<<action->distinct_id();
     active_actions_.erase(action->version());
     running_action_count_--;
     safe_version_.store(
