@@ -381,12 +381,13 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEN
         if (subbatch_->entries_size() == 0) {
           continue;
         }
-              
-        for (int j = 0; j < subbatch_->entries_size() / 2; j++) {
+        
+        int subbatch_size = subbatch_->entries_size();  
+        for (int j = 0; j < subbatch_size / 2; j++) {
           subbatch_->mutable_entries()->SwapElements(j, subbatch_->entries_size()-1-j);
         }
         
-        for (int j = 0; j < subbatch_->entries_size(); j++) {
+        for (int j = 0; j < subbatch_size; j++) {
           new_action = subbatch_->mutable_entries()->ReleaseLast();                 
           new_action->set_fake_action(false);
           new_action->clear_client_machine();
