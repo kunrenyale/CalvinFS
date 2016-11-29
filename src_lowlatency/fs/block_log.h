@@ -308,7 +308,6 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the old multi-repl
         machine()->SendMessage(header, new MessageBuffer(subbatches[*it]));
       }
 
-
       // Forward "fake multi-replica action" to the head node 
       if (config_->LookupReplica(message_from_) != replica_) {
         ActionBatch fake_action_batch;
