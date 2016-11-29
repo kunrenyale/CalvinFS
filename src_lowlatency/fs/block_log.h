@@ -140,18 +140,18 @@ class BlockLogApp : public App {
         for (int i = 0; i < count; i++) {
           Action* a = NULL;
           queue_.Pop(&a);
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block_log got an action.  distinct_id:"<<a->distinct_id();          
+//LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block_log got an action.  distinct_id:"<<a->distinct_id();          
           // Delay multi-replicas action, and add a fake action
           if (a->single_replica() == false) {
             uint64 active_batch_cnt = batch_cnt_ + delayed_batch_cnt;
             if (delay_txns_.find(active_batch_cnt) == delay_txns_.end()) {
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Delay multi-replicas action, and add a fake action(first).  distinct_id:"<<a->distinct_id();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Delay multi-replicas action, and add a fake action(first).  distinct_id:"<<a->distinct_id();
               vector<Action*> actions;
               actions.push_back(a);
               //delay_txns_.insert(make_pair<uint64, vector<Action*>>(active_batch_cnt, actions));
               delay_txns_[active_batch_cnt] = actions;
             } else {
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Delay multi-replicas action, and add a fake action(not first).  distinct_id:"<<a->distinct_id();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Delay multi-replicas action, and add a fake action(not first).  distinct_id:"<<a->distinct_id();
               vector<Action*> actions = delay_txns_[active_batch_cnt];
               actions.push_back(a);
               //delay_txns_.insert(make_pair<uint64, vector<Action*>>(active_batch_cnt, actions));
@@ -163,11 +163,11 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Delay multi-replicas a
             a->set_fake_action(true);
             batch.mutable_entries()->AddAllocated(a);
 
+          } else {
+            a->set_version_offset(actual_offset++);
+	    a->set_origin(config_->LookupReplica(machine()->machine_id()));
+            batch.mutable_entries()->AddAllocated(a);
           }
-
-          a->set_version_offset(actual_offset++);
-	  a->set_origin(config_->LookupReplica(machine()->machine_id()));
-          batch.mutable_entries()->AddAllocated(a);
         }
 
         // Add the old multi-replicas actions into batch
@@ -205,7 +205,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the old multi-repl
           header->add_misc_int(actual_offset);
           machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
         }
-
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Blocklog: send BATCH, block_id is:"<<block_id<<"  size is :"<<actual_offset;
         // Scheduler block for eventual deallocation.
         to_delete_.Push(block);
       }
@@ -376,7 +376,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the old multi-repl
 
       for (int i = 0; i < sequence.pairs_size();i++) {
         uint64 subbatch_id_ = sequence.pairs(i).first();
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  begin batch_id:"<<subbatch_id_;   
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  begin batch_id:"<<subbatch_id_<<"  size is:"<<sequence.pairs(i).second();
         bool got_it;
         do {
           got_it = fakebatches_.Lookup(subbatch_id_, &subbatch_);
