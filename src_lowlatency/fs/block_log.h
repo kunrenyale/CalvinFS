@@ -166,7 +166,7 @@ class BlockLogApp : public App {
             a->set_version_offset(actual_offset++);
 	    a->set_origin(replica_);
             batch.mutable_entries()->AddAllocated(a);
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the old multi-replicas actions into batch.  distinct_id:"<<a->distinct_id();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the old multi-replicas actions into batch.  distinct_id:"<<a->distinct_id();
           }
 
           delay_txns_.erase(batch_cnt_);
@@ -315,7 +315,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the old multi-repl
           if (batch.entries(i).fake_action() == true) {
             for (int j = 0; j < batch.entries(i).involved_replicas_size(); j++) {
               if (batch.entries(i).involved_replicas(j) == replica_) {
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the faked multi-replicas actions into batch. block id: "<<block_id<<"  distinct_id: "<<batch.entries(i).distinct_id();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the faked multi-replicas actions into batch. block id: "<<block_id<<"  distinct_id: "<<batch.entries(i).distinct_id();
                  fake_action_batch.add_entries()->CopyFrom(batch.entries(i));
                  break;
               }
@@ -332,7 +332,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the faked multi-re
         header->set_rpc("FAKEACTIONBATCH");
         header->add_misc_int(block_id);
         machine()->SendMessage(header, new MessageBuffer(fake_action_batch));
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " Send FAKEACTIONBATCH . block id: "<<block_id<<"  size(): "<<fake_action_batch.entries_size();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id() << " Send FAKEACTIONBATCH . block id: "<<block_id<<"  size(): "<<fake_action_batch.entries_size();
       }
       
 
@@ -354,7 +354,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " Send FAKEACTIONBATCH . b
       ActionBatch* batch = new ActionBatch();
       batch->ParseFromArray((*message)[0].data(), (*message)[0].size());
       fakebatches_.Put(block_id, batch);
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received FAKEACTIONBATCH request.  batch_id:"<<block_id<<"  size is:"<<batch->entries_size();  
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received FAKEACTIONBATCH request.  batch_id:"<<block_id<<"  size is:"<<batch->entries_size();  
     } else if (header->rpc() == "APPEND_MULTIREPLICA_ACTIONS") {
       MessageBuffer* m = NULL;
       PairSequence sequence;
@@ -376,7 +376,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received FAKEA
           usleep(10);
         } while (got_it == false);
 
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  begin batch_id:"<<subbatch_id_<<"  size is:"<<subbatch_->entries_size();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  begin batch_id:"<<subbatch_id_<<"  size is:"<<subbatch_->entries_size();
 
         if (subbatch_->entries_size() == 0) {
           continue;
@@ -394,13 +394,13 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEN
           new_action->clear_client_channel();
           new_action->set_new_generated(true);
           queue_.Push(new_action);
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  append a action:"<<new_action->distinct_id()<<" batch size is:"<<subbatch_->entries_size();   
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  append a action:"<<new_action->distinct_id()<<" batch size is:"<<subbatch_->entries_size();   
         }
 
         delete subbatch_;
         subbatch_ = NULL;
         fakebatches_.Erase(subbatch_id_);
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  finish batch_id:"<<subbatch_id_;   
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  finish batch_id:"<<subbatch_id_;   
       }
 
       // Send ack to paxos_leader.
