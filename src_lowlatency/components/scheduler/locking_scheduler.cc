@@ -36,7 +36,7 @@ void LockingScheduler::MainLoopBody() {
     high_water_mark_ = action->version();
     active_actions_.insert(action->version());
     int ungranted_requests = 0;
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action: " << action->version()<<" distinct id is:"<<action->distinct_id();
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action: " << action->version()<<" distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin();
 
     if (action->single_replica() == false) {
       set<string> writeset;
