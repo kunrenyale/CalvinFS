@@ -365,7 +365,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received FAKEA
       sequence.ParseFromArray((*m)[0].data(), (*m)[0].size());
 
       ActionBatch* subbatch_ = NULL;
-      Action** new_action = NULL;
+      Action* new_action;
 
       for (int i = 0; i < sequence.pairs_size();i++) {
         uint64 subbatch_id_ = sequence.pairs(i).first();
@@ -387,13 +387,13 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEN
         }
         
         for (int i = 0; i < subbatch_->entries_size(); i++) {
-          *new_action = subbatch_->mutable_entries()->ReleaseLast();                 
-          (*new_action)->set_fake_action(false);
-          (*new_action)->clear_client_machine();
-          (*new_action)->clear_client_channel();
-          (*new_action)->set_new_generated(true);
-          queue_.Push(*new_action);
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  append a action:"<<(*new_action)->distinct_id();   
+          new_action = subbatch_->mutable_entries()->ReleaseLast();                 
+          new_action->set_fake_action(false);
+          new_action->clear_client_machine();
+          new_action->clear_client_channel();
+          new_action->set_new_generated(true);
+          queue_.Push(new_action);
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  append a action:"<<new_action->distinct_id();   
         }
 
         delete subbatch_;
