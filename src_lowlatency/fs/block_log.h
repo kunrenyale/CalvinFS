@@ -166,7 +166,7 @@ class BlockLogApp : public App {
             a->set_version_offset(actual_offset++);
 	    a->set_origin(replica_);
             batch.mutable_entries()->AddAllocated(a);
-//LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the old multi-replicas actions into batch.  distinct_id:"<<a->distinct_id();
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the old multi-replicas actions into batch.  distinct_id:"<<a->distinct_id();
           }
 
           delay_txns_.erase(batch_cnt_);
@@ -394,7 +394,7 @@ class BlockLogApp : public App {
           new_action->clear_client_channel();
           new_action->set_new_generated(true);
           queue_.Push(new_action);
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  append a action:"<<new_action->distinct_id()<<" batch size is:"<<subbatch_->entries_size();   
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  append a action:"<<new_action->distinct_id()<<" batch size is:"<<subbatch_->entries_size();   
         }
 
         delete subbatch_;
