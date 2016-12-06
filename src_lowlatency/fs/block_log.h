@@ -236,10 +236,6 @@ class BlockLogApp : public App {
       map<uint64, ActionBatch> subbatches;
       for (int i = 0; i < batch.entries_size(); i++) {
         set<uint64> recipients;
-        
-        if (batch.entries(i).fake_action() == true) {
-          continue;
-        }
 
         for (int j = 0; j < batch.entries(i).readset_size(); j++) {
           if (config_->LookupReplicaByDir(batch.entries(i).readset(j)) == batch.entries(i).origin()) {
