@@ -106,21 +106,27 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ BLOCK: " << a
   while (completed_.Pop(&action)) {
 
     if (action->single_replica() == false) {
+      set<string> writeset;
+
+      // Release write locks. 
+      for (int i = 0; i < action->writeset_size(); i++) {
+        uint32 replica = store_->LookupReplicaByDir(action->writeset(i));
+        if ((store_->IsLocal(action->writeset(i))) && (replica == action->origin())) {
+          writeset.insert(action->writeset(i));
+          lm_.Release(action, action->writeset(i));
+        }
+      }
+
       // Release read locks.
       for (int i = 0; i < action->readset_size(); i++) {
         uint32 replica = store_->LookupReplicaByDir(action->readset(i));
         if ((store_->IsLocal(action->readset(i))) && (replica == action->origin())) {
-          lm_.Release(action, action->readset(i));
+          if (writeset.count(action->readset(i)) == 0)  {
+            lm_.Release(action, action->readset(i));
+          }
         }
       }
 
-      // Release write locks. (Okay to release a lock twice.)
-      for (int i = 0; i < action->writeset_size(); i++) {
-        uint32 replica = store_->LookupReplicaByDir(action->writeset(i));
-        if ((store_->IsLocal(action->writeset(i))) && (replica == action->origin())) {
-          lm_.Release(action, action->writeset(i));
-        }
-      }
     } else {
       // Release read locks.
       for (int i = 0; i < action->readset_size(); i++) {
