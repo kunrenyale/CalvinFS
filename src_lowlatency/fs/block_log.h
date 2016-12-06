@@ -166,7 +166,7 @@ class BlockLogApp : public App {
             a->set_version_offset(actual_offset++);
 	    a->set_origin(replica_);
             batch.mutable_entries()->AddAllocated(a);
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the old multi-replicas actions into batch.  distinct_id:"<<a->distinct_id();
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the old multi-replicas actions into batch. version:"<<a->version()<<"  distinct_id:"<<a->distinct_id();
           }
 
           delay_txns_.erase(batch_cnt_);
@@ -388,7 +388,8 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the old multi-repl
         }
         
         for (int j = 0; j < subbatch_size; j++) {
-          new_action = subbatch_->mutable_entries()->ReleaseLast();                 
+          new_action = new Action();
+          new_action->CopyFrom(*(subbatch_->mutable_entries()->ReleaseLast()));               
           new_action->set_fake_action(false);
           new_action->clear_client_machine();
           new_action->clear_client_channel();
