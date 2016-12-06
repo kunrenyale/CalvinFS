@@ -116,60 +116,22 @@ class BlockLogApp : public App {
         new SequenceSource(
             new RemoteLogSource<PairSequence>(machine(), local_paxos_leader_, "paxos2"));
 
-    delay_time_ = 0.1;
-    batch_cnt_ = 0;
-   
-    uint64 delayed_batch_cnt = delay_time_/0.005;
-
     // Okay, finally, start main loop!
     going_ = true;
     while (go_.load()) {
       // Create new batch once per epoch.
       double next_epoch = GetTime() + 0.005;
-  
-      batch_cnt_++;
 
       // Create batch (iff there are any pending requests).
       int count = queue_.Size();
-      if (count != 0 || delay_txns_.find(batch_cnt_) != delay_txns_.end()) {
+      if (count != 0) {
         ActionBatch batch;
-        uint64 actual_offset = 0;
-        // Handle new actions
         for (int i = 0; i < count; i++) {
           Action* a = NULL;
           queue_.Pop(&a);
-//LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block_log got an action.  distinct_id:"<<a->distinct_id();          
-          // Delay multi-replicas action, and add a fake action
-          if (a->single_replica() == false && a->new_generated() == false) {
-            uint64 active_batch_cnt = batch_cnt_ + delayed_batch_cnt;
-
-            delay_txns_[active_batch_cnt].add_entries()->CopyFrom(*a);
-  
-            // Add a fake multi-replicas action
-	    a->set_origin(replica_);
-            a->set_fake_action(true);
-            batch.mutable_entries()->AddAllocated(a);
-
-          } else {
-            a->set_version_offset(actual_offset++);
-	    a->set_origin(replica_);
-            batch.mutable_entries()->AddAllocated(a);
-          }
-        }
-
-        // Add the old multi-replicas actions into batch
-        if (delay_txns_.find(batch_cnt_) != delay_txns_.end()) {
-          ActionBatch actions = delay_txns_[batch_cnt_];
-          for (int i = 0; i < actions.entries_size(); i++) {
-            Action* a = new Action();
-            a->CopyFrom(actions.entries(i));
-            a->set_version_offset(actual_offset++);
-	    a->set_origin(replica_);
-            batch.mutable_entries()->AddAllocated(a);
-//LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the old multi-replicas actions into batch. version:"<<a->version()<<"  distinct_id:"<<a->distinct_id();
-          }
-
-          delay_txns_.erase(batch_cnt_);
+          a->set_version_offset(i);
+	  a->set_origin(config_->LookupReplica(machine()->machine_id()));
+          batch.mutable_entries()->AddAllocated(a);
         }
 
         // Avoid multiple allocation.
@@ -177,19 +139,20 @@ class BlockLogApp : public App {
         batch.SerializeToString(block);
 
         // Choose block_id.
-        uint64 block_id = machine()->GetGUID() * 2 + (block->size() > 1024 ? 1 : 0);
+        uint64 block_id =
+            machine()->GetGUID() * 2 + (block->size() > 1024 ? 1 : 0);
 
         // Send batch to block stores.
         for (uint64 i = 0; i < config_->config().block_replication_factor();
              i++) {
           Header* header = new Header();
           header->set_from(machine()->machine_id());
-          header->set_to(config_->LookupBlucket(config_->HashBlockID(block_id), i));
+          header->set_to(
+              config_->LookupBlucket(config_->HashBlockID(block_id), i));
           header->set_type(Header::RPC);
           header->set_app(name());
           header->set_rpc("BATCH");
           header->add_misc_int(block_id);
-          header->add_misc_int(actual_offset);
           machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
         }
 
@@ -249,7 +212,6 @@ class BlockLogApp : public App {
     } else if (header->rpc() == "BATCH") {
       // Write batch block to local block store.
       uint64 block_id = header->misc_int(0);
-      uint64 batch_size = header->misc_int(1);
       blocks_->Put(block_id, (*message)[0]);
 //LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a BATCH request. block id is:"<< block_id <<" from machine:"<<header->from();
       // Parse batch.
@@ -266,7 +228,7 @@ class BlockLogApp : public App {
         header->set_app(name());
         header->set_rpc("SUBMIT");
         header->add_misc_int(block_id);
-        header->add_misc_int(batch_size);
+        header->add_misc_int(batch.entries_size());
         machine()->SendMessage(header, new MessageBuffer());
       }
 
@@ -312,7 +274,7 @@ class BlockLogApp : public App {
       if (config_->LookupReplica(message_from_) != replica_) {
         ActionBatch fake_action_batch;
         for (int i = 0; i < batch.entries_size(); i++) {
-          if (batch.entries(i).fake_action() == true) {
+          if (batch.entries(i).single_replica() == false && batch.entries(i).new_generated() == false) {
             for (int j = 0; j < batch.entries(i).involved_replicas_size(); j++) {
               if (batch.entries(i).involved_replicas(j) == replica_) {
 //LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the faked multi-replicas actions into batch. block id: "<<block_id<<"  distinct_id: "<<batch.entries(i).distinct_id();
@@ -389,8 +351,7 @@ class BlockLogApp : public App {
         
         for (int j = 0; j < subbatch_size; j++) {
           new_action = new Action();
-          new_action->CopyFrom(*(subbatch_->mutable_entries()->ReleaseLast()));               
-          new_action->set_fake_action(false);
+          new_action->CopyFrom(*(subbatch_->mutable_entries()->ReleaseLast()));  
           new_action->clear_client_machine();
           new_action->clear_client_channel();
           new_action->set_new_generated(true);
@@ -464,10 +425,6 @@ class BlockLogApp : public App {
   DelayQueue<string*> to_delete_;
 
   uint64 local_paxos_leader_;
-
-  double delay_time_;
-  map<uint64, ActionBatch> delay_txns_;
-  uint64 batch_cnt_;
 
   // fake multi-replicas actions batch received.
   AtomicMap<uint64, ActionBatch*> fakebatches_;

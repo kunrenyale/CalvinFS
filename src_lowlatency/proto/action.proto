@@ -57,9 +57,6 @@ message Action {
 
   repeated uint32 involved_replicas = 45;
 
-  // For some cross-replica actions, need to create a new action to guarantee deterministic order
-  optional bool fake_action = 46 [default = false];
-
   // Miscellaneous data.
   repeated Scalar misc = 51;
   
