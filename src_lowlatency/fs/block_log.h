@@ -358,9 +358,11 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() <<" =>Block log recevie a APP
         
         for (int j = 0; j < subbatch_size; j++) {
           new_action = new Action();
-          new_action->CopyFrom(*(subbatch_->mutable_entries()->ReleaseLast()));  
-          new_action->clear_client_machine();
-          new_action->clear_client_channel();
+          new_action->CopyFrom(*(subbatch_->mutable_entries()->ReleaseLast()));
+          if (new_action->fake_action() == false) {
+            new_action->clear_client_machine();
+            new_action->clear_client_channel();
+          }
           new_action->set_new_generated(true);
           new_action->set_fake_action(false);
           queue_.Push(new_action);
