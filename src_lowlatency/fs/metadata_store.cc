@@ -395,12 +395,6 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
   
   uint32 lowest_replica = *(replica_involved.begin());
 
-  if (lowest_replica == replica_) {
-    return machine_id_;
-  } else {
-    return lowest_replica * machines_per_replica_ + rand() % machines_per_replica_;
-  }
-
   // Always send cross-replica actions to the first replica
   if (replica_involved.size() == 1) {
     if (lowest_replica == replica_) {
