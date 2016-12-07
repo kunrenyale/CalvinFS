@@ -126,10 +126,15 @@ class BlockLogApp : public App {
       int count = queue_.Size();
       if (count != 0) {
         ActionBatch batch;
+        uint64 actual_offset = 0;
+
         for (int i = 0; i < count; i++) {
           Action* a = NULL;
           queue_.Pop(&a);
-          a->set_version_offset(i);
+          if (a->fake_action() == false) {
+            a->set_version_offset(actual_offset++);
+          }
+
 	  a->set_origin(config_->LookupReplica(machine()->machine_id()));
           batch.mutable_entries()->AddAllocated(a);
         }
@@ -153,6 +158,7 @@ class BlockLogApp : public App {
           header->set_app(name());
           header->set_rpc("BATCH");
           header->add_misc_int(block_id);
+          header->add_misc_int(actual_offset);
           machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
         }
 
@@ -212,6 +218,7 @@ class BlockLogApp : public App {
     } else if (header->rpc() == "BATCH") {
       // Write batch block to local block store.
       uint64 block_id = header->misc_int(0);
+      uint64 batch_size = header->misc_int(1);
       blocks_->Put(block_id, (*message)[0]);
 //LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a BATCH request. block id is:"<< block_id <<" from machine:"<<header->from();
       // Parse batch.
@@ -228,7 +235,7 @@ class BlockLogApp : public App {
         header->set_app(name());
         header->set_rpc("SUBMIT");
         header->add_misc_int(block_id);
-        header->add_misc_int(batch.entries_size());
+        header->add_misc_int(batch_size);
         machine()->SendMessage(header, new MessageBuffer());
       }
 
@@ -236,6 +243,10 @@ class BlockLogApp : public App {
       map<uint64, ActionBatch> subbatches;
       for (int i = 0; i < batch.entries_size(); i++) {
         set<uint64> recipients;
+    
+        if (batch.entries(i).fake_action() == true) {
+          continue;        
+        }
 
         for (int j = 0; j < batch.entries(i).readset_size(); j++) {
           if (config_->LookupReplicaByDir(batch.entries(i).readset(j)) == batch.entries(i).origin()) {
@@ -266,7 +277,7 @@ class BlockLogApp : public App {
         machine()->SendMessage(header, new MessageBuffer(subbatches[*it]));
       }
 
-      // Forward "fake multi-replica action" to the head node 
+      // Forward "relevant multi-replica action" to the head node 
       if (config_->LookupReplica(message_from_) != replica_) {
         ActionBatch fake_action_batch;
         for (int i = 0; i < batch.entries_size(); i++) {
@@ -351,6 +362,7 @@ class BlockLogApp : public App {
           new_action->clear_client_machine();
           new_action->clear_client_channel();
           new_action->set_new_generated(true);
+          new_action->set_fake_action(false);
           queue_.Push(new_action);
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  append a action:"<<new_action->distinct_id()<<" batch size is:"<<subbatch_->entries_size();   
         }
