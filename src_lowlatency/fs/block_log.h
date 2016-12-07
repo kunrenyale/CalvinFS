@@ -214,7 +214,7 @@ class BlockLogApp : public App {
       a->ParseFromArray((*message)[0].data(), (*message)[0].size());
       a->set_origin(replica_);
       queue_.Push(a);
-//LOG(ERROR) << "Machine: "<<machine()->machine_id() <<" =>Block log recevie a APPEND request. distinct id is:"<< a->distinct_id()<<" from machine:"<<header->from();
+LOG(ERROR) << "Machine: "<<machine()->machine_id() <<" =>Block log recevie a APPEND request. distinct id is:"<< a->distinct_id()<<" from machine:"<<header->from();
     } else if (header->rpc() == "BATCH") {
       // Write batch block to local block store.
       uint64 block_id = header->misc_int(0);
@@ -364,7 +364,7 @@ class BlockLogApp : public App {
           new_action->set_new_generated(true);
           new_action->set_fake_action(false);
           queue_.Push(new_action);
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  append a action:"<<new_action->distinct_id()<<" batch size is:"<<subbatch_->entries_size();   
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  append a action:"<<new_action->distinct_id()<<" batch size is:"<<subbatch_->entries_size();   
         }
 
         delete subbatch_;
