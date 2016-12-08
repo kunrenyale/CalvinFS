@@ -407,6 +407,9 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
       action->set_fake_action(true);
     } 
     return rand() % machines_per_replica_;
+  } else {
+    CHECK(replica_involved.size() >= 1);
+    return 0;
   }
 
 }
