@@ -111,7 +111,7 @@ void Paxos2App::HandleOtherMessages(Header* header, MessageBuffer* message) {
     p->set_first(header->misc_int(0));
     p->set_second(header->misc_int(1));
     count_ += p->second();
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a Append request. block id is:"<< header->misc_int(0)<<"  count is:"<<header->misc_int(1)<<" from machine:"<<header->from();
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a Append request. block id is:"<< header->misc_int(0)<<"  count is:"<<header->misc_int(1)<<" from machine:"<<header->from();
 
   } else if (header->rpc() == "NEW-SEQUENCE") {
 
@@ -127,7 +127,7 @@ MessageBuffer* m = new MessageBuffer(other_sequence);
     s.ParseFromArray((*message)[2].data(), (*message)[2].size());
     m->Append(s);
     sequences_other_replicas.Push(m);
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SEQUENCE  from machine:"<<header->from()<<"  version is:"<<other_sequence.misc();
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SEQUENCE  from machine:"<<header->from()<<"  version is:"<<other_sequence.misc();
   } else if (header->rpc() == "NEW-SEQUENCE-ACK") {
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SEQUENCE-ACK. from machine:"<<header->from();
     // Send next sequence to the from-replica
@@ -172,7 +172,7 @@ MessageBuffer* m = new MessageBuffer(other_sequence);
     m->Append(ToScalar<uint64>(num_actions));
     m->Append(ToScalar<uint32>(machine()->machine_id()));
     machine()->SendMessage(header2, m);
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Send NEW-SEQUENCE(after receive ack) to: "<<from_replica<<" . version: "<<r->Version();
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Send NEW-SEQUENCE(after receive ack) to: "<<from_replica<<" . version: "<<r->Version();
   } else {
     LOG(FATAL) << "unknown message type: " << header->rpc();
   }
@@ -220,7 +220,7 @@ void Paxos2App::RunLeader() {
         sequence_.Clear();
         isLocal = true;
 
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new sequence from local: version:"<< version<< " next_version is: "<<next_version;
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new sequence from local: version:"<< version<< " next_version is: "<<next_version;
       }
     } else if (sequences_other_replicas.Size() != 0) {
       atomic<int>* ack = new atomic<int>(0);
@@ -234,8 +234,6 @@ void Paxos2App::RunLeader() {
       MessageBuffer* n = new MessageBuffer();
       n->Append(ToScalar<uint64>(reinterpret_cast<uint64>(ack)));
       machine()->SendMessage(header, n);
-
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 is waiting for the ack: version:"<< version<< " next_version is: "<<next_version;
 
           // Collect Ack.
       while (ack->load() < 1) {
@@ -258,7 +256,7 @@ CHECK(other_sequence.pairs_size() != 0);
       s.ParseFromArray((*m)[2].data(), (*m)[2].size());
       from_machine = FromScalar<uint32>(s);
       isLocal = false;
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new sequence from other replicas: version:"<< other_sequence.misc() << " next_version is: "<<next_version<<". from: "<<from_machine;
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new sequence from other replicas: version:"<< version << " next_version is: "<<next_version<<". from: "<<from_machine;
     }
 
 
@@ -322,7 +320,7 @@ CHECK(other_sequence.pairs_size() != 0);
           machine()->SendMessage(header, m);
 
           next_sequences_index.Put(i, 1);
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Send NEW-SEQUENCE to: "<<i*partitions_per_replica;
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Send NEW-SEQUENCE to: "<<i*partitions_per_replica<<" version:"<<version;
 	}
       }
 
