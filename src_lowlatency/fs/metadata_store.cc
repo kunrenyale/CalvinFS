@@ -402,14 +402,11 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
     } else {
       return lowest_replica * machines_per_replica_ + rand() % machines_per_replica_;
     }
-  } else if (replica_involved.size() > 1) {
+  } else {
     if (lowest_replica != replica_) {
       action->set_fake_action(true);
     } 
     return rand() % machines_per_replica_;
-  } else {
-    CHECK(replica_involved.size() >= 1);
-    return 0;
   }
 
 }
