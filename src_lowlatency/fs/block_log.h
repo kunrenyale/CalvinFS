@@ -284,7 +284,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a BA
           if (batch.entries(i).single_replica() == false && batch.entries(i).new_generated() == false) {
             for (int j = 0; j < batch.entries(i).involved_replicas_size(); j++) {
               if (batch.entries(i).involved_replicas(j) == replica_) {
-//LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the faked multi-replicas actions into batch. block id: "<<block_id<<"  distinct_id: "<<batch.entries(i).distinct_id();
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the faked multi-replicas actions into batch. block id: "<<block_id<<"  distinct_id: "<<batch.entries(i).distinct_id();
                  fake_action_batch.add_entries()->CopyFrom(batch.entries(i));
                  break;
               }
@@ -362,7 +362,11 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a BA
           if (new_action->fake_action() == false) {
             new_action->clear_client_machine();
             new_action->clear_client_channel();
+          } else {
+            new_action->set_fake_action(false);
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request(fake_action). append a action:"<<new_action->distinct_id();
           }
+
           new_action->set_new_generated(true);
           new_action->set_fake_action(false);
           queue_.Push(new_action);
