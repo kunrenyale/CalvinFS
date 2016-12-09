@@ -360,8 +360,8 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the faked multi-re
           new_action = new Action();
           new_action->CopyFrom(*(subbatch_->mutable_entries()->ReleaseLast()));
           if (new_action->fake_action() == false) {
-            //new_action->clear_client_machine();
-            //new_action->clear_client_channel();
+            new_action->clear_client_machine();
+            new_action->clear_client_channel();
           } else {
             new_action->set_fake_action(false);
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request(fake_action). append a action:"<<new_action->distinct_id();

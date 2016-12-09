@@ -722,7 +722,7 @@ void LatencyExperimentAppend() {
 
     double start = GetTime();
 
-    for (int j = 0; j < 500; j++) {
+    for (int j = 0; j < 100; j++) {
       int seed = rand() % 100;
       
       // Copy operations inside one data center
@@ -739,7 +739,7 @@ void LatencyExperimentAppend() {
         //BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/c" + IntToString(j),
         //                     "/a" + IntToString(machines_other_replicas[rand()%size_other_machines]) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));
 BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(0) + "/c" + IntToString(j),
-                             "/a" + IntToString((machine()->machine_id() + 1)%3) + "/b" + IntToString(0) + "/d" + IntToString(machine()->GetGUID()));
+                             "/a" + IntToString((machine()->machine_id() + 1)%2) + "/b" + IntToString(0) + "/d" + IntToString(machine()->GetGUID()));
       }
 
       if (j % 100 == 0) {
