@@ -199,7 +199,7 @@ void Paxos2App::RunLeader() {
 
   while (go_.load()) {
     // Sleep while there are NO requests.
-    while (count_.load() == 0 && sequences_other_replicas.Size() == 0) {
+    while (sequence_.pairs_size() == 0 && sequences_other_replicas.Size() == 0) {
       usleep(10);
       if (!go_.load()) {
         return;
