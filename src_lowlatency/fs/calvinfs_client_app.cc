@@ -311,6 +311,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":^^^^^^^^ CalvinFSClientApp
   }
 
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":^^^^^^^^ CalvinFSClientApp::RenameFile completed ^^^^^^  distinct id is:"<<distinct_id;
+  machine_->CloseDataChannel(channel_name);
 
   Action result;
   result.ParseFromArray((*m)[0].data(), (*m)[0].size());
