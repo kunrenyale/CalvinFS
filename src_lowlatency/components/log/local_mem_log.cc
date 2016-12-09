@@ -181,17 +181,22 @@ bool LocalMemLogReader::SeekLocal(uint64 target) {
 
   // Use snapshot of size as of when seek was called.
   uint64 size = log_->size_.load();
+    
+  // Okay, let's see if I remember how to implement binary search. =)
+  uint64 min;
+  uint64 max = size - 1;
+  LocalMemLog::Entry* e = log_->entries_;  // For brevity.
 
-  // Seek WILL succeed.
-  started_ = true;
+  if (started_ == false) {
+    min = offset_;
+    started_ = true;  
+  } else {
+    min = offset_ + 1;
+  }
+
 
   // Prevent array resizing.
   ReadLock l(&log_->mutex_);
-
-  // Okay, let's see if I remember how to implement binary search. =)
-  uint64 min = offset_;
-  uint64 max = size - 1;
-  LocalMemLog::Entry* e = log_->entries_;  // For brevity.
 
   // Check min and max so we can use strict inequalities in invariant.
   if (e[min].version == target) {
