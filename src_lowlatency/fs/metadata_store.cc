@@ -403,7 +403,7 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
       return lowest_replica * machines_per_replica_ + rand() % machines_per_replica_;
     }
   } else {
-    if (lowest_replica != replica_) {
+    if (lowest_replica != 0) {
       action->set_fake_action(true);
       return rand() % machines_per_replica_;
     }  else {
