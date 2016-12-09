@@ -65,6 +65,9 @@ class Paxos2App : public LogApp {
   std::atomic<uint64> count_;
   Mutex mutex_;
 
+   std::atomic<uint64> has_local_sequence_;
+
+
   uint32 replica_count;
   uint32 partitions_per_replica;
 

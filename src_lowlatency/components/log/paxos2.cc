@@ -49,11 +49,13 @@ REGISTER_APP(Paxos2App2) {
 Paxos2App::Paxos2App(Log* log, const vector<uint64>& participants)
     : participants_(participants), go_(true), going_(false), count_(0) {
   log_ = log;
+  has_local_sequence_ = 0;
 }
 
 Paxos2App::Paxos2App(Log* log, uint64 count)
     : go_(true), going_(false), count_(0) {
   log_ = log;
+  has_local_sequence_ = 0;
   for (uint64 i = 0; i < count; i++) {
     participants_.push_back(i);
   }
@@ -111,6 +113,7 @@ void Paxos2App::HandleOtherMessages(Header* header, MessageBuffer* message) {
     p->set_first(header->misc_int(0));
     p->set_second(header->misc_int(1));
     count_ += p->second();
+    has_local_sequence_ = 1;
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a Append request. block id is:"<< header->misc_int(0)<<"  count is:"<<header->misc_int(1)<<" from machine:"<<header->from();
 
   } else if (header->rpc() == "NEW-SEQUENCE") {
@@ -199,7 +202,7 @@ void Paxos2App::RunLeader() {
 
   while (go_.load()) {
     // Sleep while there are NO requests.
-    while (sequence_.pairs_size() == 0 && sequences_other_replicas.Size() == 0) {
+    while (has_local_sequence_ == 0 && sequences_other_replicas.Size() == 0) {
       usleep(10);
       if (!go_.load()) {
         return;
@@ -211,13 +214,14 @@ void Paxos2App::RunLeader() {
     uint32 from_machine = machine()->machine_id();
     PairSequence other_sequence;
 
-    if (sequence_.pairs_size() > 0) {
+    if (has_local_sequence_ > 0) {
       // Propose a new sequence.
       {
         Lock l(&mutex_);
         version = next_version;
         next_version += count_.load();
         count_ = 0;
+        has_local_sequence_ = 0;
         sequence_.set_misc(version);
         sequence_.SerializeToString(&encoded);
         sequence_.Clear();
