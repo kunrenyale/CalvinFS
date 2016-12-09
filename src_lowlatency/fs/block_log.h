@@ -333,32 +333,32 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the faked multi-re
 
       sequence.ParseFromArray((*m)[0].data(), (*m)[0].size());
 
-      ActionBatch* subbatch_ = NULL;
+      ActionBatch* fake_subbatch = NULL;
       Action* new_action;
 
       for (int i = 0; i < sequence.pairs_size();i++) {
-        uint64 subbatch_id_ = sequence.pairs(i).first();
+        uint64 fake_subbatch_id = sequence.pairs(i).first();
 
         bool got_it;
         do {
-          got_it = fakebatches_.Lookup(subbatch_id_, &subbatch_);
+          got_it = fakebatches_.Lookup(fake_subbatch_id, &fake_subbatch);
           usleep(10);
         } while (got_it == false);
 
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  begin batch_id:"<<subbatch_id_<<"  size is:"<<subbatch_->entries_size();
 
-        if (subbatch_->entries_size() == 0) {
+        if (fake_subbatch->entries_size() == 0) {
           continue;
         }
         
-        int subbatch_size = subbatch_->entries_size();  
+        int subbatch_size = fake_subbatch->entries_size();  
         for (int j = 0; j < subbatch_size / 2; j++) {
-          subbatch_->mutable_entries()->SwapElements(j, subbatch_->entries_size()-1-j);
+          fake_subbatch->mutable_entries()->SwapElements(j, fake_subbatch->entries_size()-1-j);
         }
         
         for (int j = 0; j < subbatch_size; j++) {
           new_action = new Action();
-          new_action->CopyFrom(*(subbatch_->mutable_entries()->ReleaseLast()));
+          new_action->CopyFrom(*(fake_subbatch->mutable_entries()->ReleaseLast()));
           if (new_action->fake_action() == false) {
             new_action->clear_client_machine();
             new_action->clear_client_channel();
@@ -370,13 +370,13 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEN
           new_action->set_new_generated(true);
           new_action->set_fake_action(false);
           queue_.Push(new_action);
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  append a action:"<<new_action->distinct_id()<<" batch size is:"<<subbatch_->entries_size();   
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  append a action:"<<new_action->distinct_id()<<" batch size is:"<<fake_subbatch->entries_size();   
         }
 
-        delete subbatch_;
-        subbatch_ = NULL;
-        fakebatches_.Erase(subbatch_id_);
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  finish batch_id:"<<subbatch_id_;   
+        delete fake_subbatch;
+        fake_subbatch = NULL;
+        fakebatches_.Erase(fake_subbatch_id);
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  finish batch_id:"<<fake_subbatch_id;   
       }
 
       // Send ack to paxos_leader.
