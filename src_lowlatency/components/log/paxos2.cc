@@ -211,7 +211,7 @@ void Paxos2App::RunLeader() {
     uint32 from_machine = machine()->machine_id();
     PairSequence other_sequence;
 
-    if (count_.load() != 0) {
+    if (sequence_.pairs_size() > 0) {
       // Propose a new sequence.
       {
         Lock l(&mutex_);
@@ -242,7 +242,6 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new se
       while (ack->load() < 1) {
         usleep(10);
       }
-
 
       sequences_other_replicas.Pop(&m);
       version = next_version;
@@ -339,7 +338,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Send NEW-SEQUENC
       m = new MessageBuffer();
       m->Append(ToScalar<uint32>(machine()->machine_id()/partitions_per_replica));
       machine()->SendMessage(header, m);
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Send NEW-SEQUENCE-ACK to: "<<from_machine;
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Send NEW-SEQUENCE-ACK to: "<<from_machine<<" version:"<<version;
     }
 
   }
