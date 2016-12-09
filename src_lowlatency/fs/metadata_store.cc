@@ -407,7 +407,11 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
       action->set_fake_action(true);
       return rand() % machines_per_replica_;
     }  else {
-      return machine_id_;
+      if (replica_ == 0) {
+        return machine_id_;
+      } else {
+        return rand() % machines_per_replica_;
+      }
     }
   }
 
