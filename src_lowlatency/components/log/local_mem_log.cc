@@ -18,6 +18,7 @@ class LocalMemLogReader : public Log::Reader {
   virtual void Reset();
   virtual bool Next();
   virtual bool Seek(uint64 target);
+  virtual bool SeekLocal(uint64 target);
   virtual uint64 Version();
   virtual Slice Entry();
 
@@ -134,6 +135,61 @@ bool LocalMemLogReader::Seek(uint64 target) {
 
   // Okay, let's see if I remember how to implement binary search. =)
   uint64 min = 0;
+  uint64 max = size - 1;
+  LocalMemLog::Entry* e = log_->entries_;  // For brevity.
+
+  // Check min and max so we can use strict inequalities in invariant.
+  if (e[min].version == target) {
+    offset_ = min;
+    entry_ = e[offset_];
+    return true;
+  } else if (e[max].version == target) {
+    offset_ = max;
+    entry_ = e[offset_];
+    return true;
+  }
+
+  // Invariant: e[min].version < target < e[max].version
+  while (max > min + 1) {
+    uint64 mid = (min + max) / 2;
+    if (e[mid].version == target) {
+      offset_ = mid;
+      entry_ = e[offset_];
+      return true;
+    } else if (target < e[mid].version) {
+      max = mid;
+    } else {  // target > e[mid].version
+      min = mid;
+    }
+  }
+
+  // Just to be safe....
+  CHECK(e[min].version < target);
+  CHECK(e[max].version > target);
+
+  offset_ = max;
+  entry_ = e[offset_];
+  return true;
+}
+
+
+bool LocalMemLogReader::SeekLocal(uint64 target) {
+  CHECK(target > 0) << "seeking to invalid version 0";
+  if (target > log_->LastVersion()) {
+    return false;
+  }
+
+  // Use snapshot of size as of when seek was called.
+  uint64 size = log_->size_.load();
+
+  // Seek WILL succeed.
+  started_ = true;
+
+  // Prevent array resizing.
+  ReadLock l(&log_->mutex_);
+
+  // Okay, let's see if I remember how to implement binary search. =)
+  uint64 min = offset_;
   uint64 max = size - 1;
   LocalMemLog::Entry* e = log_->entries_;  // For brevity.
 

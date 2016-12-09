@@ -149,13 +149,13 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SE
     pair<uint64, uint64> next_sequence_version;
     bool findnext = local_versions_index_table.Lookup(next_index, &next_sequence_version); 
 
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SEQUENCE-ACK(--before find next). from machine:"<<header->from();
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SEQUENCE-ACK(--before find next). from machine:"<<header->from();
     while (findnext == false) {
       usleep(10);
       findnext = local_versions_index_table.Lookup(next_index, &next_sequence_version);
     }
 
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SEQUENCE-ACK(--already find next). from machine:"<<header->from()<<". next version is: "<<next_sequence_version.first;
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SEQUENCE-ACK(--already find next). from machine:"<<header->from()<<". next version is: "<<next_sequence_version.first;
 
     // The number of actions of the current sequence
     uint64 num_actions = next_sequence_version.second;
@@ -164,7 +164,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SE
     next_sequences_index.EraseAndPut(from_replica, next_index);
  
     Log::Reader* r = readers_for_local_log[from_replica];
-    bool find = r->Seek(next_sequence_version.first);
+    bool find = r->SeekLocal(next_sequence_version.first);
     CHECK(find == true);
 
     Header* header2 = new Header();

@@ -58,6 +58,9 @@ class Log {
     // and false is returned.
     virtual bool Seek(uint64 target) = 0;
 
+
+    virtual bool SeekLocal(uint64 target) = 0;
+
     // Return the version of the current entry.
     //
     // Requires: Valid()
