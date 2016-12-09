@@ -332,14 +332,14 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log recevie a SUBM
       CHECK(m != NULL);
 
       sequence.ParseFromArray((*m)[0].data(), (*m)[0].size());
-
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request. version:"<<sequence.misc();
       ActionBatch* fake_subbatch = NULL;
       Action* new_action;
 
       for (int i = 0; i < sequence.pairs_size();i++) {
         uint64 fake_subbatch_id = sequence.pairs(i).first();
 
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  begin batch_id:"<<fake_subbatch_id;
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  begin batch_id:"<<fake_subbatch_id<<" version:"<<sequence.misc();
         bool got_it;
         do {
           got_it = fakebatches_.Lookup(fake_subbatch_id, &fake_subbatch);
