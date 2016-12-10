@@ -189,6 +189,7 @@ void Machine::SendReplyMessage(Header* header, MessageBuffer* message) {
 }
 
 AtomicQueue<MessageBuffer*>* Machine::DataChannel(const string& channel) {
+  Lock l(&data_channel_mutex_);
   AtomicQueue<MessageBuffer*>* inbox = NULL;
   if (!inboxes_.Lookup(channel, &inbox)) {
     AtomicQueue<MessageBuffer*>* newinbox = new AtomicQueue<MessageBuffer*>();
@@ -202,6 +203,7 @@ AtomicQueue<MessageBuffer*>* Machine::DataChannel(const string& channel) {
 }
 
 void Machine::CloseDataChannel(const string& channel) {
+  Lock l(&data_channel_mutex_);
   AtomicQueue<MessageBuffer*>* inbox = NULL;
   if (inboxes_.Lookup(channel, &inbox)) {
     delete inbox;

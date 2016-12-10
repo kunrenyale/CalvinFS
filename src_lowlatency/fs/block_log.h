@@ -363,7 +363,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEN
         }
         
         for (int j = 0; j < subbatch_size; j++) {
-          //new_action = new Action();
+          new_action = new Action();
           new_action->CopyFrom(*(fake_subbatch->mutable_entries()->ReleaseLast()));
           if (new_action->fake_action() == false) {
             new_action->clear_client_machine();
