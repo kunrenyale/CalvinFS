@@ -424,7 +424,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEN
             machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
           }
           
-          to_delete_.Push(block);
+          //to_delete_.Push(block);
         }
 
          // Submit to paxos leader

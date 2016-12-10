@@ -203,13 +203,12 @@ void Paxos2App::RunLeader() {
         Lock l(&mutex_);
         version = next_version;
         next_version += count_.load();
-        count_ = 0;
-        has_local_sequence_ = 0;
         sequence_.set_misc(version);
         sequence_.SerializeToString(&encoded);
         sequence_.Clear();
         isLocal = true;
-
+        count_ = 0;
+        has_local_sequence_ = 0;
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new sequence from local: version:"<< version<< " next_version is: "<<next_version;
       }
     } else if (sequences_other_replicas.Size() != 0) {
