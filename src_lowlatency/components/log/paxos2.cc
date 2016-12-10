@@ -319,6 +319,10 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new se
 
       for (uint64 i = 0; i < replica_count; i++) {
         if (i != machine()->machine_id()/partitions_per_replica) {
+          Log::Reader* r = readers_for_local_log[i];
+          bool find = r->Next();
+          CHECK(find == true);
+
           Header* header = new Header();
           header->set_from(machine()->machine_id());
           header->set_to(i*partitions_per_replica);
