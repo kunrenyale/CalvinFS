@@ -220,7 +220,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() <<" =>Block log recevie a APP
       // Write batch block to local block store.
       uint64 block_id = header->misc_int(0);
       uint64 batch_size = header->misc_int(1);
-      bool need_submit = header->misc_int(2);
+      bool need_submit = header->misc_bool(0);
 
       blocks_->Put(block_id, (*message)[0]);
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a BATCH request. block id is:"<< block_id <<" from machine:"<<header->from()<<" , batch size is:"<<batch_size;
@@ -417,8 +417,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEN
              i++) {
           Header* header = new Header();
           header->set_from(machine()->machine_id());
-          header->set_to(
-              config_->LookupBlucket(config_->HashBlockID(block_id), i));
+          header->set_to(config_->LookupBlucket(config_->HashBlockID(block_id), i));
           header->set_type(Header::RPC);
           header->set_app(name());
           header->set_rpc("BATCH");
