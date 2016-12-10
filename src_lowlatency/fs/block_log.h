@@ -164,14 +164,14 @@ class BlockLogApp : public App {
         }
 
         // Scheduler block for eventual deallocation.
-        to_delete_.Push(block);
+        //to_delete_.Push(block);
       }
 
       // Delete old blocks.
-      string* block;
+      /**string* block;
       while (to_delete_.Pop(&block)) {
         delete block;
-      }
+      }**/
 
       // Sleep until next epoch.
       SpinUntil(next_epoch);
