@@ -423,7 +423,8 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEN
             header->add_misc_bool(false);
             machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
           }
-          delete block;
+          
+          to_delete_.Push(block);
         }
 
          // Submit to paxos leader
