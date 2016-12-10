@@ -159,6 +159,8 @@ class Machine {
 
   uint64 next_barrier_;
 
+  Mutex data_channel_mutex_;
+
   // DISALLOW_COPY_AND_ASSIGN
   Machine(const Machine&);
   Machine& operator=(const Machine&);
