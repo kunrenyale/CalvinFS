@@ -159,6 +159,7 @@ class BlockLogApp : public App {
           header->set_rpc("BATCH");
           header->add_misc_int(block_id);
           header->add_misc_int(actual_offset);
+          header->add_misc_bool(true);
           machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
         }
 
@@ -219,6 +220,8 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() <<" =>Block log recevie a APP
       // Write batch block to local block store.
       uint64 block_id = header->misc_int(0);
       uint64 batch_size = header->misc_int(1);
+      bool need_submit = header->misc_int(2);
+
       blocks_->Put(block_id, (*message)[0]);
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a BATCH request. block id is:"<< block_id <<" from machine:"<<header->from()<<" , batch size is:"<<batch_size;
       // Parse batch.
@@ -227,7 +230,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a BA
       uint64 message_from_ = header->from();
 
       //  If (This batch come from this replica) → send SUBMIT to the Sequencer(LogApp) on the master node of the local paxos participants
-      if (config_->LookupReplica(message_from_) == replica_) {
+      if (config_->LookupReplica(message_from_) == replica_ && need_submit == true) {
         Header* header = new Header();
         header->set_from(machine()->machine_id());
         header->set_to(local_paxos_leader_);  // Local Paxos leader.
@@ -327,6 +330,8 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log recevie a SUBM
     } else if (header->rpc() == "APPEND_MULTIREPLICA_ACTIONS") {
       MessageBuffer* m = NULL;
       PairSequence sequence;
+      AtomicQueue<Action*> new_generated_queue;
+      uint64 batch_size = 0;
 
       paxos_leader_->GetRemoteSequence(&m);
       CHECK(m != NULL);
@@ -352,7 +357,10 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEN
           continue;
         }
         
-        int subbatch_size = fake_subbatch->entries_size();  
+        int subbatch_size = fake_subbatch->entries_size();
+
+        batch_size += subbatch_size;
+
         for (int j = 0; j < subbatch_size / 2; j++) {
           fake_subbatch->mutable_entries()->SwapElements(j, fake_subbatch->entries_size()-1-j);
         }
@@ -370,7 +378,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEN
 
           new_action->set_new_generated(true);
           new_action->set_fake_action(false);
-          queue_.Push(new_action);
+          new_generated_queue.Push(new_action);
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  append a action:"<<new_action->distinct_id()<<" batch size is:"<<fake_subbatch->entries_size()<<" block id:"<<fake_subbatch_id;   
         }
 
@@ -379,6 +387,52 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEN
         fake_subbatch = NULL;
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  finish batch_id:"<<fake_subbatch_id;   
       }
+
+
+      // Generated a new batch and submit to paxos leader.
+      int count = new_generated_queue.Size();
+      uint64 block_id = 0;
+
+      if (count != 0) {
+        ActionBatch batch;
+
+        for (int i = 0; i < count; i++) {
+          Action* a = NULL;
+          new_generated_queue.Pop(&a);
+
+          a->set_version_offset(i);
+	  a->set_origin(config_->LookupReplica(machine()->machine_id()));
+          batch.mutable_entries()->AddAllocated(a);
+        }
+
+        // Avoid multiple allocation.
+        string* block = new string();
+        batch.SerializeToString(block);
+
+        // Choose block_id.
+        block_id = machine()->GetGUID() * 2 + (block->size() > 1024 ? 1 : 0);
+
+        // Send batch to block stores.
+        for (uint64 i = 0; i < config_->config().block_replication_factor();
+             i++) {
+          Header* header = new Header();
+          header->set_from(machine()->machine_id());
+          header->set_to(
+              config_->LookupBlucket(config_->HashBlockID(block_id), i));
+          header->set_type(Header::RPC);
+          header->set_app(name());
+          header->set_rpc("BATCH");
+          header->add_misc_int(block_id);
+          header->add_misc_int(count);
+          header->add_misc_bool(false);
+          machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
+        }
+        delete block;
+      }
+
+       // Submit to paxos leader
+       paxos_leader_->Append(block_id, count);
+
 
       // Send ack to paxos_leader.
       Header* h = new Header();

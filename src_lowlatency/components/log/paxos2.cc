@@ -311,7 +311,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new se
       local_versions_index_table.Put(local_sequences_index, make_pair(version, next_version - version));
       local_sequences_index++;
     }
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Actually append the request into the log: version:"<< version;
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Actually append the request into the log: version:"<< version<<" next_version is:"<<next_version;
 
    
     if (isLocal == true && isFirst == true) {
