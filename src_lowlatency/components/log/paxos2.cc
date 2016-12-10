@@ -347,7 +347,7 @@ void Paxos2App::RunFollower() {
         return;
       }
     }
-    if (m->size() == 3) {
+    if (m->size() == 4) {
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2(Follower): Receive a new proposal:";
       // New proposal.
       uncommitted.push(m);
