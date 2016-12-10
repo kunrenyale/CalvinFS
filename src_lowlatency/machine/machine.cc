@@ -189,7 +189,7 @@ void Machine::SendReplyMessage(Header* header, MessageBuffer* message) {
 }
 
 AtomicQueue<MessageBuffer*>* Machine::DataChannel(const string& channel) {
-LOG(ERROR) << "Machine: "<<machine_id_<< "=>Machine::DataChannel(begin):"<<channel;
+//LOG(ERROR) << "Machine: "<<machine_id_<< "=>Machine::DataChannel(begin):"<<channel;
   AtomicQueue<MessageBuffer*>* inbox = NULL;
   if (!inboxes_.Lookup(channel, &inbox)) {
     AtomicQueue<MessageBuffer*>* newinbox = new AtomicQueue<MessageBuffer*>();
@@ -199,18 +199,18 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "=>Machine::DataChannel(begin):"<<chann
       delete newinbox;
     }
   }
-LOG(ERROR) << "Machine: "<<machine_id_<< "=>Machine::DataChannel(finish):"<<channel;
+//LOG(ERROR) << "Machine: "<<machine_id_<< "=>Machine::DataChannel(finish):"<<channel;
   return inbox;
 }
 
 void Machine::CloseDataChannel(const string& channel) {
-LOG(ERROR) << "Machine: "<<machine_id_<< "=>Machine::CloseDataChannel(begin):"<<channel;
+//LOG(ERROR) << "Machine: "<<machine_id_<< "=>Machine::CloseDataChannel(begin):"<<channel;
   AtomicQueue<MessageBuffer*>* inbox = NULL;
   if (inboxes_.Lookup(channel, &inbox)) {
     delete inbox;
   }
   inboxes_.Erase(channel);
-LOG(ERROR) << "Machine: "<<machine_id_<< "=>Machine::CloseDataChannel(finish):"<<channel;
+//LOG(ERROR) << "Machine: "<<machine_id_<< "=>Machine::CloseDataChannel(finish):"<<channel;
 }
 
 void Machine::AddApp(const StartAppProto& sap) {
