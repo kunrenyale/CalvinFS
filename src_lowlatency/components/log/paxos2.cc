@@ -49,12 +49,14 @@ REGISTER_APP(Paxos2App2) {
 Paxos2App::Paxos2App(Log* log, const vector<uint64>& participants)
     : participants_(participants), go_(true), going_(false), count_(0) {
   log_ = log;
+  local_log_ = new LocalMemLog();
   has_local_sequence_ = 0;
 }
 
 Paxos2App::Paxos2App(Log* log, uint64 count)
     : go_(true), going_(false), count_(0) {
   log_ = log;
+  local_log_ = new LocalMemLog();
   has_local_sequence_ = 0;
   for (uint64 i = 0; i < count; i++) {
     participants_.push_back(i);
@@ -164,7 +166,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SE
     next_sequences_index.EraseAndPut(from_replica, next_index);
  
     Log::Reader* r = readers_for_local_log[from_replica];
-    bool find = r->SeekLocal(next_sequence_version.first);
+    bool find = r->Next();
     CHECK(find == true);
 
     Header* header2 = new Header();
@@ -196,7 +198,7 @@ void Paxos2App::RunLeader() {
   bool isLocal = false;
 
   for (uint64 i = 0; i < replica_count; i++) {
-    readers_for_local_log[i] = log_->GetReader();
+    readers_for_local_log[i] = local_log_->GetReader();
   }
 
 
@@ -302,12 +304,15 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new se
 
     // Actually append the request into the log
     log_->Append(version, encoded);
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Actually append the request into the log: version:"<< version;
-     
+
     if (isLocal == true) {
+      local_log_->Append(version, encoded);
+
       local_versions_index_table.Put(local_sequences_index, make_pair(version, next_version - version));
       local_sequences_index++;
     }
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Actually append the request into the log: version:"<< version;
+
    
     if (isLocal == true && isFirst == true) {
       // Send the sequence to the LeaderPaxosApp of all the other replicas;

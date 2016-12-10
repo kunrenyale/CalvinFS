@@ -83,6 +83,8 @@ class Paxos2App : public LogApp {
   AtomicMap<uint32, uint64> next_sequences_index;
 
   map<uint32, Log::Reader*> readers_for_local_log;
+
+  Log* local_log_;
   
 };
 
