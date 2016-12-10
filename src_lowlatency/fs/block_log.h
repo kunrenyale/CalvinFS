@@ -409,6 +409,8 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEN
           // Choose block_id.
           block_id = machine()->GetGUID() * 2 + (block->size() > 1024 ? 1 : 0);
 
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  new_generated batch id:"<<block_id; 
+
           // Send batch to block stores.
           for (uint64 i = 0; i < config_->config().block_replication_factor(); i++) {
             Header* header = new Header();
@@ -422,7 +424,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEN
             header->add_misc_bool(false);
             machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
           }
-          delete block;
+          //delete block;
         }
 
          // Submit to paxos leader
