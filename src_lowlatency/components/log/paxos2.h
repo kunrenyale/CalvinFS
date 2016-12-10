@@ -73,15 +73,6 @@ class Paxos2App : public LogApp {
 
   AtomicQueue<MessageBuffer*> sequences_other_replicas;
 
-  // Record the current sequence index
-  uint64 local_sequences_index;
-
-  // Map the local sequence index to the version.
-  AtomicMap<uint64, pair<uint64, uint64>> local_versions_index_table;
-
-  // Map the replica ID to its local running index
-  AtomicMap<uint32, uint64> next_sequences_index;
-
   map<uint32, Log::Reader*> readers_for_local_log;
 
   Log* local_log_;

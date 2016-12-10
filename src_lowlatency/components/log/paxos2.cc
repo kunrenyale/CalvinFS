@@ -89,8 +89,6 @@ void Paxos2App::Start() {
   going_ = true;
   replica_count = (machine()->config().size() >= 3) ? 3 : 1;
   partitions_per_replica = machine()->config().size() / replica_count;
-  
-  local_sequences_index = 0;
 
   if (IsLeader()) {
     RunLeader();
@@ -142,31 +140,14 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SE
     Scalar s;
     s.ParseFromArray((*message)[0].data(), (*message)[0].size());
     uint32 from_replica = FromScalar<uint32>(s);
-
-    uint64 next_index = 0;
-    bool findit = next_sequences_index.Lookup(from_replica, &next_index);
-    
-    CHECK(findit == true);
-
-    pair<uint64, uint64> next_sequence_version;
-    bool findnext = local_versions_index_table.Lookup(next_index, &next_sequence_version); 
-
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SEQUENCE-ACK(--before find next). from machine:"<<header->from();
-    while (findnext == false) {
-      usleep(10);
-      findnext = local_versions_index_table.Lookup(next_index, &next_sequence_version);
-    }
-
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SEQUENCE-ACK(--already find next). from machine:"<<header->from()<<". next version is: "<<next_sequence_version.first;
-
-    // The number of actions of the current sequence
-    uint64 num_actions = next_sequence_version.second;
-    ++next_index;
-
-    next_sequences_index.EraseAndPut(from_replica, next_index);
  
     Log::Reader* r = readers_for_local_log[from_replica];
     bool find = r->Next();
+    while (find == false) {
+      usleep(20);
+      find = r->Next();
+    }
+
     CHECK(find == true);
 
     Header* header2 = new Header();
@@ -177,7 +158,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SE
     header2->set_rpc("NEW-SEQUENCE");
     MessageBuffer* m = new MessageBuffer();
     m->Append(r->Entry());
-    m->Append(ToScalar<uint64>(num_actions));
+    m->Append(ToScalar<uint64>(r->Count()));
     m->Append(ToScalar<uint32>(machine()->machine_id()));
     machine()->SendMessage(header2, m);
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Send NEW-SEQUENCE(after receive ack) to: "<<from_replica<<" . version: "<<r->Version();
@@ -280,6 +261,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new se
       h->set_data_channel("paxos2");
       m = new MessageBuffer(new string(encoded));
       m->Append(ToScalar<uint64>(version));
+      m->Append(ToScalar<uint64>(next_version - version));
       m->Append(ToScalar<uint64>(reinterpret_cast<uint64>(acks)));
       machine()->SendMessage(h, m);
     }
@@ -303,13 +285,10 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new se
     }
 
     // Actually append the request into the log
-    log_->Append(version, encoded);
+    log_->Append(version, next_version - version, encoded);
 
     if (isLocal == true) {
-      local_log_->Append(version, encoded);
-
-      local_versions_index_table.Put(local_sequences_index, make_pair(version, next_version - version));
-      local_sequences_index++;
+      local_log_->Append(version, next_version - version, encoded);
     }
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Actually append the request into the log: version:"<< version<<" next_version is:"<<next_version;
 
@@ -334,7 +313,6 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Actually append 
           m->Append(ToScalar<uint32>(machine()->machine_id()));
           machine()->SendMessage(header, m);
 
-          next_sequences_index.Put(i, 1);
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2: Send NEW-SEQUENCE to: "<<i*partitions_per_replica<<" version:"<<version;
 	}
       }
@@ -379,7 +357,7 @@ void Paxos2App::RunFollower() {
       h->set_to(participants_[0]);
       h->set_type(Header::ACK);
       Scalar s;
-      s.ParseFromArray((*m)[2].data(), (*m)[2].size());
+      s.ParseFromArray((*m)[3].data(), (*m)[3].size());
       h->set_ack_counter(FromScalar<uint64>(s));
       machine()->SendMessage(h, new MessageBuffer());
     } else {
@@ -391,7 +369,9 @@ void Paxos2App::RunFollower() {
       uncommitted.pop();
       Scalar s;
       s.ParseFromArray((*m)[1].data(), (*m)[1].size());
-      log_->Append(FromScalar<uint64>(s), (*m)[0]);
+      Scalar count;
+      count.ParseFromArray((*m)[2].data(), (*m)[2].size());
+      log_->Append(FromScalar<uint64>(s), FromScalar<uint64>(count), (*m)[0]);
       delete m;
     }
   }

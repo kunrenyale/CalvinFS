@@ -23,6 +23,8 @@ class Log {
   // Requires: version > any previously appended version
   virtual void Append(uint64 version, const Slice& entry) = 0;
 
+  virtual void Append(uint64 version, uint64 count, const Slice& entry) = 0;
+
   // Returns the highest version that has been appended to the log so far, or
   // 0 if the log is empty.
   virtual uint64 LastVersion() = 0;
@@ -62,6 +64,8 @@ class Log {
     //
     // Requires: Valid()
     virtual uint64 Version() = 0;
+
+    virtual uint64 Count() = 0;
 
     // Returns the current entry.
     //

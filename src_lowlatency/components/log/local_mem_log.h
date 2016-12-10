@@ -28,6 +28,7 @@ class LocalMemLog : public Log {
 
   // Actual log interface.
   virtual void Append(uint64 version, const Slice& entry);
+  virtual void Append(uint64 version, uint64 count, const Slice& entry);
   virtual typename Log::Reader* GetReader();
   virtual uint64 LastVersion();
 
@@ -42,12 +43,17 @@ class LocalMemLog : public Log {
 
   // Array of entries.
   struct Entry {
-    Entry() : version(0), entry(NULL) {}
+    Entry() : version(0), count(0), entry(NULL) {}
+    Entry(uint64 v, uint64 s, const Slice& e)
+        : version(v), count(s), entry(new string(e.data(), e.size())) {
+    }
+
     Entry(uint64 v, const Slice& e)
-        : version(v), entry(new string(e.data(), e.size())) {
+        : version(v), count(0), entry(new string(e.data(), e.size())) {
     }
 
     uint64 version;
+    uint64 count;
     string* entry;
   };
   Entry* entries_;

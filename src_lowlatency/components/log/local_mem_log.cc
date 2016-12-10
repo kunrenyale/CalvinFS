@@ -19,6 +19,7 @@ class LocalMemLogReader : public Log::Reader {
   virtual bool Next();
   virtual bool Seek(uint64 target);
   virtual uint64 Version();
+  virtual uint64 Count(); 
   virtual Slice Entry();
 
  private:
@@ -71,6 +72,23 @@ void LocalMemLog::Append(uint64 version, const Slice& entry) {
   }
 
   entries_[size_.load()] = Entry(version, entry);
+  size_++;
+  max_version_ = version;
+}
+
+void LocalMemLog::Append(uint64 version, uint64 count, const Slice& entry) {
+  CHECK_GE(version, max_version_);
+
+  // Resize if necessary.
+  if (size_.load() >= allocated_) {
+    CHECK_EQ(allocated_, size_.load());
+    WriteLock l(&mutex_);
+    allocated_ *= 2;
+    entries_ = reinterpret_cast<LocalMemLog::Entry*>(
+                        realloc(entries_, allocated_ * sizeof(Entry)));
+  }
+
+  entries_[size_.load()] = Entry(version, count, entry);
   size_++;
   max_version_ = version;
 }
@@ -175,6 +193,11 @@ bool LocalMemLogReader::Seek(uint64 target) {
 uint64 LocalMemLogReader::Version() {
   CHECK(Valid()) << "version called on invalid LogReader";
   return entry_.version;
+}
+
+uint64 LocalMemLogReader::Count() {
+  CHECK(Valid()) << "version called on invalid LogReader";
+  return entry_.count;
 }
 
 Slice LocalMemLogReader::Entry() {
