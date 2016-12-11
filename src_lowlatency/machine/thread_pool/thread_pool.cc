@@ -300,11 +300,16 @@ void* ThreadPool::MonitorThread(void* arg) {
       for (int i = 0; i < add_thread_count; i++) {
         high->threads_[high->assigned_thread_count_ + i] = (pthread_t)0;
         high->stopped_[high->assigned_thread_count_ + i] = false;
-        pthread_create(&high->threads_[high->assigned_thread_count_ + i],
+        int error = pthread_create(&high->threads_[high->assigned_thread_count_ + i],
                        &attr,
                        SubPool::RunThread,
                        new pair<int, SubPool*>(high->assigned_thread_count_ + i,
                                                high));
+
+        if (error != 0) {
+          LOG(ERROR) << ":------------ Excess the max threads limit: " << high->assigned_thread_count_;
+          CHECK(error == 0);      
+        }
       }
       high->Resize_thread_count(high->Thread_count() + add_thread_count);
       high->assigned_thread_count_ += add_thread_count;
