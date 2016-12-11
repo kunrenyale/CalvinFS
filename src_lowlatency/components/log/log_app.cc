@@ -37,7 +37,7 @@ bool LogApp::HandleRemoteReaderMessage(Header* header, MessageBuffer* message) {
     if (r->Next()) {
       message->Append(r->Entry());
       message->Append(new string(UInt64ToString(r->Version())));
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 GET operation, next_version is:"<<r->Version();
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 GET operation, next_version is:"<<r->Version();
     }
 
     machine()->SendReplyMessage(header, message);
