@@ -84,7 +84,7 @@ void StoreApp::Run(Action* action) {
       header->set_type(Header::DATA);
       header->set_data_channel(action->client_channel());
       machine()->SendMessage(header, new MessageBuffer(*action));
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>StoreAPP send results to client:"<<action->client_machine()<<". distinct_id:"<<action->distinct_id()<<" version:"<<action->version();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>StoreAPP send results to client:"<<action->client_machine()<<". distinct_id:"<<action->distinct_id()<<" version:"<<action->version();
     }
   }
 }
