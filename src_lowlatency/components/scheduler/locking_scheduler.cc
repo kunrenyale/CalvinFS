@@ -127,17 +127,22 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ BLOCK:" << ac
       }
 
     } else {
-      // Release read locks.
-      for (int i = 0; i < action->readset_size(); i++) {
-        if (store_->IsLocal(action->readset(i))) {
-          lm_.Release(action, action->readset(i));
+      set<string> writeset;
+
+      // Release write locks. 
+      for (int i = 0; i < action->writeset_size(); i++) {
+        if (store_->IsLocal(action->writeset(i))) {
+          writeset.insert(action->writeset(i));
+          lm_.Release(action, action->writeset(i));
         }
       }
 
-      // Release write locks. (Okay to release a lock twice.)
-      for (int i = 0; i < action->writeset_size(); i++) {
-        if (store_->IsLocal(action->writeset(i))) {
-          lm_.Release(action, action->writeset(i));
+      // Release read locks.
+      for (int i = 0; i < action->readset_size(); i++) {
+        if (store_->IsLocal(action->readset(i))) {
+          if (writeset.count(action->readset(i)) == 0) {
+            lm_.Release(action, action->readset(i));
+          }
         }
       }
     }
