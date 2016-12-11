@@ -37,8 +37,10 @@ bool LogApp::HandleRemoteReaderMessage(Header* header, MessageBuffer* message) {
     if (r->Next()) {
       message->Append(r->Entry());
       message->Append(new string(UInt64ToString(r->Version())));
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 GET operation, next_version is: "<<r->Version();
-    }
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 GET operation, next_version is:"<<r->Version();
+    } else {
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>&&&Paxos2 GET operation, Run out!!!:";
+}
     machine()->SendReplyMessage(header, message);
 
   } else {
@@ -158,10 +160,12 @@ T* ParseFromMessageBuffer(MessageBuffer* m) {
 
 template<class T>
 bool RemoteLogSource<T>::Get(T** t) {
+LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "=>call RemoteLogSource<T>::Get:";
   // Maybe there is already an entry in the queue.
   MessageBuffer* m = NULL;
   if (!inbox_->Pop(&m)) {
     // Nope. Request new entry from source app.
+LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "=>call RemoteLogSource<T>::Get(request a new one):";
     Header* header = new Header();
     header->set_from(machine_->machine_id());
     header->set_to(source_machine_);
@@ -175,6 +179,7 @@ bool RemoteLogSource<T>::Get(T** t) {
     while (!inbox_->Pop(&m)) {
       usleep(10);
     }
+LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "=>call RemoteLogSource<T>::Got the new one):";
   }
 
   // Parse response.

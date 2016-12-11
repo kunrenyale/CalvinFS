@@ -535,7 +535,7 @@ LOG(ERROR) << "*********Have we received the subbatch corresponding to subbatch_
             } else {
               // Okay, got a non-empty subbatch! Reverse the order of elements
               // so we can now repeatedly call ReleaseLast on the entries.
-//LOG(ERROR) <<"*********Okay, got a non-empty subbatch! Reverse the order of elements.";
+LOG(ERROR) <<"*********Okay, got a non-empty subbatch! Reverse the order of elements. the subbatch size is:"<<subbatch_->entries_size();
               for (int i = 0; i < subbatch_->entries_size() / 2; i++) {
                 subbatch_->mutable_entries()->SwapElements(
                     i,
@@ -557,7 +557,7 @@ LOG(ERROR) << "*********Have we received the subbatch corresponding to subbatch_
       *a = subbatch_->mutable_entries()->ReleaseLast();
       (*a)->set_version(subbatch_version_ + (*a)->version_offset());
       (*a)->clear_version_offset();
-//LOG(ERROR) <<"^^^^^^^^^ActionSource get a txn: distinct_id is: "<<(*a)->distinct_id();
+LOG(ERROR) <<"^^^^^^^^^ActionSource get a txn: distinct_id is: "<<(*a)->distinct_id();
       if (subbatch_->entries_size() == 0) {
         // Okay, NOW the batch is empty.
         delete subbatch_;
