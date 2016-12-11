@@ -52,7 +52,7 @@ LOG(ERROR) <<"^^^^^^^^^SequenceSource wrong!!!";
       } else {
         index_ = 0;
         offset_ = current_->misc();
-//LOG(ERROR) <<"^^^^^^^^^SequenceSource get a sequence:"<< offset_ << " block_id is: "<<current_->pairs(0).first();
+LOG(ERROR) <<"^^^^^^^^^SequenceSource get a sequence:"<< offset_ << " first block_id is:"<<current_->pairs(0).first();
       }
     }
 
@@ -320,7 +320,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log recevie a SUBM
       ActionBatch* batch = new ActionBatch();
       batch->ParseFromArray((*message)[0].data(), (*message)[0].size());
       subbatches_.Put(block_id, batch);
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log recevie a SUBBATCH request. block id is:"<< block_id<<" from machine:"<<header->from();
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log recevie a SUBBATCH request. block id is:"<< block_id<<" from machine:"<<header->from();
     } else if (header->rpc() == "FAKEACTIONBATCH") {
       uint64 block_id = header->misc_int(0);
       ActionBatch* batch = new ActionBatch();
@@ -509,7 +509,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEN
             subbatch_id_ = p->first();
             subbatch_version_ = p->second();
             delete p;
-//LOG(ERROR) <<"*********Blocklog subbatch_id:"<< subbatch_id_ << " subbatch_version_ "<<subbatch_version_;
+LOG(ERROR) <<"*********Blocklog subbatch_id:"<< subbatch_id_ << " subbatch_version_:"<<subbatch_version_;
           } else {
             return false;
           }
@@ -521,7 +521,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEN
           // Have we received the subbatch corresponding to subbatch_id_?
           if (!log_->subbatches_.Lookup(subbatch_id_, &subbatch_)) {
             // Nope. Gotta try again later.
-//LOG(ERROR) <<"*********Have we received the subbatch corresponding to subbatch_id_?";
+LOG(ERROR) <<"*********Have we received the subbatch corresponding to subbatch_id_?";
             return false;
           } else {
             // Got the subbatch! Is it empty?

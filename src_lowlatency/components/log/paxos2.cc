@@ -129,11 +129,12 @@ MessageBuffer* m = new MessageBuffer(other_sequence);
     m->Append(s);
     s.ParseFromArray((*message)[2].data(), (*message)[2].size());
     m->Append(s);
-    sequences_other_replicas.Push(m);
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SEQUENCE  from machine:"<<header->from()<<"  version is:"<<other_sequence.misc();
       for (int i = 0; i < other_sequence.pairs_size();i++) {
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SEQUENCEuint64 contains block_id:"<<other_sequence.pairs(i).first();
       }
+    sequences_other_replicas.Push(m);
+
   } else if (header->rpc() == "NEW-SEQUENCE-ACK") {
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a NEW-SEQUENCE-ACK. from machine:"<<header->from();
     // Send next sequence to the from-replica
