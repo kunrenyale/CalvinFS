@@ -509,7 +509,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEN
             subbatch_id_ = p->first();
             subbatch_version_ = p->second();
             delete p;
-LOG(ERROR) <<"*********Blocklog subbatch_id:"<< subbatch_id_ << " subbatch_version_:"<<subbatch_version_;
+LOG(ERROR) << "*********Blocklog subbatch_id:"<< subbatch_id_ << " subbatch_version_:"<<subbatch_version_;
           } else {
             return false;
           }
@@ -521,7 +521,7 @@ LOG(ERROR) <<"*********Blocklog subbatch_id:"<< subbatch_id_ << " subbatch_versi
           // Have we received the subbatch corresponding to subbatch_id_?
           if (!log_->subbatches_.Lookup(subbatch_id_, &subbatch_)) {
             // Nope. Gotta try again later.
-LOG(ERROR) <<"*********Have we received the subbatch corresponding to subbatch_id_?";
+LOG(ERROR) << "*********Have we received the subbatch corresponding to subbatch_id_? batch_id:"<<subbatch_id_;
             return false;
           } else {
             // Got the subbatch! Is it empty?
