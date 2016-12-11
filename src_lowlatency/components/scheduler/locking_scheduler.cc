@@ -33,7 +33,7 @@ void LockingScheduler::MainLoopBody() {
     high_water_mark_ = action->version();
     active_actions_.insert(action->version());
     int ungranted_requests = 0;
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action:" << action->version()<<" distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action:" << action->version()<<" distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin();
 
     if (action->single_replica() == false) {
       set<string> writeset;
@@ -94,10 +94,10 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action
 
       running_action_count_++;
       store_->RunAsync(action, &completed_);
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ Get Lock immediately:" << action->version()<<" distinct id is:"<<action->distinct_id();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ Get Lock immediately:" << action->version()<<" distinct id is:"<<action->distinct_id();
     } 
 else {
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ BLOCK:" << action->version()<<" distinct id is:"<<action->distinct_id();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ BLOCK:" << action->version()<<" distinct id is:"<<action->distinct_id();
 }
   }
 
@@ -141,7 +141,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ BLOCK:" << ac
         }
       }
     }
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":** scheduler finish running action:" << action->version()<<" distinct id is:"<<action->distinct_id();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":** scheduler finish running action:" << action->version()<<" distinct id is:"<<action->distinct_id();
     active_actions_.erase(action->version());
     running_action_count_--;
     safe_version_.store(
@@ -152,7 +152,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":** scheduler finish runnin
 
   // Start executing all actions that have newly acquired all their locks.
   while (lm_.Ready(&action)) {
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ Previous blocked, now active:" << action->version()<<" distinct id is:"<<action->distinct_id();    
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ Previous blocked, now active:" << action->version()<<" distinct id is:"<<action->distinct_id();    
     running_action_count_++;
     store_->RunAsync(action, &completed_);
   }
