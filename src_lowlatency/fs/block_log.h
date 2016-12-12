@@ -511,7 +511,7 @@ class BlockLogApp : public App {
             delete p;
 //LOG(ERROR) << "*********Blocklog subbatch_id:"<< subbatch_id_ << " subbatch_version_:"<<subbatch_version_;
           } else {
-            usleep(20);
+            //usleep(50);
             return false;
           }
         }
@@ -523,6 +523,7 @@ class BlockLogApp : public App {
           if (!log_->subbatches_.Lookup(subbatch_id_, &subbatch_)) {
             // Nope. Gotta try again later.
 //LOG(ERROR) << "*********Have we received the subbatch corresponding to subbatch_id_? batch_id:"<<subbatch_id_;
+            //usleep(20);
             return false;
           } else {
             // Got the subbatch! Is it empty?
