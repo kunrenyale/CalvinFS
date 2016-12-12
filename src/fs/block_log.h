@@ -333,6 +333,7 @@ class BlockLogApp : public App {
             subbatch_version_ = p->second();
             delete p;
           } else {
+            usleep(50);
             return false;
           }
         }
@@ -343,6 +344,7 @@ class BlockLogApp : public App {
           // Have we received the subbatch corresponding to subbatch_id_?
           if (!log_->subbatches_.Lookup(subbatch_id_, &subbatch_)) {
             // Nope. Gotta try again later.
+            usleep(20);
             return false;
           } else {
             // Got the subbatch! Is it empty?
