@@ -738,6 +738,7 @@ void LatencyExperimentAppend() {
         // Copy operations that cross data centers
          BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/c" + IntToString(j),
                              "/a" + IntToString(machines_other_replicas[rand()%size_other_machines]) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));
+// For high contention
 /**BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(0) + "/c" + IntToString(j),
                              "/a" + IntToString((machine()->machine_id() + 2)%6) + "/b" + IntToString(0) + "/d" + IntToString(machine()->GetGUID()));**/
       }
