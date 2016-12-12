@@ -145,7 +145,7 @@ MessageBuffer* m = new MessageBuffer(other_sequence);
     Log::Reader* r = readers_for_local_log[from_replica];
     bool find = r->Next();
     while (find == false) {
-      usleep(20);
+      usleep(10);
       find = r->Next();
     }
 
@@ -153,7 +153,7 @@ MessageBuffer* m = new MessageBuffer(other_sequence);
 
     Header* header2 = new Header();
     header2->set_from(machine()->machine_id());
-    header2->set_to(header->from());
+    header2->set_to(from_replica * partitions_per_replica);
     header2->set_type(Header::RPC);
     header2->set_app(name());
     header2->set_rpc("NEW-SEQUENCE");
