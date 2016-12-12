@@ -140,8 +140,8 @@ void SubPool::HandleMessage(Header* header, MessageBuffer* message) {
 SubPool::SubPool(MessageHandler* handler, int priority) {
   handler_ = handler;
   priority_ = priority;
-  min_idle_ = 32;
-  max_idle_ = 48;
+  min_idle_ = 64;
+  max_idle_ = 64;
   thread_count_ = min_idle_;
   idle_thread_count_ = 0;
   assigned_thread_count_ = thread_count_;
@@ -285,7 +285,7 @@ void* ThreadPool::MonitorThread(void* arg) {
     // Check high priority threads
     if (high->idle_thread_count_ < high->min_idle_) {
       // Need to create some threads
-      int add_thread_count = 4;
+      int add_thread_count = 8;
       // Set affinity
       cpu_set_t cpuset;
       pthread_attr_t attr;
