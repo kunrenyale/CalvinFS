@@ -511,7 +511,7 @@ class BlockLogApp : public App {
             delete p;
 //LOG(ERROR) << "*********Blocklog subbatch_id:"<< subbatch_id_ << " subbatch_version_:"<<subbatch_version_;
           } else {
-            usleep(100);
+            //usleep(100);
             return false;
           }
         }
