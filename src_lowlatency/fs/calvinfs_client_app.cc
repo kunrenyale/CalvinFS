@@ -310,7 +310,7 @@ MessageBuffer* CalvinFSClientApp::RenameFile(const Slice& from_path, const Slice
     usleep(100);
   }
 
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":^^^^^^^^ CalvinFSClientApp::RenameFile completed ^^^^^^  distinct id is:"<<distinct_id;
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":^^^^^^^^ CalvinFSClientApp::RenameFile completed ^^^^^^  distinct id is:"<<distinct_id;
   //machine()->CloseDataChannel(channel_name);
 
   Action result;
