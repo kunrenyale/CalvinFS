@@ -68,16 +68,13 @@ bool Paxos2App::IsLeader() {
 }
 
 void Paxos2App::Append(uint64 blockid, uint64 count) {
-  // Forward append request to leader.
-  Header* header = new Header();
-  header->set_from(machine()->machine_id());
-  header->set_to(participants_[0]);
-  header->set_type(Header::RPC);
-  header->set_app(name());
-  header->set_rpc("APPEND");
-  header->add_misc_int(blockid);
-  header->add_misc_int(count);
-  machine()->SendMessage(header, new MessageBuffer());
+    Lock l(&mutex_);
+    UInt64Pair* p = sequence_.add_pairs();
+    p->set_first(blockid);
+    p->set_second(count);
+    count_ += p->second();
+    has_local_sequence_ = 1;
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a Append request. block id is:"<< header->misc_int(0)<<"  count is:"<<header->misc_int(1)<<" from machine:"<<header->from();
 }
 
 void Paxos2App::GetRemoteSequence(MessageBuffer** result) {
