@@ -783,7 +783,7 @@ void LatencyExperimentRenameFile(int local_percentage) {
     // Begin mix of operations.
     reporting_ = true;
     double start = GetTime();
-    for (int j = 0; j < 500; j++) {
+    for (int j = 0; j < 200; j++) {
       int seed = rand() % 100;
       
       // Copy operations inside one data center
