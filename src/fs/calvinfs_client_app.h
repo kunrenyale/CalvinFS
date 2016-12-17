@@ -721,7 +721,7 @@ void LatencyExperimentAppend() {
     reporting_ = true;
     double start = GetTime();
 
-    for (int j = 0; j < 500; j++) {
+    for (int j = 0; j < 250; j++) {
       int a1 = rand() % 1000;
       int a2 = rand() % 1000;
       BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a1) + "/c" + IntToString(j),
