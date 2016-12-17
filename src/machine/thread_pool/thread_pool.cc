@@ -141,7 +141,7 @@ SubPool::SubPool(MessageHandler* handler, int priority) {
   handler_ = handler;
   priority_ = priority;
   min_idle_ = 32;
-  max_idle_ = 48;
+  max_idle_ = 128;
   thread_count_ = min_idle_;
   idle_thread_count_ = 0;
   assigned_thread_count_ = thread_count_;
@@ -371,7 +371,7 @@ void* ThreadPool::MonitorThread(void* arg) {
     }
 
     // sleep for 1/100th of a second
-    usleep(1000);
+    usleep(10000);
   }
   return NULL;
 }
