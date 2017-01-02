@@ -722,47 +722,7 @@ void LatencyExperimentAppend() {
 
     double start = GetTime();
 
-    for (int j = 0; j < 250; j++) {
-      int seed = rand() % 100;
-      
-      // Copy operations inside one data center
-      if (seed < local_percentage) {
-        int a1 = rand() % 1000;
-        int a2 = rand() % 1000;
-        while (a2 == a1) {
-          a2 = rand() % 1000;
-        }
-        BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a1) + "/c" + IntToString(j),
-                             "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a2) + "/d" + IntToString(machine()->GetGUID()));
-      } else {
-        // Copy operations that cross data centers
-         BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/c" + IntToString(j),
-                             "/a" + IntToString(machines_other_replicas[rand()%size_other_machines]) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));
-// For high contention
-/**BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(0) + "/c" + IntToString(j),
-                             "/a" + IntToString((machine()->machine_id() + 3)%9) + "/b" + IntToString(0) + "/d" + IntToString(machine()->GetGUID()));**/
-      }
-
-      if (j % 100 == 0) {
-        LOG(ERROR) << "[" << machine()->machine_id() << "] "
-                   << "Test progress : " << j / 100 << "/" << 5;
-      }    
-    }
-
-    // Wait for all operations to finish.
-    while (capacity_.load() < kMaxCapacity) {
-      usleep(10);
-    }
-
-    // Report.
-    LOG(ERROR) << "[" << machine()->machine_id() << "] "
-               << "Renamed " <<  "500 files. Elapsed time: "
-               << (GetTime() - start) << " seconds";
-
-
-    // For test
-    start = GetTime();
-    for (int j = 0; j < 250; j++) {
+    for (int j = 0; j < 500; j++) {
       int seed = rand() % 100;
       
       // Copy operations inside one data center
