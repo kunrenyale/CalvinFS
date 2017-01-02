@@ -9,6 +9,7 @@
 #include <map>
 #include <queue>
 #include <vector>
+#include <tr1/unordered_map>
 #include "btree/btree_map.h"
 #include "common/mutex.h"
 #include "common/types.h"
@@ -19,6 +20,7 @@ using std::map;
 using std::pair;
 using std::queue;
 using std::vector;
+using std::tr1::unordered_map;
 
 // Queue with atomic push and pop operations. One Push and one Pop can occur
 // concurrently, so consumers will not block producers, and producers will not
@@ -148,23 +150,23 @@ class AtomicMap {
 
   inline bool Lookup(const K& k, V* v) {
     ReadLock l(&mutex_);
-    typename btree_map<K, V>::const_iterator lookup = map_.find(k);
-    if (lookup == map_.end()) {
+    if (map_.count(k) == 0) {
       return false;
+    } else {
+      *v = map_[k];
+      return true;
     }
-    *v = lookup->second;
-    return true;
   }
 
   inline void Put(const K& k, const V& v) {
     WriteLock l(&mutex_);
-    map_.insert(std::make_pair(k, v));
+    map_[k] = v;
   }
 
   inline void EraseAndPut(const K& k, const V& v) {
     WriteLock l(&mutex_);
     map_.erase(k);
-    map_.insert(std::make_pair(k, v));
+    map_[k] = v;
   }
 
   inline void Erase(const K& k) {
@@ -177,12 +179,12 @@ class AtomicMap {
   // was there already).
   inline V PutNoClobber(const K& k, const V& v) {
     WriteLock l(&mutex_);
-    typename btree_map<K, V>::const_iterator lookup = map_.find(k);
-    if (lookup != map_.end()) {
-      return lookup->second;
+    if (map_.count(k) != 0) {
+      return map_[k];
+    } else {
+      map_[k] = v;
+      return v;
     }
-    map_.insert(std::make_pair(k, v));
-    return v;
   }
 
   inline uint32 Size() {
@@ -191,7 +193,7 @@ class AtomicMap {
   }
 
  private:
-  btree_map<K, V> map_;
+  unordered_map<K, V> map_;
   MutexRW mutex_;
 
   // DISALLOW_COPY_AND_ASSIGN
