@@ -77,7 +77,7 @@ void StoreApp::Run(Action* action) {
 
   // Send results to client.
   if (action->has_client_machine()) {
-    if (GetHeadMachine(machine()->machine_id()) == GetHeadMachine(action->client_machine())) {
+    //if (GetHeadMachine(machine()->machine_id()) == GetHeadMachine(action->client_machine())) {
       Header* header = new Header();
       header->set_from(machine()->machine_id());
       header->set_to(action->client_machine());
@@ -85,7 +85,7 @@ void StoreApp::Run(Action* action) {
       header->set_data_channel(action->client_channel());
       machine()->SendMessage(header, new MessageBuffer(*action));
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>StoreAPP send results to client:"<<action->client_machine()<<". distinct_id:"<<action->distinct_id()<<" version:"<<action->version();
-    }
+    //}
   }
 }
 
