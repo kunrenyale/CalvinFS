@@ -140,7 +140,7 @@ class DelayQueue {
   DelayQueue& operator=(const DelayQueue<T>&);
 };
 
-template<typename K, typename V>
+/**template<typename K, typename V>
 class AtomicMap {
  public:
   AtomicMap() {}
@@ -186,6 +186,65 @@ class AtomicMap {
 
  private:
   btree_map<K, V> map_;
+  MutexRW mutex_;
+
+  // DISALLOW_COPY_AND_ASSIGN
+  AtomicMap(const AtomicMap<K, V>&);
+  AtomicMap& operator=(const AtomicMap<K, V>&);
+};**/
+
+template<typename K, typename V>
+class AtomicMap {
+ public:
+  AtomicMap() {}
+  ~AtomicMap() {}
+
+  inline bool Lookup(const K& k, V* v) {
+    ReadLock l(&mutex_);
+    if (map_.count(k) == 0) {
+      return false;
+    } else {
+      *v = map_[k];
+      return true;
+    }
+  }
+
+  inline void Put(const K& k, const V& v) {
+    WriteLock l(&mutex_);
+    map_[k] = v;
+  }
+
+  inline void EraseAndPut(const K& k, const V& v) {
+    WriteLock l(&mutex_);
+    map_.erase(k);
+    map_[k] = v;
+  }
+
+  inline void Erase(const K& k) {
+    WriteLock l(&mutex_);
+    map_.erase(k);
+  }
+
+  // Puts (k, v) if there is no record for k. Returns the value of v that is
+  // associated with k afterwards (either the inserted value or the one that
+  // was there already).
+  inline V PutNoClobber(const K& k, const V& v) {
+    WriteLock l(&mutex_);
+    if (map_.count(k) != 0) {
+      return map_[k];
+    } else {
+      map_[k] = v;
+      return v;
+    }
+  }
+
+  inline uint32 Size() {
+    ReadLock l(&mutex_);
+    return map_.size();
+  }
+
+ private:
+  unordered_map<K, V> map_;
   MutexRW mutex_;
 
   // DISALLOW_COPY_AND_ASSIGN
