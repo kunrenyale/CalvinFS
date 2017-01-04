@@ -1,0 +1,13 @@
+// Author: Alex Thomson
+//
+syntax = "proto2";
+message A {
+  repeated int32 x = 1;
+  repeated bytes s = 2;
+}
+
+message B {
+  repeated A a = 1;
+  repeated B b = 2;
+}
+

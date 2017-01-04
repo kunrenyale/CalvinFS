@@ -1,0 +1,7 @@
+// Author: Alex Thomson (thomson@cs.yale.edu)
+//
+syntax = "proto2";
+message Batch {
+  repeated bytes entries = 1;
+}
+

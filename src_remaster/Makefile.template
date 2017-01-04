@@ -1,0 +1,62 @@
+OBJDIRS += $(LC_DIR)
+
+$(UC_DIR)_PROTO_DEFS := $(PROTOS)
+$(UC_DIR)_SRCS       := $(SRCS)
+$(UC_DIR)_EXES       := $(EXES)
+$(UC_DIR)_TEST_SRCS  := $(TEST)
+
+# proto stuff
+$(UC_DIR)_PROTO_SRCS := $(patsubst %.proto, $(OBJDIR)/%.pb.cc, $($(UC_DIR)_PROTO_DEFS))
+$(UC_DIR)_PROTO_OBJS := $(patsubst %.c, %.o,\
+                        $(patsubst %.cpp, %.o,\
+                        $(patsubst %.cc, %.o, $($(UC_DIR)_PROTO_SRCS))))
+
+$(OBJDIR)/$(LC_DIR)/%.pb.cc $(OBJDIR)/$(LC_DIR)/%.pb.h: $(LC_DIR)/%.proto
+	@echo + protoc $@
+	@mkdir -p $(@D)
+	$(V)$(LDLIBRARYPATH) $(PROTOCEXE) --proto_path=$(patsubst %/,%,$(dir $<)) \
+	                                  --cpp_out=$(OBJDIR)/$(patsubst %/,%,$(dir $<)) $<
+
+# Build files only if they exist.
+$(UC_DIR)_OBJS := $(patsubst %.c, $(OBJDIR)/%.o,\
+                  $(patsubst %.cpp, $(OBJDIR)/%.o,\
+                  $(patsubst %.cc, $(OBJDIR)/%.o, $($(UC_DIR)_SRCS))))
+$(UC_DIR)_OBJS += $($(UC_DIR)_PROTO_OBJS)
+
+ifneq ($($(UC_DIR)_EXES),)
+$(UC_DIR)_PROG := $(patsubst $(LC_DIR)/%.cc, $(BINDIR)/$(LC_DIR)/%, $($(UC_DIR)_EXES))
+endif
+
+$(UC_DIR)_TEST_OBJS := $(patsubst %.cc, $(OBJDIR)/%.o, $($(UC_DIR)_TEST_SRCS))
+$(UC_DIR)_TESTS     := $(patsubst %.cc, $(BINDIR)/%, $($(UC_DIR)_TEST_SRCS))
+
+TESTS += test-$(LC_DIR)
+
+all: $(LC_DIR)
+$(LC_DIR): $($(UC_DIR)_PROG) $($(UC_DIR)_OBJS) $($(UC_DIR)_TESTS)
+
+$(OBJDIR)/$(LC_DIR)/%.pb.o: $(OBJDIR)/$(LC_DIR)/%.pb.cc $(DEPS)
+	@echo + cxx $@
+	@mkdir -p $(@D)
+	$(V)$(CXX) $(CXXFLAGS) -o $@ -c $<
+
+$(OBJDIR)/$(LC_DIR)/%.o: $(LC_DIR)/%.cc $($(UC_DIR)_PROTO_SRCS) $(DEPS)
+	@echo + cxx $@
+	@mkdir -p $(@D)
+	$(V)$(CXX) $(CXXFLAGS) -o $@ -c $<
+
+$(BINDIR)/$(LC_DIR)/%_test: $(OBJDIR)/$(LC_DIR)/%_test.o $($(UC_DIR)_OBJS) $(DEPS)
+	@echo + ld $@
+	@mkdir -p $(@D)
+	$(V)$(CXX) -o $@ $^ $(LDFLAGS) $(ZMQLDFLAGS)
+
+# Compiled CPP executables
+ifneq ($($(UC_DIR)_EXES),)
+$(BINDIR)/$(LC_DIR)/%: $(LC_DIR)/%.cc $(DEPS) $($(UC_DIR)_OBJS)
+	@echo + ld $@
+	@mkdir -p $(@D)
+	$(V)$(CXX) -o $@ $^ $(CXXFLAGS) $(LDFLAGS) $(ZMQLDFLAGS)
+endif
+
+.PHONY: $(LC_DIR) test-$(LC_DIR)
+

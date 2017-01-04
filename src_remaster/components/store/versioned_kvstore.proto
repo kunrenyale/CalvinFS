@@ -1,0 +1,59 @@
+// Author: Alexander Thomson <thomson@cs.yale.edu>
+//
+syntax = "proto2";
+message VersionedKVStoreAction {  // Actually a namespace!
+
+// Types of actions that KVStore can interpret.
+enum Type {
+  EXISTS = 0;
+  PUT = 1;
+  GET = 2;
+  DELETE = 3;
+  GET_VERSION = 4;
+};
+
+/////////////////////////
+// EXISTS
+message ExistsInput {
+  required bytes key = 1;
+}
+message ExistsOutput {
+  required bool exists = 1;
+}
+
+/////////////////////////
+// PUT
+message PutInput {
+  required bytes key = 1;
+  required bytes value = 2;
+}
+// (no output type)
+
+/////////////////////////
+// GET
+message GetInput {
+  required bytes key = 1;
+}
+message GetOutput {
+  required bool exists = 1;
+  optional bytes value = 2;
+}
+
+/////////////////////////
+// DELETE
+message DeleteInput {
+  required bytes key = 1;
+}
+// (no output type)
+
+/////////////////////////
+// GET_VERSION
+message GetVersionInput {
+  required bytes key = 1;
+}
+message GetVersionOutput {
+  required bool exists = 1;
+  optional uint64 version = 2;
+}
+
+}  // message KVStoreAction

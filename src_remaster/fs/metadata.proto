@@ -1,0 +1,230 @@
+// Author: Alex Thomson
+//
+// Metadata information corresponding to a file. Note that the path to the file
+// is omitted here.
+
+// All files are currently either directories or plain data files.
+syntax = "proto2";
+enum FileType {
+  DATA = 0;
+  DIR = 1;
+};
+
+// Permissions. This type is used both to represent the permissions associated
+// with a file and the permissions of a user running an action.
+// TODO(agt): More on this later.
+message Permissions {
+  optional uint64 owner = 2 [default = 0];
+  optional uint64 group = 3 [default = 0];
+  optional string mode = 4 [default = "777"];
+}
+
+// Element in a byte mapping between logical files and physical blocks.
+message FilePart {
+  required uint64 length = 1;
+  optional uint64 block_id = 2 [default = 0];  // 0 = implicit all-zero block
+  optional uint64 block_offset = 3 [default = 0];
+}
+
+message MetadataEntry {
+  // Master system lock.
+  optional bool locked = 1 [default = false];
+
+  // Standard permissions data.
+  optional Permissions permissions = 2;
+
+  // Specifies data file vs. directory.
+  required FileType type = 5 [default = DATA];
+
+  // DATA files consist of parts zero or more data blocks, listed here.
+  repeated FilePart file_parts = 6;
+
+  // DIR files contain zero or more child files, whose names are listed here.
+  repeated string dir_contents = 7;
+}
+
+
+//////////////////////////      Metadata Actions      //////////////////////////
+
+message MetadataAction {  // actually a namespace
+
+enum Type {
+  CREATE_FILE        = 0;
+  ERASE              = 1;
+  COPY               = 2;
+  RENAME             = 3;
+  LOOKUP             = 4;
+  RESIZE             = 5;
+  WRITE              = 6;
+  APPEND             = 7;
+  CHANGE_PERMISSIONS = 8;
+}
+
+// Possible error conditions.
+enum Error {
+  FileDoesNotExist  = 0;
+  FileAlreadyExists = 1;
+  WrongFileType     = 2;
+  DirectoryNotEmpty = 3;
+  PermissionDenied  = 4;
+}
+
+/////////////////////////////////////////////
+//
+// CreateFile (used for both DATA and DIR files).
+// Does NOT clobber existing files.
+//
+message CreateFileInput {
+  // Path of file to be created.
+  required string path = 1;
+
+  // Permissions for new file (note that the owner and group fields are also
+  // used to determine whether the user has permissions needed to create the
+  // file).
+  optional Permissions permissions = 2;
+
+  // Type of file to be created.
+  required FileType type = 3 [default = DATA];
+}
+message CreateFileOutput {
+  // True if the file was successfully created.
+  optional bool success = 1 [default = true];
+
+  // List of errors that caused file creation to fail. Should be empty if
+  // success == true.
+  repeated Error errors = 2;
+}
+
+/////////////////////////////////////////////
+//
+// Erase (non-recursive: only succeeds for DATA files and EMPTY directories)
+//
+message EraseInput {
+  required string path = 1;
+  optional Permissions permissions = 2;
+}
+message EraseOutput {
+  optional bool success = 1 [default = true];
+  repeated Error errors = 2;
+}
+
+
+
+/////////////////////////////////////////////
+//
+// Copy (non-recursive: only succeeds for DATA files and EMPTY directories)
+//
+message CopyInput {
+  required string from_path = 1;
+  required string to_path = 2;
+  optional Permissions permissions = 3;
+}
+message CopyOutput {
+  optional bool success = 1 [default = true];
+  repeated Error errors = 2;
+}
+
+
+/////////////////////////////////////////////
+//
+// Rename (non-recursive: only succeeds for DATA files and EMPTY directories)
+//
+message RenameInput {
+  required string from_path = 1;
+  required string to_path = 2;
+  optional Permissions permissions = 3;
+}
+message RenameOutput {
+  optional bool success = 1 [default = true];
+  repeated Error errors = 2;
+}
+
+
+/////////////////////////////////////////////
+//
+// Lookup (used to read files and directories)
+//
+message LookupInput {
+  required string path = 1;
+  optional Permissions permissions = 2;
+}
+message LookupOutput {
+  optional bool success = 1 [default = true];
+  repeated Error errors = 2;
+
+  // Entry that was looked up. This field should appear iff success == true.
+  optional MetadataEntry entry = 3;
+}
+
+
+/////////////////////////////////////////////
+//
+// Resize (DATA file)
+//
+message ResizeInput {
+  required string path = 1;
+  optional Permissions permissions = 2;
+
+  required uint64 size = 3;
+}
+message ResizeOutput {
+  optional bool success = 1 [default = true];
+  repeated Error errors = 2;
+}
+
+
+/////////////////////////////////////////////
+//
+// Write (to DATA file)
+//
+message WriteInput {
+  required string path = 1;
+  optional Permissions permissions = 2;
+
+  required uint64 offset = 3;
+  repeated FilePart data = 4;
+}
+message WriteOutput {
+  optional bool success = 1 [default = true];
+  repeated Error errors = 2;
+}
+
+
+/////////////////////////////////////////////
+//
+// Append (to DATA file)
+//
+message AppendInput {
+  required string path = 1;
+  optional Permissions permissions = 2;
+  repeated FilePart data = 3;
+}
+message AppendOutput {
+  optional bool success = 1 [default = true];
+  repeated Error errors = 2;
+}
+
+
+/////////////////////////////////////////////
+//
+// ChangePermissions (non-recursive: only succeeds for DATA files and
+//                    EMPTY directories)
+//
+message ChangePermissionsInput {
+  required string path = 1;
+  optional Permissions permissions = 2;
+  required Permissions new_permissions = 3;
+}
+message ChangePermissionsOutput {
+  optional bool success = 1 [default = true];
+  repeated Error errors = 2;
+}
+
+
+///////////////////////////////////////////////////////
+//
+// TODO(agt): Recursive versions of Copy/Rename/Erase/ChangePermissions....
+//
+
+}  // message MetadataAction
+
