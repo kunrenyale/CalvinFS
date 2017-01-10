@@ -88,7 +88,7 @@ class MetadataStore : public Store {
   virtual bool IsLocal(const string& path);
 
   // Map of file paths to serialized MetadataEntries.
-  VersionedKVStore* store_;
+  KVStore* store_;
 
   // Pointer to local machine (for distributed action execution contexts).
   Machine* machine_;

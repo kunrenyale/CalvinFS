@@ -12,7 +12,6 @@
 #include "common/utils.h"
 #include "components/store/store_app.h"
 #include "components/store/versioned_kvstore.pb.h"
-#include "components/store/hybrid_versioned_kvstore.h"
 #include "components/store/btreestore.h"
 #include "machine/app/app.h"
 #include "machine/machine.h"
@@ -29,8 +28,7 @@ using std::pair;
 using std::make_pair;
 
 REGISTER_APP(MetadataStoreApp) {
-  return new StoreApp(new MetadataStore(new HybridVersionedKVStore()));
-  //return new StoreApp(new MetadataStore(new VersionedKVStore(new BTreeStore())));
+  return new StoreApp(new MetadataStore(new BTreeStore()));
 }
 
 
@@ -69,9 +67,7 @@ class ExecutionContext {
   ExecutionContext(VersionedKVStore* store, Action* action)
       : store_(store), version_(action->version()), aborted_(false) {
     for (int i = 0; i < action->readset_size(); i++) {
-      if (!store_->Get(action->readset(i),
-                       version_,
-                       &reads_[action->readset(i)])) {
+      if (!store_->Get(action->readset(i), &reads_[action->readset(i)])) {
         reads_.erase(action->readset(i));
       }
     }
@@ -93,10 +89,10 @@ class ExecutionContext {
   ~ExecutionContext() {
     if (!aborted_) {
       for (auto it = writes_.begin(); it != writes_.end(); ++it) {
-        store_->Put(it->first, it->second, version_);
+        store_->Put(it->first, it->second);
       }
       for (auto it = deletions_.begin(); it != deletions_.end(); ++it) {
-        store_->Delete(*it, version_);
+        store_->Delete(*it);
       }
     }
   }
@@ -141,7 +137,7 @@ class ExecutionContext {
 
  protected:
   ExecutionContext() {}
-  VersionedKVStore* store_;
+  KVStore* store_;
   uint64 version_;
   bool aborted_;
   map<string, string> reads_;
@@ -187,9 +183,7 @@ class DistributedExecutionContext : public ExecutionContext {
       uint64 machine = config_->LookupMetadataShard(mds, replica_);
       if ((machine == machine_->machine_id()) && (config_->LookupReplicaByDir(action->readset(i)) == origin_)) {
         // Local read.
-        if (!store_->Get(action->readset(i),
-                         version_,
-                         &reads_[action->readset(i)])) {
+        if (!store_->Get(action->readset(i), &reads_[action->readset(i)])) {
           reads_.erase(action->readset(i));
         }
         reader_ = true;
@@ -265,14 +259,14 @@ class DistributedExecutionContext : public ExecutionContext {
         uint64 mds = config_->HashFileName(it->first);
         uint64 machine = config_->LookupMetadataShard(mds, replica_);
         if (machine == machine_->machine_id() && config_->LookupReplicaByDir(it->first) == origin_) {
-          store_->Put(it->first, it->second, version_);
+          store_->Put(it->first, it->second);
         }
       }
       for (auto it = deletions_.begin(); it != deletions_.end(); ++it) {
         uint64 mds = config_->HashFileName(*it);
         uint64 machine = config_->LookupMetadataShard(mds, replica_);
         if (machine == machine_->machine_id() && config_->LookupReplicaByDir(*it) == origin_) {
-          store_->Delete(*it, version_);
+          store_->Delete(*it);
         }
       }
     }
@@ -321,7 +315,7 @@ void MetadataStore::SetMachine(Machine* m) {
     entry.set_type(DIR);
     string serialized_entry;
     entry.SerializeToString(&serialized_entry);
-    store_->Put("", serialized_entry, 0);
+    store_->Put("", serialized_entry);
   }
 }
 
@@ -333,40 +327,6 @@ uint32 MetadataStore::LookupReplicaByDir(string dir) {
   return config_->LookupReplicaByDir(dir);
 }
 
-/**uint32 MetadataStore::GetMachineForReplica(Action* action) {
-  set<uint32> replica_involved;
-
-  for (int i = 0; i < action->writeset_size(); i++) {
-    uint32 replica = LookupReplicaByDir(action->writeset(i));
-    replica_involved.insert(replica);
-  }
-
-  for (int i = 0; i < action->readset_size(); i++) {
-    uint32 replica = LookupReplicaByDir(action->readset(i));
-    replica_involved.insert(replica);
-  }
-
-  CHECK(replica_involved.size() >= 1);
-
-  if (replica_involved.size() == 1) {
-    action->set_single_replica(true);
-  } else {
-    action->set_single_replica(false);
-  }
-  
-  for (set<uint32>::iterator it=replica_involved.begin(); it!=replica_involved.end(); ++it) {
-    action->add_involved_replicas(*it);
-  }
-  
-  
-  uint32 lowest_replica = *(replica_involved.begin());
-
-  if (lowest_replica == replica_) {
-    return machine_id_;
-  } else {
-    return lowest_replica * machines_per_replica_ + rand() % machines_per_replica_;
-  }
-}**/
 
 uint32 MetadataStore::GetMachineForReplica(Action* action) {
   set<uint32> replica_involved;
@@ -417,6 +377,7 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
 
 }
 
+
 uint64 MetadataStore::GetHeadMachine(uint64 machine_id) {
 
   return (machine_id/machines_per_replica_) * machines_per_replica_;
@@ -424,6 +385,15 @@ uint64 MetadataStore::GetHeadMachine(uint64 machine_id) {
 
 uint32 MetadataStore::LocalReplica() {
   return replica_;
+}
+
+uint32 MetadataStore::GetMastership(const string& key) {
+   string value;
+   store_->Get(key, &value);
+   MetadataEntry entry;
+   entry.ParseFromString(value);
+
+  return entry.master();
 }
 
 void MetadataStore::Init() {
@@ -441,9 +411,10 @@ void MetadataStore::Init() {
     for (int i = 0; i < 1000; i++) {
       entry.add_dir_contents("a" + IntToString(i));
     }
+    entry.set_master(0);
     string serialized_entry;
     entry.SerializeToString(&serialized_entry);
-    store_->Put("", serialized_entry, 0);
+    store_->Put("", serialized_entry);
   }
 
   // Add dirs.
@@ -456,9 +427,11 @@ void MetadataStore::Init() {
       for (int j = 0; j < bsize; j++) {
         entry.add_dir_contents("b" + IntToString(j));
       }
+
+      entry.set_master(LookupReplicaByDir(dir));
       string serialized_entry;
       entry.SerializeToString(&serialized_entry);
-      store_->Put(dir, serialized_entry, 0);
+      store_->Put(dir, serialized_entry);
     }
     // Add subdirs.
     for (int j = 0; j < bsize; j++) {
@@ -470,9 +443,11 @@ void MetadataStore::Init() {
         for (int k = 0; k < csize; k++) {
           entry.add_dir_contents("c" + IntToString(k));
         }
+
+        entry.set_master(LookupReplicaByDir(subdir));
         string serialized_entry;
         entry.SerializeToString(&serialized_entry);
-        store_->Put(subdir, serialized_entry, 0);
+        store_->Put(subdir, serialized_entry);
       }
       // Add files.
       for (int k = 0; k < csize; k++) {
@@ -485,9 +460,11 @@ void MetadataStore::Init() {
           fp->set_length(RandomSize());
           fp->set_block_id(0);
           fp->set_block_offset(0);
+
+          entry.set_master(LookupReplicaByDir(file));
           string serialized_entry;
           entry.SerializeToString(&serialized_entry);
-          store_->Put(file, serialized_entry, 0);
+          store_->Put(file, serialized_entry);
         }
       }
       if (j % 100 == 0) {
@@ -516,9 +493,11 @@ void MetadataStore::InitSmall() {
     for (int i = 0; i < 1000; i++) {
       entry.add_dir_contents("a" + IntToString(i));
     }
+
+    entry.set_master(0);
     string serialized_entry;
     entry.SerializeToString(&serialized_entry);
-    store_->Put("", serialized_entry, 0);
+    store_->Put("", serialized_entry);
   }
 
   // Add dirs.
@@ -531,9 +510,11 @@ void MetadataStore::InitSmall() {
       for (int j = 0; j < bsize; j++) {
         entry.add_dir_contents("b" + IntToString(j));
       }
+
+      entry.set_master(LookupReplicaByDir(dir));
       string serialized_entry;
       entry.SerializeToString(&serialized_entry);
-      store_->Put(dir, serialized_entry, 0);
+      store_->Put(dir, serialized_entry);
     }
     // Add subdirs.
     for (int j = 0; j < bsize; j++) {
@@ -543,9 +524,11 @@ void MetadataStore::InitSmall() {
         entry.mutable_permissions();
         entry.set_type(DIR);
         entry.add_dir_contents("c");
+
+        entry.set_master(LookupReplicaByDir(subdir));
         string serialized_entry;
         entry.SerializeToString(&serialized_entry);
-        store_->Put(subdir, serialized_entry, 0);
+        store_->Put(subdir, serialized_entry);
       }
       // Add files.
       string file(subdir + "/c");
@@ -553,9 +536,11 @@ void MetadataStore::InitSmall() {
         MetadataEntry entry;
         entry.mutable_permissions();
         entry.set_type(DATA);
+
+        entry.set_master(LookupReplicaByDir(file));
         string serialized_entry;
         entry.SerializeToString(&serialized_entry);
-        store_->Put(file, serialized_entry, 0);
+        store_->Put(file, serialized_entry);
       }
     }
   }
