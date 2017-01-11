@@ -328,7 +328,7 @@ uint32 MetadataStore::LookupReplicaByDir(string dir) {
 }
 
 
-uint32 MetadataStore::GetMachineForReplica(Action* action) {
+/**uint32 MetadataStore::GetMachineForReplica(Action* action) {
   set<uint32> replica_involved;
 
   for (int i = 0; i < action->writeset_size(); i++) {
@@ -375,8 +375,93 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
     }
   }
 
-}
+}**/
 
+uint32 MetadataStore::GetMachineForReplica(Action* action) {
+  set<uint32> replica_involved;
+  atomic<int> ack_counter;
+  ack_counter = 0;
+  uint32 to_expect = 0;
+  string channel_name = "get-replica-" + UInt64ToString(action->distinct_id());
+
+  for (int i = 0; i < action->writeset_size(); i++) {
+    if (IsLocal(action->writeset(i))) {
+      uint32 replica = GetLocalMastership(action->writeset(i));
+      replica_involved.insert(replica);
+    } else {
+      uint64 mds = config_->HashFileName(action->writeset(i));
+      Header* header = new Header();
+      header->set_from(machine_id_);
+      header->set_to(config_->LookupMetadataShard(mds, replica_));
+      header->set_type(Header::RPC);
+      header->set_app("metadata");
+      header->set_rpc("GETMASTER");
+      header->add_misc_string(action->writeset(i));
+      header->add_misc_string(channel_name);
+      machine()->SendMessage(header, new MessageBuffer(
+      to_expect++;
+    }
+
+  }
+
+  for (int i = 0; i < action->readset_size(); i++) {
+    if (IsLocal(action->readset(i))) {
+      uint32 replica = GetLocalMastership(action->readset(i));
+      replica_involved.insert(replica);
+    } else {
+      uint64 mds = config_->HashFileName(action->readset(i));
+      Header* header = new Header();
+      header->set_from(machine_id_);
+      header->set_to(config_->LookupMetadataShard(mds, replica_));
+      header->set_type(Header::RPC);
+      header->set_app("metadata");
+      header->set_rpc("GETMASTER");
+      header->add_misc_string(action->readset(i));
+      header->add_misc_string(channel_name);
+      machine()->SendMessage(header, new MessageBuffer();
+      to_expect++;
+    }
+  }
+
+
+  // now that all RPCs have been sent, wait for responses
+  while (to_expect > 0) {
+    MessageBuffer* m = NULL;
+    while (!channel->Pop(&m)) {
+      // Wait for action to complete and be sent back.
+      usleep(100);
+    }
+    
+    Scalar s;
+    s.ParseFromArray((*m)[0].data(), (*m)[0].size());
+    uint32 repilca = FromScalar<uint32>(s);
+    replica_involved.insert(replica);
+
+    to_expect--;
+  }
+
+
+  CHECK(replica_involved.size() >= 1);
+
+  if (replica_involved.size() == 1) {
+    action->set_single_replica(true);
+  } else {
+    action->set_single_replica(false);
+  }
+  
+  for (set<uint32>::iterator it=replica_involved.begin(); it!=replica_involved.end(); ++it) {
+    action->add_involved_replicas(*it);
+  }
+  
+  uint32 lowest_replica = *(replica_involved.begin());
+
+  // Always send cross-replica actions to the first replica (current implementation, will change soon)
+  if (replica_involved.size() == 1) {
+    return lowest_replica * machines_per_replica_ + rand() % machines_per_replica_;
+  }
+
+
+}
 
 uint64 MetadataStore::GetHeadMachine(uint64 machine_id) {
 
@@ -387,7 +472,7 @@ uint32 MetadataStore::LocalReplica() {
   return replica_;
 }
 
-uint32 MetadataStore::GetMastership(const string& key) {
+uint32 MetadataStore::GetLocalMastership(const string& key) {
    string value;
    store_->Get(key, &value);
    MetadataEntry entry;

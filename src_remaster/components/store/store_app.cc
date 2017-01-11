@@ -45,6 +45,19 @@ void StoreApp::HandleMessageBase(Header* header, MessageBuffer* message) {
     Run(action);
     queue->Push(action);
 
+  } else if (header->rpc() == "GETMASTER") {
+    string key = header->misc_string(0);
+    string channel = header->misc_string(1);
+    uint32 replica = store_->GetLocalMastership(key);
+    
+    Header* header2 = new Header();
+    header2->set_from(machine()->machine_id());
+    header2->set_to(header->from());
+    header2->set_type(Header::DATA);
+    header2->set_data_channel(channel);
+    string result = IntToString(replica);
+    machine()->SendMessage(header, new MessageBuffer(Slice(result)));
+
   } else {
     LOG(FATAL) << "unknown RPC type";
   }
