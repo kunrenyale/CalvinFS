@@ -214,7 +214,13 @@ class BlockLogApp : public App {
       Action* a = new Action();
       a->ParseFromArray((*message)[0].data(), (*message)[0].size());
       a->set_origin(replica_);
-      queue_.Push(a);
+
+      if (a->single_replica() == true) {
+        queue_.Push(a);
+      } else {
+        // Queue the multi-replica actions, and send the remaster actions to the involved replicas;
+        
+      }
 //LOG(ERROR) << "Machine: "<<machine()->machine_id() <<" =>Block log recevie a APPEND request. distinct id is:"<< a->distinct_id()<<" from machine:"<<header->from();
     } else if (header->rpc() == "BATCH") {
       // Write batch block to local block store.

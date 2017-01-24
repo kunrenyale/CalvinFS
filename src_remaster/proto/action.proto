@@ -70,6 +70,10 @@ message Action {
     FREE = 0;
     BLOCKED = 1;
   }
+   
+  // serve as a flag to note a special remaster action
+  optional bool remaster = 71 [default = false];
+  optional uint32 remaster_origin = 72 [default = 0];
 }
 
 message ActionBatch {

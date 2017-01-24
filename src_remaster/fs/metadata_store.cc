@@ -328,55 +328,6 @@ uint32 MetadataStore::LookupReplicaByDir(string dir) {
 }
 
 
-/**uint32 MetadataStore::GetMachineForReplica(Action* action) {
-  set<uint32> replica_involved;
-
-  for (int i = 0; i < action->writeset_size(); i++) {
-    uint32 replica = LookupReplicaByDir(action->writeset(i));
-    replica_involved.insert(replica);
-  }
-
-  for (int i = 0; i < action->readset_size(); i++) {
-    uint32 replica = LookupReplicaByDir(action->readset(i));
-    replica_involved.insert(replica);
-  }
-
-  CHECK(replica_involved.size() >= 1);
-
-  if (replica_involved.size() == 1) {
-    action->set_single_replica(true);
-  } else {
-    action->set_single_replica(false);
-  }
-  
-  for (set<uint32>::iterator it=replica_involved.begin(); it!=replica_involved.end(); ++it) {
-    action->add_involved_replicas(*it);
-  }
-  
-  uint32 lowest_replica = *(replica_involved.begin());
-
-  // Always send cross-replica actions to the first replica
-  if (replica_involved.size() == 1) {
-    if (lowest_replica == replica_) {
-      return machine_id_;
-    } else {
-      return lowest_replica * machines_per_replica_ + rand() % machines_per_replica_;
-    }
-  } else {
-    if (lowest_replica != 0) {
-      action->set_fake_action(true);
-      return rand() % machines_per_replica_;
-    }  else {
-      if (replica_ == 0) {
-        return machine_id_;
-      } else {
-        return rand() % machines_per_replica_;
-      }
-    }
-  }
-
-}**/
-
 uint32 MetadataStore::GetMachineForReplica(Action* action) {
   set<uint32> replica_involved;
   atomic<int> ack_counter;
@@ -457,6 +408,8 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
 
   // Always send cross-replica actions to the first replica (current implementation, will change soon)
   if (replica_involved.size() == 1) {
+    return lowest_replica * machines_per_replica_ + rand() % machines_per_replica_;
+  } else {
     return lowest_replica * machines_per_replica_ + rand() % machines_per_replica_;
   }
 
