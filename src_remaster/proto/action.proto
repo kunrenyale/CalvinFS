@@ -74,6 +74,8 @@ message Action {
   // serve as a flag to note a special remaster action
   optional bool remaster = 71 [default = false];
   optional uint32 remaster_origin = 72 [default = 0];
+
+  // Also should take some information about which records will be remaster
 }
 
 message ActionBatch {

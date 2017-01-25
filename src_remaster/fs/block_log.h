@@ -218,10 +218,13 @@ class BlockLogApp : public App {
       if (a->single_replica() == true) {
         queue_.Push(a);
       } else {
-        // Queue the multi-replica actions, and send the remaster actions to the involved replicas;
-        
+        // Queue the multi-replica actions, and send the remaster actions(generate a new action) to the involved replicas;
+        // Which machine will store the queues? 
       }
 //LOG(ERROR) << "Machine: "<<machine()->machine_id() <<" =>Block log recevie a APPEND request. distinct id is:"<< a->distinct_id()<<" from machine:"<<header->from();
+    } else if (header->rpc() == "WAKEUP_QUEUE")  {
+      // Now it is safe to get multi-replica actions and relevant blocked actions from the queue.
+
     } else if (header->rpc() == "BATCH") {
       // Write batch block to local block store.
       uint64 block_id = header->misc_int(0);
