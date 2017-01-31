@@ -219,7 +219,18 @@ class BlockLogApp : public App {
         queue_.Push(a);
       } else {
         // Queue the multi-replica actions, and send the remaster actions(generate a new action) to the involved replicas;
-        // Which machine will store the queues? 
+        for (int i = 0; i < a->key_origins.size(); i++) {
+          MapEntry map_entry = a->key_origins[i];
+          if (map_entry.value != replica_) {
+            delayed_actions_by_key[map_entry.key].push_back(a);
+            if (a->mp_action() == true) {
+              delayed_mp_actions_by_id_[a->distinct_id()]->insert(map_entry.key);
+            }
+          }
+        }
+
+
+
       }
 //LOG(ERROR) << "Machine: "<<machine()->machine_id() <<" =>Block log recevie a APPEND request. distinct id is:"<< a->distinct_id()<<" from machine:"<<header->from();
     } else if (header->rpc() == "WAKEUP_QUEUE")  {
@@ -500,6 +511,10 @@ class BlockLogApp : public App {
   DelayQueue<string*> to_delete_;
 
   uint64 local_paxos_leader_;
+
+  map<string, vector<Action*>> delayed_actions_by_key;
+
+  map<uint64, set<string>> delayed_mp_actions_by_id_;
 
   // fake multi-replicas actions batch received.
   AtomicMap<uint64, ActionBatch*> fakebatches_;

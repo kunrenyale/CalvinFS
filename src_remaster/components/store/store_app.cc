@@ -55,8 +55,10 @@ void StoreApp::HandleMessageBase(Header* header, MessageBuffer* message) {
     header2->set_to(header->from());
     header2->set_type(Header::DATA);
     header2->set_data_channel(channel);
-    string result = IntToString(replica);
-    machine()->SendMessage(header, new MessageBuffer(Slice(result)));
+
+    MessageBuffer* m = new MessageBuffer(key);
+    m->Append(ToScalar<uint32>(replica));
+    machine()->SendMessage(header, m);
 
   } else {
     LOG(FATAL) << "unknown RPC type";

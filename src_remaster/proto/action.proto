@@ -11,6 +11,11 @@
 syntax = "proto2";
 import "scalar.proto";
 
+message MapEntry {
+  required bytes key = 1;
+  required int32 value = 2;
+}
+
 message Action {
   // Uniquely identifies the originator of the Action.
   optional uint64 client_machine = 1;
@@ -74,6 +79,10 @@ message Action {
   // serve as a flag to note a special remaster action
   optional bool remaster = 71 [default = false];
   optional uint32 remaster_origin = 72 [default = 0];
+  optional bool mp_action = 73 [default = false];
+
+  // Keys of records and its origins.
+  repeated MapEntry key_origins = 81;
 
   // Also should take some information about which records will be remaster
 }

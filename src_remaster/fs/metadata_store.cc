@@ -334,16 +334,21 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
   ack_counter = 0;
   uint32 to_expect = 0;
   string channel_name = "get-replica-" + UInt64ToString(action->distinct_id());
+  set<uint64> machines_involved;
 
   for (int i = 0; i < action->writeset_size(); i++) {
     if (IsLocal(action->writeset(i))) {
       uint32 replica = GetLocalMastership(action->writeset(i));
       replica_involved.insert(replica);
+      machines_involved.insert(machine_id_);
     } else {
       uint64 mds = config_->HashFileName(action->writeset(i));
+      uint64 remote_machine_id = config_->LookupMetadataShard(mds, replica_);
+      machines_involved.insert(remote_machine_id);
+
       Header* header = new Header();
       header->set_from(machine_id_);
-      header->set_to(config_->LookupMetadataShard(mds, replica_));
+      header->set_to(remote_machine_id);
       header->set_type(Header::RPC);
       header->set_app("metadata");
       header->set_rpc("GETMASTER");
@@ -359,11 +364,15 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
     if (IsLocal(action->readset(i))) {
       uint32 replica = GetLocalMastership(action->readset(i));
       replica_involved.insert(replica);
+      machines_involved.insert(machine_id_);
     } else {
       uint64 mds = config_->HashFileName(action->readset(i));
+      uint64 remote_machine_id = config_->LookupMetadataShard(mds, replica_);
+      machines_involved.insert(remote_machine_id);
+
       Header* header = new Header();
       header->set_from(machine_id_);
-      header->set_to(config_->LookupMetadataShard(mds, replica_));
+      header->set_to(remote_machine_id);
       header->set_type(Header::RPC);
       header->set_app("metadata");
       header->set_rpc("GETMASTER");
@@ -383,16 +392,27 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
       usleep(100);
     }
     
+    string key = (*m)[0];
     Scalar s;
-    s.ParseFromArray((*m)[0].data(), (*m)[0].size());
+    s.ParseFromArray((*m)[1].data(), (*m)[1].size());
     uint32 repilca = FromScalar<uint32>(s);
     replica_involved.insert(replica);
 
     to_expect--;
+
+
+     MapEntry map_entry;
+     map_entry.key = key;
+     map_entry.value = replica;
+     action->add_key_origins(map_entry);
   }
 
 
   CHECK(replica_involved.size() >= 1);
+
+  if (machines_involved.size() > 1) {
+    action->set_mp_action(true);
+  }
 
   if (replica_involved.size() == 1) {
     action->set_single_replica(true);
@@ -406,11 +426,13 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
   
   uint32 lowest_replica = *(replica_involved.begin());
 
-  // Always send cross-replica actions to the first replica (current implementation, will change soon)
+  action->set_remaster_origin(lowest_replica);
+
+  // Always send cross-replica actions to the first machine in the first replica (current implementation, will change soon)
   if (replica_involved.size() == 1) {
-    return lowest_replica * machines_per_replica_ + rand() % machines_per_replica_;
+    return lowest_replica * machines_per_replica_;
   } else {
-    return lowest_replica * machines_per_replica_ + rand() % machines_per_replica_;
+    return lowest_replica * machines_per_replica_;
   }
 
 
