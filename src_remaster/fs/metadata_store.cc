@@ -807,6 +807,8 @@ void MetadataStore::Run(Action* action) {
 void MetadataStore::Remaster_Internal(ExecutionContext* context, Action* action) {
   MetadataEntry entry;
   uint32 origin_master = action->remaster_origin();
+  vector<string> remastered_keys;
+
   for (int i = 0; i < action->readset_size(); i++) {
     uint64 mds = config_->HashFileName(action->readset(i));
     uint64 machine = config_->LookupMetadataShard(mds, replica_);
@@ -816,7 +818,8 @@ void MetadataStore::Remaster_Internal(ExecutionContext* context, Action* action)
         LOG(ERROR) <<"Entry doesn't exist!, should not happen!";
         return;
       }
-    
+      
+      remastered_keys.push_back(action->readset(i));
       if (entry->master() != origin_master) {
         entry->set_master(origin_master);
         context->PutEntry(action->readset(i), entry);
@@ -826,6 +829,23 @@ void MetadataStore::Remaster_Internal(ExecutionContext* context, Action* action)
 
   if (origin_master == replica_) {
     // Need to send message to confirm the completation of the remaster operation
+    uint32 keys_size = remastered_keys.size();
+    uint64 machine_sent = replica_ * machines_per_replica_;
+
+    Header* header = new Header();
+    header->set_from(machine()->machine_id());
+    header->set_to(machine_sent);
+    header->set_type(Header::RPC);
+    header->set_app("blocklog");
+    header->set_rpc("COMPLETED_REMASTER");
+
+    MessageBuffer* m = new MessageBuffer();
+    m->Append(ToScalar<uint32>(keys_size));
+    
+    for (uint32 i = 0; i < keys_size; i++) {
+      m->Append(new string(remastered_keys[i]));
+    }
+    machine()->SendMessage(header, m);
   }
 }
 

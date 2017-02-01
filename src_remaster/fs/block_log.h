@@ -255,8 +255,29 @@ class BlockLogApp : public App {
 
       }
 //LOG(ERROR) << "Machine: "<<machine()->machine_id() <<" =>Block log recevie a APPEND request. distinct id is:"<< a->distinct_id()<<" from machine:"<<header->from();
-    } else if (header->rpc() == "WAKEUP_QUEUE")  {
-      // Now it is safe to get multi-replica actions and relevant blocked actions from the queue.
+    } else if (header->rpc() == "COMPLETED_REMASTER")  {
+      // After the completed remaster, now it might be safe to get multi-replica actions and relevant blocked actions off from the queue.
+      Scalar s;
+      s.ParseFromArray((*m)[0].data(), (*m)[0].size());
+      uint32 keys_num = FromScalar<uint32>(s);
+
+      for (uint32 i = 0; i < keys_num; i++) {
+        string key = (*m)[i+1];
+        
+        CHECK(delayed_actions_by_key.find(key) != delayed_actions_by_key.end());
+
+        vector<Action*> delayed_queue = delayed_actions_by_key[key];
+        for (uint32 j = 0; j < delayed_queue.size(); j++) {
+          Action* action = delayed_queue[j];
+          if (action->mp_action() == false) {
+            // Now we can append this action safely
+          } else {
+          
+          }
+        }
+         
+      }
+
 
     } else if (header->rpc() == "BATCH") {
       // Write batch block to local block store.
