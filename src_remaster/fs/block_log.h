@@ -215,13 +215,17 @@ class BlockLogApp : public App {
       a->ParseFromArray((*message)[0].data(), (*message)[0].size());
       a->set_origin(replica_);
 
-      if (a->single_replica() == true) {
+      if (a->single_replica() == true || a->remaster() == true) {
         queue_.Push(a);
       } else {
-        // Queue the multi-replica actions, and send the remaster actions(generate a new action) to the involved replicas;
+        set<uint32> involved_other_replicas;
+
+        // Queue the multi-replica actions in the delayed queue, and send the remaster actions(generate a new action) to the involved replicas;
         for (int i = 0; i < a->key_origins.size(); i++) {
           MapEntry map_entry = a->key_origins[i];
           if (map_entry.value != replica_) {
+            involved_other_replicas.insert(map_entry.value);
+
             delayed_actions_by_key[map_entry.key].push_back(a);
             if (a->mp_action() == true) {
               delayed_mp_actions_by_id_[a->distinct_id()]->insert(map_entry.key);
@@ -229,7 +233,25 @@ class BlockLogApp : public App {
           }
         }
 
+        // Send the remaster actions(generate a new action) to the involved replicas;
+        Action* remaster_action = new Action();
+        remaster_action->CopyFrom(*(a);
+        remaster_action->set_remaster(true);
+        remaster_action->set_remaster_origin(replicas_);
 
+        for (auto it = involved_other_replicas.begin(); it != involved_other_replicas.end(); ++it) {
+          uint32 sentto_replica = *it;
+          
+          Header* header = new Header();
+          header->set_from(machine()->machine_id());
+          header->set_to(sentto_replica*config_->GetPartitionsPerReplica() + rand()%config_->GetPartitionsPerReplica());
+          header->set_type(Header::RPC);
+          header->set_app(name());
+          header->set_rpc("APPEND");
+          string* block = new string();
+          remaster_action->SerializeToString(block);
+          machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
+        }
 
       }
 //LOG(ERROR) << "Machine: "<<machine()->machine_id() <<" =>Block log recevie a APPEND request. distinct id is:"<< a->distinct_id()<<" from machine:"<<header->from();
