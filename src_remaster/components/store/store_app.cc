@@ -89,9 +89,9 @@ uint32 StoreApp::LocalReplica() {
 
 void StoreApp::Run(Action* action) {
   store_->Run(action);
-
+  
   // Send results to client.
-  if (action->has_client_machine()) {
+  if (action->has_client_machine() && action->remaster() == false) {
     //if (GetHeadMachine(machine()->machine_id()) == GetHeadMachine(action->client_machine())) {
       Header* header = new Header();
       header->set_from(machine()->machine_id());

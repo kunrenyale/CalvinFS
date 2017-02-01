@@ -175,9 +175,24 @@ class DistributedExecutionContext : public ExecutionContext {
     // Look up what replica we're at.
     replica_ = config_->LookupReplica(machine_->machine_id());
 
+
+    if (action->remaster() == true) {
+      writer_ = true;
+      for (int i = 0; i < action->readset_size(); i++) {
+        uint64 mds = config_->HashFileName(action->readset(i));
+        uint64 machine = config_->LookupMetadataShard(mds, replica_);
+        if ((machine == machine_->machine_id())) {
+          // Local read.
+          if (!store_->Get(action->readset(i), &reads_[action->readset(i)])) {
+            reads_.erase(action->readset(i));
+          }
+        }
+      }       
+    } else {
+
     // Figure out what machines are readers (and perform local reads).
     reader_ = false;
-     set<pair<uint64, uint32>> remote_readers;
+    set<pair<uint64, uint32>> remote_readers;
     for (int i = 0; i < action->readset_size(); i++) {
       uint64 mds = config_->HashFileName(action->readset(i));
       uint64 machine = config_->LookupMetadataShard(mds, replica_);
@@ -249,6 +264,8 @@ class DistributedExecutionContext : public ExecutionContext {
       // Close channel.
       machine_->CloseDataChannel("action-" + UInt32ToString(origin_) + "-" + UInt64ToString(data_channel_version));
 //LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext already got all results: version is:"<< version_<<"   data_channel_version:"<<data_channel_version;
+    }
+
     }
   }
 
@@ -336,7 +353,7 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
   string channel_name = "get-replica-" + UInt64ToString(action->distinct_id());
   set<uint64> machines_involved;
 
-  for (int i = 0; i < action->writeset_size(); i++) {
+  /**for (int i = 0; i < action->writeset_size(); i++) {
     if (IsLocal(action->writeset(i))) {
       uint32 replica = GetLocalMastership(action->writeset(i));
       replica_involved.insert(replica);
@@ -358,7 +375,7 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
       to_expect++;
     }
 
-  }
+  }**/
 
   for (int i = 0; i < action->readset_size(); i++) {
     if (IsLocal(action->readset(i))) {
@@ -698,8 +715,7 @@ void MetadataStore::Run(Action* action) {
   if (machine_ == NULL) {
     context = new ExecutionContext(store_, action);
   } else {
-    context =
-        new DistributedExecutionContext(machine_, config_, store_, action);
+    context = new DistributedExecutionContext(machine_, config_, store_, action);
   }
 
 
@@ -711,6 +727,10 @@ void MetadataStore::Run(Action* action) {
   // Execute action.
   MetadataAction::Type type =
       static_cast<MetadataAction::Type>(action->action_type());
+
+  if (action->remaster() == true) {
+    Remaster_Internal(context, action);
+  } else {
 
   if (type == MetadataAction::CREATE_FILE) {
     MetadataAction::CreateFileInput in;
@@ -779,7 +799,34 @@ void MetadataStore::Run(Action* action) {
     LOG(FATAL) << "invalid action type";
   }
 
+  }
+
   delete context;
+}
+
+void MetadataStore::Remaster_Internal(ExecutionContext* context, Action* action) {
+  MetadataEntry entry;
+  uint32 origin_master = action->remaster_origin();
+  for (int i = 0; i < action->readset_size(); i++) {
+    uint64 mds = config_->HashFileName(action->readset(i));
+    uint64 machine = config_->LookupMetadataShard(mds, replica_);
+    if ((machine == machine_->machine_id())) {
+      if (!context->GetEntry(action->readset(i), &entry)) {
+        // Entry doesn't exist!
+        LOG(ERROR) <<"Entry doesn't exist!, should not happen!";
+        return;
+      }
+    
+      if (entry->master() != origin_master) {
+        entry->set_master(origin_master);
+        context->PutEntry(action->readset(i), entry);
+      }
+    }
+  }
+
+  if (origin_master == replica_) {
+    // Need to send message to confirm the completation of the remaster operation
+  }
 }
 
 void MetadataStore::CreateFile_Internal(
