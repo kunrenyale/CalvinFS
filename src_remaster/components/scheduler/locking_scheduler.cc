@@ -33,34 +33,17 @@ void LockingScheduler::MainLoopBody() {
     high_water_mark_ = action->version();
     active_actions_.insert(action->version());
     int ungranted_requests = 0;
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action:" << action->version()<<" distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin();
 
-    if (action->single_replica() == false) {
-      set<string> writeset;
-
-      for (int i = 0; i < action->writeset_size(); i++) {
-        uint32 replica = store_->LookupReplicaByDir(action->writeset(i));
-        if ((store_->IsLocal(action->writeset(i))) && (replica == action->origin())) {
-          writeset.insert(action->writeset(i));
-          if (!lm_.WriteLock(action, action->writeset(i))) {
-            ungranted_requests++;
-          }
-        }
+    if (action->wait_for_remaster_pros() == true) {
+      // Check the mastership of the records without locking
+      bool can_execute_now = store_->CheckMastership(action);
+      if (can_execute_now == false) {
+        // Put it into the queue and wait for the remaster action come
       }
 
-      for (int i = 0; i < action->readset_size(); i++) {
-        uint32 replica = store_->LookupReplicaByDir(action->readset(i));
 
-        if ((store_->IsLocal(action->readset(i))) && (replica == action->origin())) {
-          if (writeset.count(action->readset(i)) == 0) {
-            if (!lm_.ReadLock(action, action->readset(i))) {
-              ungranted_requests++;
-            }
-          }
-        }
-      }
+    }
 
-    }  else {
 
       // Request write locks. Track requests so we can check that we don't
       // re-request any as read locks.
@@ -86,7 +69,7 @@ void LockingScheduler::MainLoopBody() {
           }
         }
       }
-    }
+
 
     // If all read and write locks were immediately acquired, this action
     // is ready to run.
@@ -94,37 +77,15 @@ void LockingScheduler::MainLoopBody() {
 
       running_action_count_++;
       store_->RunAsync(action, &completed_);
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ Get Lock immediately:" << action->version()<<" distinct id is:"<<action->distinct_id();
     } 
-else {
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ BLOCK:" << action->version()<<" distinct id is:"<<action->distinct_id();
-}
+
   }
 
   // Process all actions that have finished running.
   while (completed_.Pop(&action)) {
 
-    if (action->single_replica() == false) {
-      set<string> writeset;
-
-      // Release write locks. 
-      for (int i = 0; i < action->writeset_size(); i++) {
-        uint32 replica = store_->LookupReplicaByDir(action->writeset(i));
-        if ((store_->IsLocal(action->writeset(i))) && (replica == action->origin())) {
-          writeset.insert(action->writeset(i));
-          lm_.Release(action, action->writeset(i));
-        }
-      }
-
-      // Release read locks.
-      for (int i = 0; i < action->readset_size(); i++) {
-        uint32 replica = store_->LookupReplicaByDir(action->readset(i));
-        if ((store_->IsLocal(action->readset(i))) && (replica == action->origin())) {
-          if (writeset.count(action->readset(i)) == 0)  {
-            lm_.Release(action, action->readset(i));
-          }
-        }
-      }
+    if (action->remaster() == true) {
+      // Wake up some waiting actions
 
     } else {
       set<string> writeset;
@@ -146,7 +107,7 @@ else {
         }
       }
     }
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":** scheduler finish running action:" << action->version()<<" distinct id is:"<<action->distinct_id();
+
     active_actions_.erase(action->version());
     running_action_count_--;
     safe_version_.store(
@@ -156,8 +117,7 @@ else {
   }
 
   // Start executing all actions that have newly acquired all their locks.
-  while (lm_.Ready(&action)) {
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ Previous blocked, now active:" << action->version()<<" distinct id is:"<<action->distinct_id();    
+  while (lm_.Ready(&action)) {   
     running_action_count_++;
     store_->RunAsync(action, &completed_);
   }
