@@ -218,6 +218,7 @@ class BlockLogApp : public App {
       if (a->single_replica() == true || a->remaster() == true) {
         queue_.Push(a);
       } else {
+        a->set_wait_for_remaster_pros(true);
         set<uint32> involved_other_replicas;
 
         // Queue the multi-replica actions in the delayed queue, and send the remaster actions(generate a new action) to the involved replicas;
@@ -271,8 +272,13 @@ class BlockLogApp : public App {
           Action* action = delayed_queue[j];
           if (action->mp_action() == false) {
             // Now we can append this action safely
+            queue_.Push(a);
           } else {
-          
+            delayed_mp_actions_by_id_[a->distinct_id()].erase(key);
+            if (delayed_mp_actions_by_id_[a->distinct_id()].size() == 0) {
+              queue_.Push(a);
+              delayed_mp_actions_by_id_.erase(a->distinct_id());
+            }
           }
         }
          
