@@ -178,13 +178,13 @@ class DistributedExecutionContext : public ExecutionContext {
 
     if (action->remaster() == true) {
       writer_ = true;
-      for (int i = 0; i < action->readset_size(); i++) {
-        uint64 mds = config_->HashFileName(action->readset(i));
+      for (int i = 0; i < action->remastered_keys_size(); i++) {
+        uint64 mds = config_->HashFileName(action->remastered_keys(i));
         uint64 machine = config_->LookupMetadataShard(mds, replica_);
         if ((machine == machine_->machine_id())) {
           // Local read.
-          if (!store_->Get(action->readset(i), &reads_[action->readset(i)])) {
-            reads_.erase(action->readset(i));
+          if (!store_->Get(action->remastered_keys(i), &reads_[action->remastered_keys(i)])) {
+            reads_.erase(action->remastered_keys(i));
           }
         }
       }       
@@ -801,24 +801,24 @@ void MetadataStore::Run(Action* action) {
 
 void MetadataStore::Remaster_Internal(ExecutionContext* context, Action* action) {
   MetadataEntry entry;
-  uint32 origin_master = action->remaster_origin();
+  uint32 origin_master = action->remaster_to();
   vector<string> remastered_keys;
 
-  for (int i = 0; i < action->readset_size(); i++) {
-    uint64 mds = config_->HashFileName(action->readset(i));
+  for (int i = 0; i < action->remastered_keys_size(); i++) {
+    uint64 mds = config_->HashFileName(action->remastered_keys(i));
     uint64 machine = config_->LookupMetadataShard(mds, replica_);
     if ((machine == machine_->machine_id())) {
-      if (!context->GetEntry(action->readset(i), &entry)) {
+      if (!context->GetEntry(action->remastered_keys(i), &entry)) {
         // Entry doesn't exist!
         LOG(ERROR) <<"Entry doesn't exist!, should not happen!";
         return;
       }
       
-      remastered_keys.push_back(action->readset(i));
-      if (entry->master() != origin_master) {
-        entry->set_master(origin_master);
-        context->PutEntry(action->readset(i), entry);
-      }
+      remastered_keys.push_back(action->remastered_keys(i));
+
+      entry->set_master(origin_master);
+      context->PutEntry(action->remastered_keys(i), entry);
+
     }
   }
 

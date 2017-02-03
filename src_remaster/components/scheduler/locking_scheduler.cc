@@ -36,15 +36,29 @@ void LockingScheduler::MainLoopBody() {
 
     if (action->wait_for_remaster_pros() == true) {
       // Check the mastership of the records without locking
-      bool can_execute_now = store_->CheckMastership(action);
+      set<string> keys;
+      bool can_execute_now = store_->CheckMastership(action, &keys);
       if (can_execute_now == false) {
         // Put it into the queue and wait for the remaster action come
+        waiting_actions_by_actionid[action->distinct_id()] = keys;
+        for (auto it = keys.begin(); it != keys.end(); it++) {
+          waiting_actions_by_key[*it].insert(action);
+        }
+        
       }
-
-
     }
 
 
+    if (action->remaster() == true) {
+      // Request the lock
+      for (int i = 0; i < action->remastered_keys_size(); i++) {
+        if (store_->IsLocal(action->remastered_keys(i))) {
+          if (!lm_.WriteLock(action, action->remastered_keys(i))) {
+            ungranted_requests++;
+          }
+        }
+      }
+    } else {
       // Request write locks. Track requests so we can check that we don't
       // re-request any as read locks.
       set<string> writeset;
@@ -70,6 +84,8 @@ void LockingScheduler::MainLoopBody() {
         }
       }
 
+    }
+
 
     // If all read and write locks were immediately acquired, this action
     // is ready to run.
@@ -85,7 +101,25 @@ void LockingScheduler::MainLoopBody() {
   while (completed_.Pop(&action)) {
 
     if (action->remaster() == true) {
-      // Wake up some waiting actions
+      // Release the locks and wake up the waiting actions.
+      for (int i = 0; i < action->remastered_keys_size(); i++) {
+        if (store_->IsLocal(action->remastered_keys(i))) {
+          set<Action*> blocked_actions = waiting_actions_by_key[action->remastered_keys(i)];   
+          for (auto it = blocked_actions.begin(); it != blocked_actions.end(); it++) {
+            Action* a = *it;
+            (waiting_actions_by_actionid[a->distinct_id()]).erase(action->remastered_keys(i));
+            if ((waiting_actions_by_actionid[a->distinct_id()]).size() == 0) {
+              a->set_wait_for_remaster_pros(false);
+              waiting_actions_by_actionid.erase(a->distinct_id());
+            }
+          }
+
+          waiting_actions_by_key.erase(action->remastered_keys(i));
+
+          lm_.Release(action, action->remastered_keys(i));
+        }
+      }
+
 
     } else {
       set<string> writeset;

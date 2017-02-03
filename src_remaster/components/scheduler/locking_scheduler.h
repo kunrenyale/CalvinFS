@@ -49,6 +49,9 @@ class LockingScheduler : public Scheduler {
 
   atomic<uint64> safe_version_;
 
+  map<string, set<Action*>> waiting_actions_by_key;
+  map<uint64, set<string>> waiting_actions_by_actionid;
+
   // DISALLOW_COPY_AND_ASSIGN
   LockingScheduler(const LockingScheduler&);
   LockingScheduler& operator=(const LockingScheduler&);

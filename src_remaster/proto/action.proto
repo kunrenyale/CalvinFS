@@ -78,13 +78,15 @@ message Action {
    
   // serve as a flag to note a special remaster action
   optional bool remaster = 71 [default = false];
-  optional uint32 remaster_origin = 72 [default = 0];
-  optional bool mp_action = 73 [default = false];
-  optional bool wait_for_remaster_pros = 74 [default = false];
+  optional uint32 remaster_from = 72 [default = 0];
+  optional uint32 remaster_to = 73 [default = 0];
+  optional bool mp_action = 74 [default = false];
+  optional bool wait_for_remaster_pros = 75 [default = false];
 
   // Keys of records and its origins.
   repeated MapEntry key_origins = 81;
 
+  repeated bytes remastered_keys = 82;
   // Also should take some information about which records will be remaster
 }
 

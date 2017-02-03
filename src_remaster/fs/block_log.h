@@ -220,12 +220,14 @@ class BlockLogApp : public App {
       } else {
         a->set_wait_for_remaster_pros(true);
         set<uint32> involved_other_replicas;
-
+        map<uint32, set<string>> remastered_keys;     
+  
         // Queue the multi-replica actions in the delayed queue, and send the remaster actions(generate a new action) to the involved replicas;
         for (int i = 0; i < a->key_origins.size(); i++) {
           MapEntry map_entry = a->key_origins[i];
           if (map_entry.value != replica_) {
             involved_other_replicas.insert(map_entry.value);
+            remastered_keys[map_entry.value].insert(map_entry.key);
 
             delayed_actions_by_key[map_entry.key].push_back(a);
             if (a->mp_action() == true) {
@@ -238,10 +240,18 @@ class BlockLogApp : public App {
         Action* remaster_action = new Action();
         remaster_action->CopyFrom(*(a);
         remaster_action->set_remaster(true);
-        remaster_action->set_remaster_origin(replicas_);
+        remaster_action->set_remaster_to(replicas_);
+        remaster_action->clear_readset();
+        remaster_action->clear_writeset();
+        remaster_action->clear_key_origins();
 
         for (auto it = involved_other_replicas.begin(); it != involved_other_replicas.end(); ++it) {
           uint32 sentto_replica = *it;
+          remaster_action->set_remaster_from(sentto_replica);
+          set<string> keys = remastered_keys[sentto_replica];
+          for (auto it = keys.begin(); it != keys.end(); it++) {
+            remaster_action->add_remastered_keys(*it);
+          }
           
           Header* header = new Header();
           header->set_from(machine()->machine_id());
