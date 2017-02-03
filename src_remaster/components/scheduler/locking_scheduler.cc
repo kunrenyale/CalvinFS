@@ -30,6 +30,13 @@ void LockingScheduler::MainLoopBody() {
       running_action_count_ < kMaxRunningActions &&
       action_requests_->Get(&action)) {
 
+    if (ready_actions.size() != 0) {
+      action = ready_actions.front();
+      ready_actions.pop();
+    } else if (!action_requests_->Get(&action)) {
+      return
+    }
+
     high_water_mark_ = action->version();
     active_actions_.insert(action->version());
     int ungranted_requests = 0;
@@ -110,6 +117,7 @@ void LockingScheduler::MainLoopBody() {
             (waiting_actions_by_actionid[a->distinct_id()]).erase(action->remastered_keys(i));
             if ((waiting_actions_by_actionid[a->distinct_id()]).size() == 0) {
               a->set_wait_for_remaster_pros(false);
+              ready_actions->push_back(a);
               waiting_actions_by_actionid.erase(a->distinct_id());
             }
           }

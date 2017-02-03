@@ -7,6 +7,7 @@
 
 #include <atomic>
 #include <set>
+#include <queue>
 #include "common/atomic.h"
 #include "machine/app/app.h"
 #include "components/scheduler/lock_manager.h"
@@ -51,6 +52,8 @@ class LockingScheduler : public Scheduler {
 
   map<string, set<Action*>> waiting_actions_by_key;
   map<uint64, set<string>> waiting_actions_by_actionid;
+
+  queue<Action*> ready_actions;
 
   // DISALLOW_COPY_AND_ASSIGN
   LockingScheduler(const LockingScheduler&);
