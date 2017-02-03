@@ -791,13 +791,15 @@ void MetadataStore::Run(Action* action) {
     context = new DistributedExecutionContext(machine_, config_, store_, action);
   }
 
-
-  if (!context->IsWriter()) {
+  if (context->Abort() == true) {
+    action->clear_client_machine();
+    delete context;
+    return;
+  } else if (!context->IsWriter()) {
     delete context;
     return;
   }
-//LOG(ERROR) << "Machine: "<<machine_id_<<"****************** MetadataStore::Run:*******(will execute it)" << action->version()<<" distinct id is:"<<action->distinct_id();
-  // Execute action.
+
   MetadataAction::Type type =
       static_cast<MetadataAction::Type>(action->action_type());
 
@@ -965,6 +967,7 @@ void MetadataStore::CreateFile_Internal(
   MetadataEntry entry;
   entry.mutable_permissions()->CopyFrom(in.permissions());
   entry.set_type(in.type());
+  entry.set_master(replica_);
   context->PutEntry(in.path(), entry);
 }
 
@@ -1065,6 +1068,7 @@ void MetadataStore::Copy_Internal(
   // Add entry
   MetadataEntry to_entry;
   to_entry.CopyFrom(from_entry);
+  to_entry.set_master(replica_);
   context->PutEntry(in.to_path(), to_entry);
 }
 
@@ -1117,6 +1121,7 @@ void MetadataStore::Rename_Internal(
   // Add to_entry
   MetadataEntry to_entry;
   to_entry.CopyFrom(from_entry);
+  to_entry.set_master(replica_);
   context->PutEntry(in.to_path(), to_entry);
 
   // Update from_parent(Find file and remove it from parent directory.)
