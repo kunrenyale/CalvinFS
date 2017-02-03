@@ -149,6 +149,7 @@ class ExecutionContext {
 
   // True iff any writes are at this partition.
   bool writer_;
+
 };
 
 ////////////////////      DistributedExecutionContext      /////////////////////
@@ -171,7 +172,7 @@ class DistributedExecutionContext : public ExecutionContext {
     origin_ = action->origin();
 
     data_channel_version = action->distinct_id();
-//LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext received a txn:: version is:"<< version_<<"   data_channel_version:"<<data_channel_version;
+
     // Look up what replica we're at.
     replica_ = config_->LookupReplica(machine_->machine_id());
 
@@ -189,10 +190,13 @@ class DistributedExecutionContext : public ExecutionContext {
         }
       }       
     } else {
-
+    
     // Figure out what machines are readers (and perform local reads).
+    set<uint64> remote_readers_and_writers;
+    uint32 remote_replica;
     reader_ = false;
-    set<pair<uint64, uint32>> remote_readers;
+    set<uint64> remote_readers;
+
     for (int i = 0; i < action->readset_size(); i++) {
       uint64 mds = config_->HashFileName(action->readset(i));
       uint64 machine = config_->LookupMetadataShard(mds, replica_);
@@ -202,8 +206,17 @@ class DistributedExecutionContext : public ExecutionContext {
           reads_.erase(action->readset(i));
         }
         reader_ = true;
+
+        MetadataEntry entry;
+        GetEntry(action->readset(i), &entry);
+        if (entry.master() != replica_) { 
+          aborted_ = true;
+          remote_replica = entry.master();
+        }
+   
       } else {
-        remote_readers.insert(make_pair(machine, config_->LookupReplicaByDir(action->readset(i))));
+        remote_readers.insert(machine);
+        remote_readers_and_writers.insert(machine);
       }
     }
 
@@ -218,8 +231,73 @@ class DistributedExecutionContext : public ExecutionContext {
         writer_ = true;
       } else {
         remote_writers.insert(machine);
+        remote_readers_and_writers.insert(machine);
       }
     }
+
+    // Check whether this action can be executed or not
+    for (auto it = remote_readers_and_writers.begin(); it != remote_readers_and_writers.end(); ++it) {
+      Header* header = new Header();
+      header->set_from(machine_->machine_id());
+      header->set_to(it->first);
+      header->set_type(Header::DATA);
+      header->set_data_channel("action-" + UInt64ToString(data_channel_version));
+      MessageBuffer* m = new MessageBuffer();
+      m->Append(ToScalar<uint64>(machine_->machine_id()));
+      if (aborted_ == true) {
+        m->Append(ToScalar<uint64>(1));
+        m->Append(ToScalar<uint64>(remote_replica));
+      } else {
+        m->Append(ToScalar<uint64>(0));
+      }
+      machine_->SendMessage(header, new MessageBuffer(local_reads)); 
+    }
+
+    uint64 max_machine_id = machine_->machine_id();
+    for (uint32 i = 0; i < remote_readers_and_writers.size(); i++) {
+      MessageBuffer* m = NULL;
+      // Get results.
+      while (!channel->Pop(&m)) {
+        usleep(10);
+      }
+
+      Scalar s, r, t;
+      s.ParseFromArray((*m)[0].data(), (*m)[0].size());
+      r.ParseFromArray((*m)[1].data(), (*m)[1].size());
+
+      uint64 remote_machine_id = FromScalar<uint64>(s);
+      uint64 abort_decision = FromScalar<uint64>(r);
+
+      if (remote_machine_id > max_machine_id) {
+        max_machine_id = remote_machine_id;
+      }
+
+      if (abort_decision == 1) {
+        aborted_ = true;
+        t.ParseFromArray((*m)[1].data(), (*m)[1].size());
+        remote_replica = FromScalar<uint64>(t);
+      }
+      
+    }
+
+    if (aborted_ == true) {
+      if (max_machine_id == machine_->machine_id() && replica_ == origin_) {
+        // Send this action to the correct replica
+        uint32 machine_sent = remote_replica*config_->GetPartitionsPerReplica();
+        Header* header = new Header();
+        header->set_from(machine()->machine_id());
+        header->set_to(machine_sent);
+        header->set_type(Header::RPC);
+        header->set_app("blocklog");
+        header->set_rpc("APPEND");
+        string* block = new string();
+        action->SerializeToString(block);
+        machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
+
+      }
+      return;
+    }
+    
 
     // If any reads were performed locally, broadcast them to writers.
     if (reader_) {
