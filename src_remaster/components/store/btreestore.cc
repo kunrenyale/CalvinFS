@@ -77,6 +77,10 @@ uint32 BTreeStore::LocalReplica() {
   return -1;
 }
 
+bool CheckLocalMastership(Action* action, set<string>& keys) {
+  return false;
+}
+
 
 bool BTreeStore::Exists(const string& key) {
   ReadLock l(&mutex_);

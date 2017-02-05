@@ -191,154 +191,195 @@ class DistributedExecutionContext : public ExecutionContext {
       }       
     } else {
     
-    // Figure out what machines are readers (and perform local reads).
-    set<uint64> remote_readers_and_writers;
-    uint32 remote_replica;
-    reader_ = false;
-    set<uint64> remote_readers;
+      // Figure out what machines are readers (and perform local reads).
+      set<uint64> remote_readers_and_writers;
+      uint32 remote_replica;
+      reader_ = false;
+      set<uint64> remote_readers;
+      bool partial_local = false;
+      uint64 abort_decision;
 
-    for (int i = 0; i < action->readset_size(); i++) {
-      uint64 mds = config_->HashFileName(action->readset(i));
-      uint64 machine = config_->LookupMetadataShard(mds, replica_);
-      if ((machine == machine_->machine_id())) {
-        // Local read.
-        if (!store_->Get(action->readset(i), &reads_[action->readset(i)])) {
-          reads_.erase(action->readset(i));
-        }
-        reader_ = true;
+      for (int i = 0; i < action->readset_size(); i++) {
+        uint64 mds = config_->HashFileName(action->readset(i));
+        uint64 machine = config_->LookupMetadataShard(mds, replica_);
+        if ((machine == machine_->machine_id())) {
+          // Local read.
+          if (!store_->Get(action->readset(i), &reads_[action->readset(i)])) {
+            reads_.erase(action->readset(i));
+          }
+          reader_ = true;
 
-        MetadataEntry entry;
-        GetEntry(action->readset(i), &entry);
-        if (entry.master() != replica_) { 
-          aborted_ = true;
-          remote_replica = entry.master();
-        }
+          MetadataEntry entry;
+          GetEntry(action->readset(i), &entry);
+          if (entry.master() != replica_) { 
+            aborted_ = true;
+            remote_replica = entry.master();
+          } else {
+            partial_local = true;
+          }
    
-      } else {
-        remote_readers.insert(machine);
-        remote_readers_and_writers.insert(machine);
+        } else {
+          remote_readers.insert(machine);
+          remote_readers_and_writers.insert(machine);
+        }
       }
-    }
 
-    // Figure out what machines are writers.
-    writer_ = false;
-    set<uint64> remote_writers;
+      // Figure out what machines are writers.
+      writer_ = false;
+      set<uint64> remote_writers;
     
-    for (int i = 0; i < action->writeset_size(); i++) {
-      uint64 mds = config_->HashFileName(action->writeset(i));
-      uint64 machine = config_->LookupMetadataShard(mds, replica_);
-      if ((machine == machine_->machine_id())) {
-        writer_ = true;
-      } else {
-        remote_writers.insert(machine);
-        remote_readers_and_writers.insert(machine);
-      }
-    }
-
-    // Check whether this action can be executed or not
-    for (auto it = remote_readers_and_writers.begin(); it != remote_readers_and_writers.end(); ++it) {
-      Header* header = new Header();
-      header->set_from(machine_->machine_id());
-      header->set_to(it->first);
-      header->set_type(Header::DATA);
-      header->set_data_channel("action-" + UInt64ToString(data_channel_version));
-      MessageBuffer* m = new MessageBuffer();
-      m->Append(ToScalar<uint64>(machine_->machine_id()));
-      if (aborted_ == true) {
-        m->Append(ToScalar<uint64>(1));
-        m->Append(ToScalar<uint64>(remote_replica));
-      } else {
-        m->Append(ToScalar<uint64>(0));
-      }
-      machine_->SendMessage(header, new MessageBuffer(local_reads)); 
-    }
-
-    uint64 max_machine_id = machine_->machine_id();
-    for (uint32 i = 0; i < remote_readers_and_writers.size(); i++) {
-      MessageBuffer* m = NULL;
-      // Get results.
-      while (!channel->Pop(&m)) {
-        usleep(10);
-      }
-
-      Scalar s, r, t;
-      s.ParseFromArray((*m)[0].data(), (*m)[0].size());
-      r.ParseFromArray((*m)[1].data(), (*m)[1].size());
-
-      uint64 remote_machine_id = FromScalar<uint64>(s);
-      uint64 abort_decision = FromScalar<uint64>(r);
-
-      if (remote_machine_id > max_machine_id) {
-        max_machine_id = remote_machine_id;
-      }
-
-      if (abort_decision == 1) {
-        aborted_ = true;
-        t.ParseFromArray((*m)[1].data(), (*m)[1].size());
-        remote_replica = FromScalar<uint64>(t);
+      for (int i = 0; i < action->writeset_size(); i++) {
+        uint64 mds = config_->HashFileName(action->writeset(i));
+        uint64 machine = config_->LookupMetadataShard(mds, replica_);
+        if ((machine == machine_->machine_id())) {
+          writer_ = true;
+        } else {
+          remote_writers.insert(machine);
+          remote_readers_and_writers.insert(machine);
+        }
       }
       
-    }
-
-    if (aborted_ == true) {
-      if (max_machine_id == machine_->machine_id() && replica_ == origin_) {
-        // Send this action to the correct replica
-        uint32 machine_sent = remote_replica*config_->GetPartitionsPerReplica();
-        Header* header = new Header();
-        header->set_from(machine()->machine_id());
-        header->set_to(machine_sent);
-        header->set_type(Header::RPC);
-        header->set_app("blocklog");
-        header->set_rpc("APPEND");
-        string* block = new string();
-        action->SerializeToString(block);
-        machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
-
+      // 0: All local; 1: partial local/partial remote ; 2: all remote
+      if (aborted_ == false) {
+        abort_decision = 0;
+      } else if (partial_local == true) {
+        abort_decision = 1;
+      } else {
+        abort_decision = 2;
       }
-      return;
-    }
-    
-
-    // If any reads were performed locally, broadcast them to writers.
-    if (reader_) {
-      MapProto local_reads;
-      for (auto it = reads_.begin(); it != reads_.end(); ++it) {
-        MapProto::Entry* e = local_reads.add_entries();
-        e->set_key(it->first);
-        e->set_value(it->second);
-      }
-      for (auto it = remote_writers.begin(); it != remote_writers.end(); ++it) {
+      // Check whether this action can be executed now or aborted
+      for (auto it = remote_readers_and_writers.begin(); it != remote_readers_and_writers.end(); ++it) {
         Header* header = new Header();
         header->set_from(machine_->machine_id());
         header->set_to(it->first);
         header->set_type(Header::DATA);
         header->set_data_channel("action-" + UInt64ToString(data_channel_version));
-        machine_->SendMessage(header, new MessageBuffer(local_reads));
-      }
-    }
+        MessageBuffer* m = new MessageBuffer();
+        m->Append(ToScalar<uint64>(machine_->machine_id()));
 
-    // If any writes will be performed locally, wait for all remote reads.
-    if (writer_) {
-      // Get channel.
-      AtomicQueue<MessageBuffer*>* channel =
-          machine_->DataChannel("action-" + UInt64ToString(data_channel_version));
-      for (uint32 i = 0; i < remote_readers.size(); i++) {
+        if (aborted_ == true) {
+          m->Append(ToScalar<uint64>(abort_decision));          
+
+          m->Append(ToScalar<uint64>(remote_replica));
+        } else {
+          m->Append(ToScalar<uint64>(0));
+        }
+        machine_->SendMessage(header, new MessageBuffer(local_reads)); 
+      }
+
+      uint64 max_machine_id = machine_->machine_id();
+    
+      uint32 cnt_0 = 0, cnt_1 = 0; cnt_2 = 0;
+      switch(abort_decision) {
+        case 0: cnt_0++; break;
+        case 1: cnt_1++; break;
+        case 2: cnt_2++; break;
+      }
+
+      for (uint32 i = 0; i < remote_readers_and_writers.size(); i++) {
         MessageBuffer* m = NULL;
         // Get results.
         while (!channel->Pop(&m)) {
           usleep(10);
         }
-        MapProto remote_read;
-        remote_read.ParseFromArray((*m)[0].data(), (*m)[0].size());
-        for (int j = 0; j < remote_read.entries_size(); j++) {
-          CHECK(reads_.count(remote_read.entries(j).key()) == 0);
-          reads_[remote_read.entries(j).key()] = remote_read.entries(j).value();
+
+        Scalar s, r, t;
+        s.ParseFromArray((*m)[0].data(), (*m)[0].size());
+        r.ParseFromArray((*m)[1].data(), (*m)[1].size());
+
+        uint64 remote_machine_id = FromScalar<uint64>(s);
+        uint64 remote_abort_decision = FromScalar<uint64>(r);
+
+        if (remote_machine_id > max_machine_id) {
+          max_machine_id = remote_machine_id;
+        }
+
+        switch(remote_abort_decision) {
+          case 0: cnt_0++; break;
+          case 1: cnt_1++; break;
+          case 2: cnt_2++; break;
+        }
+
+        if (remote_abort_decision == 1 || remote_abort_decision == 2) {
+          aborted_ = true;
+          t.ParseFromArray((*m)[1].data(), (*m)[1].size());
+          remote_replica = FromScalar<uint64>(t);
+        }
+      
+      }
+
+      if (aborted_ == true) {
+        if (max_machine_id == machine_->machine_id() && replica_ == origin_) {
+          // Send this action to the correct replica, note that only the oringin replica
+          // needs to do so, and the other replicas can just ignore this action
+          if (cnt_1 == 0) {
+            // All remotely, but still single-replica action
+            action->set_single_replica(true);
+            action->clear_involved_replicas;
+            action->add_involved_replicas(remote_replica);
+          } else {
+            action->set_single_replica(false);
+            action->clear_involved_replicas;
+            action->add_involved_replicas(replica_);
+            action->add_involved_replicas(remote_replica);
+          }
+
+          action->set_wait_for_remaster_pros(true);
+
+          uint32 machine_sent = remote_replica*config_->GetPartitionsPerReplica();
+          Header* header = new Header();
+          header->set_from(machine()->machine_id());
+          header->set_to(machine_sent);
+          header->set_type(Header::RPC);
+          header->set_app("blocklog");
+          header->set_rpc("APPEND");
+          string* block = new string();
+          action->SerializeToString(block);
+          machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
+
+        }
+        return;
+      }
+    
+      // If any reads were performed locally, broadcast them to writers.
+      if (reader_) {
+        MapProto local_reads;
+        for (auto it = reads_.begin(); it != reads_.end(); ++it) {
+          MapProto::Entry* e = local_reads.add_entries();
+          e->set_key(it->first);
+          e->set_value(it->second);
+        }
+        for (auto it = remote_writers.begin(); it != remote_writers.end(); ++it) {
+          Header* header = new Header();
+          header->set_from(machine_->machine_id());
+          header->set_to(it->first);
+          header->set_type(Header::DATA);
+          header->set_data_channel("action-" + UInt64ToString(data_channel_version));
+          machine_->SendMessage(header, new MessageBuffer(local_reads));
         }
       }
-      // Close channel.
-      machine_->CloseDataChannel("action-" + UInt32ToString(origin_) + "-" + UInt64ToString(data_channel_version));
-    }
 
+      // If any writes will be performed locally, wait for all remote reads.
+      if (writer_) {
+        // Get channel.
+        AtomicQueue<MessageBuffer*>* channel =
+          machine_->DataChannel("action-" + UInt64ToString(data_channel_version));
+        for (uint32 i = 0; i < remote_readers.size(); i++) {
+          MessageBuffer* m = NULL;
+          // Get results.
+          while (!channel->Pop(&m)) {
+            usleep(10);
+          }
+          MapProto remote_read;
+          remote_read.ParseFromArray((*m)[0].data(), (*m)[0].size());
+          for (int j = 0; j < remote_read.entries_size(); j++) {
+            CHECK(reads_.count(remote_read.entries(j).key()) == 0);
+            reads_[remote_read.entries(j).key()] = remote_read.entries(j).value();
+          }
+        }
+        // Close channel.
+        machine_->CloseDataChannel("action-" + UInt32ToString(origin_) + "-" + UInt64ToString(data_channel_version));
+      }
     }
   }
 

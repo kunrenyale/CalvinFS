@@ -217,7 +217,7 @@ class BlockLogApp : public App {
       a->ParseFromArray((*message)[0].data(), (*message)[0].size());
       a->set_origin(replica_);
 
-      if (a->single_replica() == true || a->remaster() == true) {
+      if ((a->single_replica() == true || a->remaster() == true) && a->wait_for_remaster_pros() == false) {
         queue_.Push(a);
       } else {
         a->set_wait_for_remaster_pros(true);

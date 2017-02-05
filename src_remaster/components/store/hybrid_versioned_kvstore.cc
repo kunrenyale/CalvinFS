@@ -52,6 +52,11 @@ uint32 HybridVersionedKVStore::LocalReplica() {
   return -1;
 }
 
+bool CheckLocalMastership(Action* action, set<string>& keys) {
+  return false;
+}
+
+
 void HybridVersionedKVStore::GetRWSets(Action* action) {
   action->clear_readset();
   action->clear_writeset();

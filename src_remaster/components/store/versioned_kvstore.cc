@@ -220,6 +220,10 @@ uint32 VersionedKVStore::LocalReplica() {
   return -1;
 }
 
+bool CheckLocalMastership(Action* action, set<string>& keys) {
+  return false;
+}
+
 bool VersionedKVStore::Get(
     const string& key,
     uint64 version,

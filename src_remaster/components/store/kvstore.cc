@@ -61,6 +61,9 @@ uint32 KVStore::LocalReplica() {
   return -1;
 }
 
+bool CheckLocalMastership(Action* action, set<string>& keys) {
+  return false;
+}
 
 void KVStore::Run(Action* action) {
   KVStoreAction::Type type =

@@ -110,6 +110,10 @@ uint32 LevelDBStore::LocalReplica() {
   return -1;
 }
 
+bool CheckLocalMastership(Action* action, set<string>& keys) {
+  return false;
+}
+
 bool LevelDBStore::Exists(const string& key) {
   string s;
   return Get(key, &s);
