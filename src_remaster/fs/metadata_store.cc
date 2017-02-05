@@ -426,30 +426,7 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
   string channel_name = "get-replica-" + UInt64ToString(action->distinct_id());
   set<uint64> machines_involved;
 
-  /**for (int i = 0; i < action->writeset_size(); i++) {
-    if (IsLocal(action->writeset(i))) {
-      uint32 replica = GetLocalMastership(action->writeset(i));
-      replica_involved.insert(replica);
-      machines_involved.insert(machine_id_);
-    } else {
-      uint64 mds = config_->HashFileName(action->writeset(i));
-      uint64 remote_machine_id = config_->LookupMetadataShard(mds, replica_);
-      machines_involved.insert(remote_machine_id);
-
-      Header* header = new Header();
-      header->set_from(machine_id_);
-      header->set_to(remote_machine_id);
-      header->set_type(Header::RPC);
-      header->set_app("metadata");
-      header->set_rpc("GETMASTER");
-      header->add_misc_string(action->writeset(i));
-      header->add_misc_string(channel_name);
-      machine()->SendMessage(header, new MessageBuffer(
-      to_expect++;
-    }
-
-  }**/
-
+  // Only need to check the readset(Note: read-write keys are also in the readset)
   for (int i = 0; i < action->readset_size(); i++) {
     if (IsLocal(action->readset(i))) {
       uint32 replica = GetLocalMastership(action->readset(i));
@@ -491,10 +468,10 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
     to_expect--;
 
 
-     MapEntry map_entry;
-     map_entry.key = key;
-     map_entry.value = replica;
-     action->add_key_origins(map_entry);
+    KeyValueEntry map_entry;
+    map_entry.key = key;
+    map_entry.value = replica;
+    action->add_keys_origins(map_entry);
   }
 
 
@@ -526,6 +503,21 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
   }
 
 
+}
+
+bool MetadataStore::CheckLocalMastership(Action* action, set<string>& keys) {
+  bool can_execute_now = true;
+  for (int i = 0; i < action->readset_size(); i++) {
+    if (IsLocal(action->readset(i))) {
+      uint32 replica = GetLocalMastership(action->readset(i));
+      if (replica != replica_) {
+        keys.insert(action->readset(i));
+        can_execute_now = false;
+      }
+    }
+  }
+
+  return can_execute_now;
 }
 
 uint64 MetadataStore::GetHeadMachine(uint64 machine_id) {

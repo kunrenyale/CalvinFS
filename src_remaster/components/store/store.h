@@ -19,6 +19,7 @@ class Store {
   virtual uint32 LookupReplicaByDir(string dir) = 0;
   virtual uint64 GetHeadMachine(uint64 machine_id) = 0;
   virtual uint32 LocalReplica() = 0;
+  virtual bool CheckLocalMastership(Action* action, set<string>& keys) = 0;
 };
 
 #endif  // CALVIN_COMPONENTS_STORE_STORE_H_

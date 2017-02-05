@@ -27,8 +27,7 @@ void LockingScheduler::MainLoopBody() {
 
   // Start processing the next incoming action request.
   if (static_cast<int>(active_actions_.size()) < kMaxActiveActions &&
-      running_action_count_ < kMaxRunningActions &&
-      action_requests_->Get(&action)) {
+      running_action_count_ < kMaxRunningActions) {
 
     if (ready_actions.size() != 0) {
       action = ready_actions.front();
@@ -44,12 +43,18 @@ void LockingScheduler::MainLoopBody() {
     if (action->wait_for_remaster_pros() == true) {
       // Check the mastership of the records without locking
       set<string> keys;
-      bool can_execute_now = store_->CheckMastership(action, &keys);
+      bool can_execute_now = store_->CheckLocalMastership(action, keys);
       if (can_execute_now == false) {
         // Put it into the queue and wait for the remaster action come
         waiting_actions_by_actionid[action->distinct_id()] = keys;
         for (auto it = keys.begin(); it != keys.end(); it++) {
-          waiting_actions_by_key[*it].insert(action);
+          if (waiting_actions_by_key.find(*it) != waiting_actions_by_key.end()) {
+            waiting_actions_by_key[*it].insert(action);
+          } else {
+            set<Action*> actions;
+            actions.insert(action);
+            waiting_actions_by_key[*it] = actions;
+          }
         }
         
       }

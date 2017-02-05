@@ -9,6 +9,7 @@
 #include <google/protobuf/repeated_field.h>
 #include <set>
 #include <vector>
+#include <map>
 
 #include "common/types.h"
 #include "components/log/log.h"
@@ -23,6 +24,7 @@
 using std::set;
 using std::vector;
 using std::make_pair;
+using std::map;
 
 class Header;
 class Machine;
@@ -224,14 +226,32 @@ class BlockLogApp : public App {
   
         // Queue the multi-replica actions in the delayed queue, and send the remaster actions(generate a new action) to the involved replicas;
         for (int i = 0; i < a->key_origins.size(); i++) {
-          MapEntry map_entry = a->key_origins[i];
+          KeyValueEntry map_entry = a->keys_origins[i];
           if (map_entry.value != replica_) {
             involved_other_replicas.insert(map_entry.value);
-            remastered_keys[map_entry.value].insert(map_entry.key);
-
-            delayed_actions_by_key[map_entry.key].push_back(a);
+            if (remastered_keys.find(map_entry.value) != remastered_keys.end()) {
+              remastered_keys[map_entry.value].insert(map_entry.key);
+            } else {
+              set<string> keys;
+              keys.insert(map_entry.key);
+              remastered_keys[map_entry.value] = keys;
+            }
+            
+            if (delayed_actions_by_key.find(map_entry.key) != delayed_actions_by_key.end()) {
+              delayed_actions_by_key[map_entry.key].push_back(a);
+            } else {
+              vector<Action*> actions;
+              actions.push_back(a);
+              delayed_actions_by_key[map_entry.key] = actions;
+            }
             if (a->mp_action() == true) {
-              delayed_mp_actions_by_id_[a->distinct_id()]->insert(map_entry.key);
+              if (delayed_mp_actions_by_id_.find(a->distinct_id()) != delayed_mp_actions_by_id_.end()) {
+                delayed_mp_actions_by_id_[a->distinct_id()].insert(map_entry.key);
+              } else {
+                set<string> keys;
+                keys.insert(map_entry.key);
+                delayed_mp_actions_by_id_[a->distinct_id()] = keys;
+              }
             }
           }
         }
@@ -265,7 +285,7 @@ class BlockLogApp : public App {
         }
 
       }
-//LOG(ERROR) << "Machine: "<<machine()->machine_id() <<" =>Block log recevie a APPEND request. distinct id is:"<< a->distinct_id()<<" from machine:"<<header->from();
+
     } else if (header->rpc() == "COMPLETED_REMASTER")  {
       // After the completed remaster, now it might be safe to get multi-replica actions and relevant blocked actions off from the queue.
       Scalar s;

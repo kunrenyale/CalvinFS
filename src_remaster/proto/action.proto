@@ -11,7 +11,7 @@
 syntax = "proto2";
 import "scalar.proto";
 
-message MapEntry {
+message KeyValueEntry {
   required bytes key = 1;
   required int32 value = 2;
 }
@@ -84,7 +84,7 @@ message Action {
   optional bool wait_for_remaster_pros = 75 [default = false];
 
   // Keys of records and its origins.
-  repeated MapEntry key_origins = 81;
+  repeated MapEntry keys_origins = 81;
 
   repeated bytes remastered_keys = 82;
   // Also should take some information about which records will be remaster

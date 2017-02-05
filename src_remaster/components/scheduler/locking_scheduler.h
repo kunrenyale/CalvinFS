@@ -8,6 +8,7 @@
 #include <atomic>
 #include <set>
 #include <queue>
+#include <map>
 #include "common/atomic.h"
 #include "machine/app/app.h"
 #include "components/scheduler/lock_manager.h"
@@ -16,6 +17,8 @@
 
 using std::atomic;
 using std::set;
+using std::queue;
+using std::map
 
 class LockingScheduler : public Scheduler {
 

@@ -121,3 +121,7 @@ void StoreApp::RunAsync(Action* action, AtomicQueue<Action*>* queue) {
   machine()->SendMessage(header, new MessageBuffer());
 }
 
+bool StoreApp::CheckMastership(Action* action, set<string>& keys) {
+  return store_->CheckMastership();
+}
+
