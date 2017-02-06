@@ -221,12 +221,16 @@ class BlockLogApp : public App {
         queue_.Push(a);
       } else if (a->single_replica() == true && a->wait_for_remaster_pros() == true) {
         a->set_remaster_to(replica_);
-
+        
+        bool should_wait = false;
         // Queue the multi-replica actions in the delayed queue, and send the remaster actions(generate a new action) to the involved replicas;
         for (int i = 0; i < a->key_origins.size(); i++) {
           KeyValueEntry map_entry = a->keys_origins[i];
-          if (map_entry.value != replica_) {
-            
+
+          if (recent_remastered_keys.find(map_entry.key) != recent_remastered_keys.end()) {
+            continue;
+          } else if (map_entry.value != replica_) {
+            should_wait = true;
             if (delayed_actions_by_key.find(map_entry.key) != delayed_actions_by_key.end()) {
               delayed_actions_by_key[map_entry.key].push_back(a);
             } else {
@@ -246,17 +250,24 @@ class BlockLogApp : public App {
           }
         }
 
+        if (should_wait == false) {
+          queue_.Push(a);      
+        }
 
       } else {
         a->set_wait_for_remaster_pros(true);
         a->set_remaster_to(replica_);
         set<uint32> involved_other_replicas;
-        map<uint32, set<string>> remastered_keys;     
+        map<uint32, set<string>> remastered_keys;
+        bool should_wait = false;
   
         // Queue the multi-replica actions in the delayed queue, and send the remaster actions(generate a new action) to the involved replicas;
         for (int i = 0; i < a->key_origins.size(); i++) {
           KeyValueEntry map_entry = a->keys_origins[i];
-          if (map_entry.value != replica_) {
+          if (recent_remastered_keys.find(map_entry.key) != recent_remastered_keys.end()) {
+            continue;
+          } else if (map_entry.value != replica_) {
+            should_wait = true;
             involved_other_replicas.insert(map_entry.value);
             if (remastered_keys.find(map_entry.value) != remastered_keys.end()) {
               remastered_keys[map_entry.value].insert(map_entry.key);
@@ -285,32 +296,38 @@ class BlockLogApp : public App {
           }
         }
 
-        // Send the remaster actions(generate a new action) to the involved replicas;
-        Action* remaster_action = new Action();
-        remaster_action->CopyFrom(*(a);
-        remaster_action->set_remaster(true);
-        remaster_action->set_remaster_to(replicas_);
-        remaster_action->clear_readset();
-        remaster_action->clear_writeset();
-        remaster_action->clear_key_origins();
+        if (should_wait == false) {
+          a->set_single_replica(true);
+          queue_.Push(a);
+        } else {
 
-        for (auto it = involved_other_replicas.begin(); it != involved_other_replicas.end(); ++it) {
-          uint32 sentto_replica = *it;
-          remaster_action->set_remaster_from(sentto_replica);
-          set<string> keys = remastered_keys[sentto_replica];
-          for (auto it = keys.begin(); it != keys.end(); it++) {
-            remaster_action->add_remastered_keys(*it);
-          }
+          // Send the remaster actions(generate a new action) to the involved replicas;
+          Action* remaster_action = new Action();
+          remaster_action->CopyFrom(*(a);
+          remaster_action->set_remaster(true);
+          remaster_action->set_remaster_to(replicas_);
+          remaster_action->clear_readset();
+          remaster_action->clear_writeset();
+          remaster_action->clear_key_origins();
+
+          for (auto it = involved_other_replicas.begin(); it != involved_other_replicas.end(); ++it) {
+            uint32 sentto_replica = *it;
+            remaster_action->set_remaster_from(sentto_replica);
+            set<string> keys = remastered_keys[sentto_replica];
+            for (auto it = keys.begin(); it != keys.end(); it++) {
+              remaster_action->add_remastered_keys(*it);
+            }
           
-          Header* header = new Header();
-          header->set_from(machine()->machine_id());
-          header->set_to(sentto_replica*config_->GetPartitionsPerReplica() + rand()%config_->GetPartitionsPerReplica());
-          header->set_type(Header::RPC);
-          header->set_app(name());
-          header->set_rpc("APPEND");
-          string* block = new string();
-          remaster_action->SerializeToString(block);
-          machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
+            Header* header = new Header();
+            header->set_from(machine()->machine_id());
+            header->set_to(sentto_replica*config_->GetPartitionsPerReplica() + rand()%config_->GetPartitionsPerReplica());
+            header->set_type(Header::RPC);
+            header->set_app(name());
+            header->set_rpc("APPEND");
+            string* block = new string();
+            remaster_action->SerializeToString(block);
+            machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
+          }
         }
 
       }
@@ -323,24 +340,27 @@ class BlockLogApp : public App {
 
       for (uint32 i = 0; i < keys_num; i++) {
         string key = (*m)[i+1];
-        
-        CHECK(delayed_actions_by_key.find(key) != delayed_actions_by_key.end());
 
-        vector<Action*> delayed_queue = delayed_actions_by_key[key];
-        for (uint32 j = 0; j < delayed_queue.size(); j++) {
-          Action* action = delayed_queue[j];
-          if (action->mp_action() == false) {
-            // Now we can append this action safely
-            queue_.Push(a);
-          } else {
-            delayed_mp_actions_by_id_[a->distinct_id()].erase(key);
-            if (delayed_mp_actions_by_id_[a->distinct_id()].size() == 0) {
+        recent_remastered_keys[key] = replica_;
+
+        if (delayed_actions_by_key.find(key) != delayed_actions_by_key.end()) {
+
+          vector<Action*> delayed_queue = delayed_actions_by_key[key];
+          for (uint32 j = 0; j < delayed_queue.size(); j++) {
+            Action* action = delayed_queue[j];
+            if (action->mp_action() == false) {
+              // Now we can append this action safely
               queue_.Push(a);
-              delayed_mp_actions_by_id_.erase(a->distinct_id());
+            } else {
+              delayed_mp_actions_by_id_[a->distinct_id()].erase(key);
+              if (delayed_mp_actions_by_id_[a->distinct_id()].size() == 0) {
+                queue_.Push(a);
+                delayed_mp_actions_by_id_.erase(a->distinct_id());
+              }
             }
           }
+          delayed_actions_by_key.erase(key); 
         }
-         
       }
 
 
@@ -623,6 +643,8 @@ class BlockLogApp : public App {
   map<string, vector<Action*>> delayed_actions_by_key;
 
   map<uint64, set<string>> delayed_mp_actions_by_id_;
+
+  map<string, uint32> recent_remastered_keys;
 
   // fake multi-replicas actions batch received.
   AtomicMap<uint64, ActionBatch*> fakebatches_;

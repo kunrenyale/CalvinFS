@@ -40,23 +40,33 @@ void LockingScheduler::MainLoopBody() {
     active_actions_.insert(action->version());
     int ungranted_requests = 0;
 
-    if (action->wait_for_remaster_pros() == true && action->remaster_to() != local_replica_) {
+    
+    if (action->wait_for_remaster_pros() == false && blocking_replica_ == true && blocking_replica_id_ == action->origin()) {
+      // Temporarily block the actions from replica:blocking_replica_id_
+      blocking_actions.push(action);
+    } else if (action->wait_for_remaster_pros() == true && action->remaster_to() != local_replica_) {
+      blocking_actions.push(action);
       // Check the mastership of the records without locking
       set<string> keys;
       bool can_execute_now = store_->CheckLocalMastership(action, keys);
       if (can_execute_now == false) {
+        blocking_replica_ = true;
+        blocking_replica_id_ = action->origin();
+
         // Put it into the queue and wait for the remaster action come
         waiting_actions_by_actionid[action->distinct_id()] = keys;
         for (auto it = keys.begin(); it != keys.end(); it++) {
           if (waiting_actions_by_key.find(*it) != waiting_actions_by_key.end()) {
-            waiting_actions_by_key[*it].insert(action);
+            waiting_actions_by_key[*it].push_back(action);
           } else {
-            set<Action*> actions;
-            actions.insert(action);
+            vector<Action*> actions;
+            actions.push_back(action);
             waiting_actions_by_key[*it] = actions;
           }
         }
-        
+   
+      } else if (action == blocking_actions.front()) {
+        blocking_actions.pop();
       }
     }
 
@@ -116,14 +126,29 @@ void LockingScheduler::MainLoopBody() {
       // Release the locks and wake up the waiting actions.
       for (int i = 0; i < action->remastered_keys_size(); i++) {
         if (store_->IsLocal(action->remastered_keys(i))) {
-          set<Action*> blocked_actions = waiting_actions_by_key[action->remastered_keys(i)];   
+          vector<Action*> blocked_actions = waiting_actions_by_key[action->remastered_keys(i)];
+
           for (auto it = blocked_actions.begin(); it != blocked_actions.end(); it++) {
             Action* a = *it;
             (waiting_actions_by_actionid[a->distinct_id()]).erase(action->remastered_keys(i));
+
             if ((waiting_actions_by_actionid[a->distinct_id()]).size() == 0) {
               a->set_wait_for_remaster_pros(false);
-              ready_actions->push_back(a);
               waiting_actions_by_actionid.erase(a->distinct_id());
+
+              CHECK(blocking_actions.front() == a);
+              ready_actions.push(a);
+              blocking_actions.pop();
+
+              while (blocking_actions.front()->wait_for_remaster_pros() == false) {
+                ready_actions.push(blocking_actions.front());
+                blocking_actions.pop();
+              }
+
+              if (blocking_actions.empty()) {
+                blocking_replica_ = false;
+              }
+
             }
           }
 

@@ -9,6 +9,7 @@
 #include <set>
 #include <queue>
 #include <map>
+#include <vector>
 #include "common/atomic.h"
 #include "machine/app/app.h"
 #include "components/scheduler/lock_manager.h"
@@ -19,12 +20,13 @@ using std::atomic;
 using std::set;
 using std::queue;
 using std::map
+using std::vector;
 
 class LockingScheduler : public Scheduler {
 
  public:
   LockingScheduler()
-      : running_action_count_(0), high_water_mark_(0), safe_version_(1) {
+      : running_action_count_(0), high_water_mark_(0), safe_version_(1), blocking_replica_(false) {
   }
   virtual ~LockingScheduler() {}
 
@@ -40,7 +42,7 @@ class LockingScheduler : public Scheduler {
  private:
   // Lock manager.
   LockManager lm_;
-
+ 
   // Queue of completed actions.
   AtomicQueue<Action*> completed_;
 
@@ -53,10 +55,16 @@ class LockingScheduler : public Scheduler {
 
   atomic<uint64> safe_version_;
 
-  map<string, set<Action*>> waiting_actions_by_key;
+  map<string, vector<Action*>> waiting_actions_by_key;
   map<uint64, set<string>> waiting_actions_by_actionid;
 
   queue<Action*> ready_actions;
+
+  queue<Action*> blocking_actions;
+
+  bool blocking_replica_;
+ 
+  uint32 blocking_replica_id_;
 
   // DISALLOW_COPY_AND_ASSIGN
   LockingScheduler(const LockingScheduler&);
