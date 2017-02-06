@@ -219,8 +219,37 @@ class BlockLogApp : public App {
 
       if ((a->single_replica() == true || a->remaster() == true) && a->wait_for_remaster_pros() == false) {
         queue_.Push(a);
+      } else if (a->single_replica() == true && a->wait_for_remaster_pros() == true) {
+        a->set_remaster_to(replica_);
+
+        // Queue the multi-replica actions in the delayed queue, and send the remaster actions(generate a new action) to the involved replicas;
+        for (int i = 0; i < a->key_origins.size(); i++) {
+          KeyValueEntry map_entry = a->keys_origins[i];
+          if (map_entry.value != replica_) {
+            
+            if (delayed_actions_by_key.find(map_entry.key) != delayed_actions_by_key.end()) {
+              delayed_actions_by_key[map_entry.key].push_back(a);
+            } else {
+              vector<Action*> actions;
+              actions.push_back(a);
+              delayed_actions_by_key[map_entry.key] = actions;
+            }
+            if (a->mp_action() == true) {
+              if (delayed_mp_actions_by_id_.find(a->distinct_id()) != delayed_mp_actions_by_id_.end()) {
+                delayed_mp_actions_by_id_[a->distinct_id()].insert(map_entry.key);
+              } else {
+                set<string> keys;
+                keys.insert(map_entry.key);
+                delayed_mp_actions_by_id_[a->distinct_id()] = keys;
+              }
+            }
+          }
+        }
+
+
       } else {
         a->set_wait_for_remaster_pros(true);
+        a->set_remaster_to(replica_);
         set<uint32> involved_other_replicas;
         map<uint32, set<string>> remastered_keys;     
   

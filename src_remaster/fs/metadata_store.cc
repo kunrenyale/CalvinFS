@@ -217,7 +217,7 @@ class DistributedExecutionContext : public ExecutionContext {
           } else {
             partial_local = true;
           }
-   
+
         } else {
           remote_readers.insert(machine);
           remote_readers_and_writers.insert(machine);
@@ -264,7 +264,8 @@ class DistributedExecutionContext : public ExecutionContext {
         } else {
           m->Append(ToScalar<uint64>(0));
         }
-        machine_->SendMessage(header, new MessageBuffer(local_reads)); 
+
+        machine_->SendMessage(header, m); 
       }
 
       uint64 max_machine_id = machine_->machine_id();

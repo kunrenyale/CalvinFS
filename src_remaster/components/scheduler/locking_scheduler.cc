@@ -40,7 +40,7 @@ void LockingScheduler::MainLoopBody() {
     active_actions_.insert(action->version());
     int ungranted_requests = 0;
 
-    if (action->wait_for_remaster_pros() == true) {
+    if (action->wait_for_remaster_pros() == true && action->remaster_to() != local_replica_) {
       // Check the mastership of the records without locking
       set<string> keys;
       bool can_execute_now = store_->CheckLocalMastership(action, keys);
