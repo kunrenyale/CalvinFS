@@ -253,7 +253,7 @@ class DistributedExecutionContext : public ExecutionContext {
         header->set_from(machine_->machine_id());
         header->set_to(*it);
         header->set_type(Header::DATA);
-        header->set_data_channel("action-" + UInt64ToString(data_channel_version));
+        header->set_data_channel("action-check" + UInt64ToString(data_channel_version));
         MessageBuffer* m = new MessageBuffer();
         m->Append(ToScalar<uint64>(machine_->machine_id()));
 
@@ -278,7 +278,7 @@ class DistributedExecutionContext : public ExecutionContext {
       }
 
       AtomicQueue<MessageBuffer*>* channel =
-          machine_->DataChannel("action-" + UInt64ToString(data_channel_version));
+          machine_->DataChannel("action-check" + UInt64ToString(data_channel_version));
       for (uint32 i = 0; i < remote_readers_and_writers.size(); i++) {
         MessageBuffer* m = NULL;
         // Get results.
@@ -464,8 +464,7 @@ uint32 MetadataStore::LookupReplicaByDir(string dir) {
 
 uint32 MetadataStore::GetMachineForReplica(Action* action) {
   set<uint32> replica_involved;
-  atomic<int> ack_counter;
-  ack_counter = 0;
+  atomic<int> ack_counter = 0;
   uint32 to_expect = 0;
   string channel_name = "get-replica-" + UInt64ToString(action->distinct_id());
   set<uint64> machines_involved;
@@ -542,7 +541,7 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
 
   action->set_remaster_to(lowest_replica);
 
-  // Always send cross-replica actions to the first machine in the first replica (current implementation, will change soon)
+  // Always send cross-replica actions to the first machine in the first replica (for debug reason, will change soon)
   if (replica_involved.size() == 1) {
     return lowest_replica * machines_per_replica_;
   } else {

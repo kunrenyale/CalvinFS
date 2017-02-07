@@ -255,6 +255,7 @@ class BlockLogApp : public App {
         }
 
       } else {
+        // The multi-replica actions that generate remaster actions
         a->set_wait_for_remaster_pros(true);
         a->set_remaster_to(replica_);
         set<uint32> involved_other_replicas;
