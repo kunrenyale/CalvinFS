@@ -24,7 +24,7 @@ DEFINE_bool(benchmark, false, "Run benchmarks instead of unit tests.");
 // Local tests:
 
 TEST(MetadataStoreTest, CheckRootDir) {
-  VersionedKVStore* base = new VersionedKVStore(new BTreeStore());
+  KVStore* base = new KVStore(new BTreeStore());
   MetadataStore md(base);
 
   // Check that root directory exists in base.
@@ -62,7 +62,7 @@ TEST(MetadataStoreTest, CheckRootDir) {
 }
 
 TEST(MetadataStoreTest, CreateAppendResizeRead) {
-  VersionedKVStore* base = new VersionedKVStore(new BTreeStore());
+  KVStore* base = new KVStore(new BTreeStore());
   MetadataStore md(base);
 
   // mkdir /foo

@@ -48,7 +48,7 @@ void StoreApp::HandleMessageBase(Header* header, MessageBuffer* message) {
   } else if (header->rpc() == "GETMASTER") {
     string key = header->misc_string(0);
     string channel = header->misc_string(1);
-    uint32 replica = store_->GetLocalMastership(key);
+    uint32 replica = store_->GetLocalKeyMastership(key);
     
     Header* header2 = new Header();
     header2->set_from(machine()->machine_id());
@@ -121,7 +121,7 @@ void StoreApp::RunAsync(Action* action, AtomicQueue<Action*>* queue) {
   machine()->SendMessage(header, new MessageBuffer());
 }
 
-bool StoreApp::CheckMastership(Action* action, set<string>& keys) {
-  return store_->CheckMastership();
+bool StoreApp::CheckLocalMastership(Action* action, set<string>& keys) {
+  return store_->CheckLocalMastership(action, keys);
 }
 

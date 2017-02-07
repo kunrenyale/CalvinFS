@@ -224,26 +224,26 @@ class BlockLogApp : public App {
         
         bool should_wait = false;
         // Queue the multi-replica actions in the delayed queue, and send the remaster actions(generate a new action) to the involved replicas;
-        for (int i = 0; i < a->key_origins.size(); i++) {
-          KeyValueEntry map_entry = a->keys_origins[i];
+        for (int i = 0; i < a->keys_origins_size(); i++) {
+          KeyValueEntry map_entry = a->keys_origins(i);
 
-          if (recent_remastered_keys.find(map_entry.key) != recent_remastered_keys.end()) {
+          if (recent_remastered_keys.find(map_entry.key()) != recent_remastered_keys.end()) {
             continue;
-          } else if (map_entry.value != replica_) {
+          } else if (map_entry.value() != replica_) {
             should_wait = true;
-            if (delayed_actions_by_key.find(map_entry.key) != delayed_actions_by_key.end()) {
-              delayed_actions_by_key[map_entry.key].push_back(a);
+            if (delayed_actions_by_key.find(map_entry.key()) != delayed_actions_by_key.end()) {
+              delayed_actions_by_key[map_entry.key()].push_back(a);
             } else {
               vector<Action*> actions;
               actions.push_back(a);
-              delayed_actions_by_key[map_entry.key] = actions;
+              delayed_actions_by_key[map_entry.key()] = actions;
             }
             if (a->mp_action() == true) {
               if (delayed_mp_actions_by_id_.find(a->distinct_id()) != delayed_mp_actions_by_id_.end()) {
-                delayed_mp_actions_by_id_[a->distinct_id()].insert(map_entry.key);
+                delayed_mp_actions_by_id_[a->distinct_id()].insert(map_entry.key());
               } else {
                 set<string> keys;
-                keys.insert(map_entry.key);
+                keys.insert(map_entry.key());
                 delayed_mp_actions_by_id_[a->distinct_id()] = keys;
               }
             }
@@ -262,34 +262,34 @@ class BlockLogApp : public App {
         bool should_wait = false;
   
         // Queue the multi-replica actions in the delayed queue, and send the remaster actions(generate a new action) to the involved replicas;
-        for (int i = 0; i < a->key_origins.size(); i++) {
-          KeyValueEntry map_entry = a->keys_origins[i];
-          if (recent_remastered_keys.find(map_entry.key) != recent_remastered_keys.end()) {
+        for (int i = 0; i < a->keys_origins_size(); i++) {
+          KeyValueEntry map_entry = a->keys_origins(i);
+          if (recent_remastered_keys.find(map_entry.key()) != recent_remastered_keys.end()) {
             continue;
-          } else if (map_entry.value != replica_) {
+          } else if (map_entry.value() != replica_) {
             should_wait = true;
-            involved_other_replicas.insert(map_entry.value);
-            if (remastered_keys.find(map_entry.value) != remastered_keys.end()) {
-              remastered_keys[map_entry.value].insert(map_entry.key);
+            involved_other_replicas.insert(map_entry.value());
+            if (remastered_keys.find(map_entry.value()) != remastered_keys.end()) {
+              remastered_keys[map_entry.value()].insert(map_entry.key());
             } else {
               set<string> keys;
-              keys.insert(map_entry.key);
-              remastered_keys[map_entry.value] = keys;
+              keys.insert(map_entry.key());
+              remastered_keys[map_entry.value()] = keys;
             }
             
-            if (delayed_actions_by_key.find(map_entry.key) != delayed_actions_by_key.end()) {
-              delayed_actions_by_key[map_entry.key].push_back(a);
+            if (delayed_actions_by_key.find(map_entry.key()) != delayed_actions_by_key.end()) {
+              delayed_actions_by_key[map_entry.key()].push_back(a);
             } else {
               vector<Action*> actions;
               actions.push_back(a);
-              delayed_actions_by_key[map_entry.key] = actions;
+              delayed_actions_by_key[map_entry.key()] = actions;
             }
             if (a->mp_action() == true) {
               if (delayed_mp_actions_by_id_.find(a->distinct_id()) != delayed_mp_actions_by_id_.end()) {
-                delayed_mp_actions_by_id_[a->distinct_id()].insert(map_entry.key);
+                delayed_mp_actions_by_id_[a->distinct_id()].insert(map_entry.key());
               } else {
                 set<string> keys;
-                keys.insert(map_entry.key);
+                keys.insert(map_entry.key());
                 delayed_mp_actions_by_id_[a->distinct_id()] = keys;
               }
             }
@@ -303,12 +303,12 @@ class BlockLogApp : public App {
 
           // Send the remaster actions(generate a new action) to the involved replicas;
           Action* remaster_action = new Action();
-          remaster_action->CopyFrom(*(a);
+          remaster_action->CopyFrom(*a);
           remaster_action->set_remaster(true);
-          remaster_action->set_remaster_to(replicas_);
+          remaster_action->set_remaster_to(replica_);
           remaster_action->clear_readset();
           remaster_action->clear_writeset();
-          remaster_action->clear_key_origins();
+          remaster_action->clear_keys_origins();
 
           for (auto it = involved_other_replicas.begin(); it != involved_other_replicas.end(); ++it) {
             uint32 sentto_replica = *it;
@@ -335,11 +335,11 @@ class BlockLogApp : public App {
     } else if (header->rpc() == "COMPLETED_REMASTER")  {
       // After the completed remaster, now it might be safe to get multi-replica actions and relevant blocked actions off from the queue.
       Scalar s;
-      s.ParseFromArray((*m)[0].data(), (*m)[0].size());
+      s.ParseFromArray((*message)[0].data(), (*message)[0].size());
       uint32 keys_num = FromScalar<uint32>(s);
 
       for (uint32 i = 0; i < keys_num; i++) {
-        string key = (*m)[i+1];
+        string key = (*message)[i+1];
 
         recent_remastered_keys[key] = replica_;
 
@@ -350,12 +350,12 @@ class BlockLogApp : public App {
             Action* action = delayed_queue[j];
             if (action->mp_action() == false) {
               // Now we can append this action safely
-              queue_.Push(a);
+              queue_.Push(action);
             } else {
-              delayed_mp_actions_by_id_[a->distinct_id()].erase(key);
-              if (delayed_mp_actions_by_id_[a->distinct_id()].size() == 0) {
-                queue_.Push(a);
-                delayed_mp_actions_by_id_.erase(a->distinct_id());
+              delayed_mp_actions_by_id_[action->distinct_id()].erase(key);
+              if (delayed_mp_actions_by_id_[action->distinct_id()].size() == 0) {
+                queue_.Push(action);
+                delayed_mp_actions_by_id_.erase(action->distinct_id());
               }
             }
           }

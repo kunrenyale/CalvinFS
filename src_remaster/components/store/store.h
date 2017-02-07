@@ -1,11 +1,15 @@
 // Author: Alexander Thomson <thomson@cs.yale.edu>
+// Author: Kun Ren <kun.ren@yale.edu>
 //
 // A store is simply something that runs Actions.
 
 #ifndef CALVIN_COMPONENTS_STORE_STORE_H_
 #define CALVIN_COMPONENTS_STORE_STORE_H_
 
+#include <set>
 #include "common/types.h"
+
+using std::set;
 
 class Action;  // (lawsuit)
 
@@ -19,6 +23,7 @@ class Store {
   virtual uint32 LookupReplicaByDir(string dir) = 0;
   virtual uint64 GetHeadMachine(uint64 machine_id) = 0;
   virtual uint32 LocalReplica() = 0;
+  virtual uint32 GetLocalKeyMastership(string) = 0;
   virtual bool CheckLocalMastership(Action* action, set<string>& keys) = 0;
 };
 

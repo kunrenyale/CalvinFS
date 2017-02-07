@@ -33,7 +33,7 @@ void LockingScheduler::MainLoopBody() {
       action = ready_actions.front();
       ready_actions.pop();
     } else if (!action_requests_->Get(&action)) {
-      return
+      return;
     }
 
     high_water_mark_ = action->version();

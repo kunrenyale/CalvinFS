@@ -11,18 +11,18 @@
 #include "btree/btree_map.h"
 #include "common/types.h"
 #include "common/mutex.h"
-#include "components/store/store.h"
+#include "components/store/kvstore.h"
 #include "fs/metadata.pb.h"
 
 class CalvinFSConfigMap;
 class Machine;
-class VersionedKVStore;
+class KVStore;
 class ExecutionContext;
 class MetadataStore : public Store {
  public:
   // Takes ownership of '*store'.
   // Requires: '*store' is entirely empty.
-  explicit MetadataStore(VersionedKVStore* store);
+  explicit MetadataStore(KVStore* store);
   virtual ~MetadataStore();
 
   // Inherited from Store, defined in fs/metadata_store.cc:
@@ -36,11 +36,15 @@ class MetadataStore : public Store {
   virtual uint32 LookupReplicaByDir(string dir);
   virtual uint64 GetHeadMachine(uint64 machine_id);
   virtual uint32 LocalReplica();
+  virtual uint32 GetLocalKeyMastership(string);
   virtual bool CheckLocalMastership(Action* action, set<string>& keys);
 
   uint32 GetMachineForReplica(Action* action);
 
  private:
+
+  void Remaster_Internal(ExecutionContext* context, Action* action);
+
   void CreateFile_Internal(
       ExecutionContext* context,
       const MetadataAction::CreateFileInput& in,

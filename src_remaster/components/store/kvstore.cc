@@ -2,7 +2,6 @@
 //
 
 #include <glog/logging.h>
-#include <string>
 #include "btree/btree_map.h"
 #include "common/utils.h"
 #include "components/store/kvstore.h"
@@ -61,7 +60,11 @@ uint32 KVStore::LocalReplica() {
   return -1;
 }
 
-bool CheckLocalMastership(Action* action, set<string>& keys) {
+uint32 KVStore::GetLocalKeyMastership(string) {
+  return -1;
+}
+
+bool KVStore::CheckLocalMastership(Action* action, set<string>& keys) {
   return false;
 }
 

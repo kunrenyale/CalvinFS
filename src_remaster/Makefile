@@ -10,7 +10,7 @@
 OBJDIR := ../obj
 BINDIR := ../bin
 EXTDIR := ../ext
-SRCDIR := ../src_lowlatency
+SRCDIR := ../src_remaster
 LOGDIR := ../logs
 
 # Next, we define the external libraries we use and their directories

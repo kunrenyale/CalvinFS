@@ -64,7 +64,7 @@ string FileName(const string& path) {
 class ExecutionContext {
  public:
   // Constructor performs all reads.
-  ExecutionContext(VersionedKVStore* store, Action* action)
+  ExecutionContext(KVStore* store, Action* action)
       : store_(store), version_(action->version()), aborted_(false) {
     for (int i = 0; i < action->readset_size(); i++) {
       if (!store_->Get(action->readset(i), &reads_[action->readset(i)])) {
@@ -124,8 +124,8 @@ class ExecutionContext {
     deletions_.insert(path);
   }
 
-  void Abort() {
-    aborted_ = true;
+  bool Abort() {
+    return aborted_;
   }
 
   bool IsWriter() {
@@ -162,7 +162,7 @@ class DistributedExecutionContext : public ExecutionContext {
   DistributedExecutionContext(
       Machine* machine,
       CalvinFSConfigMap* config,
-      VersionedKVStore* store,
+      KVStore* store,
       Action* action)
         : machine_(machine), config_(config) {
     // Initialize parent class variables.
@@ -251,7 +251,7 @@ class DistributedExecutionContext : public ExecutionContext {
       for (auto it = remote_readers_and_writers.begin(); it != remote_readers_and_writers.end(); ++it) {
         Header* header = new Header();
         header->set_from(machine_->machine_id());
-        header->set_to(it->first);
+        header->set_to(*it);
         header->set_type(Header::DATA);
         header->set_data_channel("action-" + UInt64ToString(data_channel_version));
         MessageBuffer* m = new MessageBuffer();
@@ -270,13 +270,15 @@ class DistributedExecutionContext : public ExecutionContext {
 
       uint64 max_machine_id = machine_->machine_id();
     
-      uint32 cnt_0 = 0, cnt_1 = 0; cnt_2 = 0;
+      uint32 cnt_0 = 0, cnt_1 = 0, cnt_2 = 0;
       switch(abort_decision) {
         case 0: cnt_0++; break;
         case 1: cnt_1++; break;
         case 2: cnt_2++; break;
       }
 
+      AtomicQueue<MessageBuffer*>* channel =
+          machine_->DataChannel("action-" + UInt64ToString(data_channel_version));
       for (uint32 i = 0; i < remote_readers_and_writers.size(); i++) {
         MessageBuffer* m = NULL;
         // Get results.
@@ -316,11 +318,11 @@ class DistributedExecutionContext : public ExecutionContext {
           if (cnt_1 == 0) {
             // All remotely, but still single-replica action
             action->set_single_replica(true);
-            action->clear_involved_replicas;
+            action->clear_involved_replicas();
             action->add_involved_replicas(remote_replica);
           } else {
             action->set_single_replica(false);
-            action->clear_involved_replicas;
+            action->clear_involved_replicas();
             action->add_involved_replicas(replica_);
             action->add_involved_replicas(remote_replica);
           }
@@ -329,14 +331,14 @@ class DistributedExecutionContext : public ExecutionContext {
 
           uint32 machine_sent = remote_replica*config_->GetPartitionsPerReplica();
           Header* header = new Header();
-          header->set_from(machine()->machine_id());
+          header->set_from(machine_->machine_id());
           header->set_to(machine_sent);
           header->set_type(Header::RPC);
           header->set_app("blocklog");
           header->set_rpc("APPEND");
           string* block = new string();
           action->SerializeToString(block);
-          machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
+          machine_->SendMessage(header, new MessageBuffer(Slice(*block)));
 
         }
         return;
@@ -353,7 +355,7 @@ class DistributedExecutionContext : public ExecutionContext {
         for (auto it = remote_writers.begin(); it != remote_writers.end(); ++it) {
           Header* header = new Header();
           header->set_from(machine_->machine_id());
-          header->set_to(it->first);
+          header->set_to(*it);
           header->set_type(Header::DATA);
           header->set_data_channel("action-" + UInt64ToString(data_channel_version));
           machine_->SendMessage(header, new MessageBuffer(local_reads));
@@ -421,7 +423,7 @@ class DistributedExecutionContext : public ExecutionContext {
 
 ///////////////////////          MetadataStore          ///////////////////////
 
-MetadataStore::MetadataStore(VersionedKVStore* store)
+MetadataStore::MetadataStore(KVStore* store)
     : store_(store), machine_(NULL), config_(NULL) {
 }
 
@@ -471,7 +473,7 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
   // Only need to check the readset(Note: read-write keys are also in the readset)
   for (int i = 0; i < action->readset_size(); i++) {
     if (IsLocal(action->readset(i))) {
-      uint32 replica = GetLocalMastership(action->readset(i));
+      uint32 replica = GetLocalKeyMastership(action->readset(i));
       replica_involved.insert(replica);
       machines_involved.insert(machine_id_);
     } else {
@@ -487,13 +489,15 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
       header->set_rpc("GETMASTER");
       header->add_misc_string(action->readset(i));
       header->add_misc_string(channel_name);
-      machine()->SendMessage(header, new MessageBuffer();
+      machine_->SendMessage(header, new MessageBuffer());
       to_expect++;
     }
   }
 
 
   // now that all RPCs have been sent, wait for responses
+  AtomicQueue<MessageBuffer*>* channel =
+          machine_->DataChannel(channel_name);
   while (to_expect > 0) {
     MessageBuffer* m = NULL;
     while (!channel->Pop(&m)) {
@@ -504,16 +508,15 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
     string key = (*m)[0];
     Scalar s;
     s.ParseFromArray((*m)[1].data(), (*m)[1].size());
-    uint32 repilca = FromScalar<uint32>(s);
+    uint32 replica = FromScalar<uint32>(s);
     replica_involved.insert(replica);
 
     to_expect--;
 
-
     KeyValueEntry map_entry;
-    map_entry.key = key;
-    map_entry.value = replica;
-    action->add_keys_origins(map_entry);
+    map_entry.set_key(key);
+    map_entry.set_value(replica);
+    action->add_keys_origins()->CopyFrom(map_entry);
   }
 
 
@@ -535,7 +538,7 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
   
   uint32 lowest_replica = *(replica_involved.begin());
 
-  action->set_remaster_origin(lowest_replica);
+  action->set_remaster_to(lowest_replica);
 
   // Always send cross-replica actions to the first machine in the first replica (current implementation, will change soon)
   if (replica_involved.size() == 1) {
@@ -551,7 +554,7 @@ bool MetadataStore::CheckLocalMastership(Action* action, set<string>& keys) {
   bool can_execute_now = true;
   for (int i = 0; i < action->readset_size(); i++) {
     if (IsLocal(action->readset(i))) {
-      uint32 replica = GetLocalMastership(action->readset(i));
+      uint32 replica = GetLocalKeyMastership(action->readset(i));
       if (replica != replica_) {
         keys.insert(action->readset(i));
         can_execute_now = false;
@@ -571,7 +574,7 @@ uint32 MetadataStore::LocalReplica() {
   return replica_;
 }
 
-uint32 MetadataStore::GetLocalMastership(const string& key) {
+uint32 MetadataStore::GetLocalKeyMastership(string key) {
    string value;
    store_->Get(key, &value);
    MetadataEntry entry;
@@ -930,7 +933,7 @@ void MetadataStore::Remaster_Internal(ExecutionContext* context, Action* action)
       
       remastered_keys.push_back(action->remastered_keys(i));
 
-      entry->set_master(origin_master);
+      entry.set_master(origin_master);
       context->PutEntry(action->remastered_keys(i), entry);
 
     }
@@ -942,7 +945,7 @@ void MetadataStore::Remaster_Internal(ExecutionContext* context, Action* action)
     uint64 machine_sent = replica_ * machines_per_replica_;
 
     Header* header = new Header();
-    header->set_from(machine()->machine_id());
+    header->set_from(machine_->machine_id());
     header->set_to(machine_sent);
     header->set_type(Header::RPC);
     header->set_app("blocklog");
@@ -954,7 +957,7 @@ void MetadataStore::Remaster_Internal(ExecutionContext* context, Action* action)
     for (uint32 i = 0; i < keys_size; i++) {
       m->Append(new string(remastered_keys[i]));
     }
-    machine()->SendMessage(header, m);
+    machine_->SendMessage(header, m);
   }
 }
 

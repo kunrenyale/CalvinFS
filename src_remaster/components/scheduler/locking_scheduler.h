@@ -19,7 +19,7 @@
 using std::atomic;
 using std::set;
 using std::queue;
-using std::map
+using std::map;
 using std::vector;
 
 class LockingScheduler : public Scheduler {

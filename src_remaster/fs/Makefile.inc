@@ -11,8 +11,6 @@ SRCS := fs/metadata_store.cc \
         fs/calvinfs_client_app.cc
 EXES :=
 TEST := fs/block_store_test.cc \
-        fs/block_log_test.cc \
-        fs/metadata_store_test.cc \
         fs/fs_test.cc
 PROTOS := fs/metadata.proto \
           fs/calvinfs_config.proto \

@@ -77,7 +77,11 @@ uint32 BTreeStore::LocalReplica() {
   return -1;
 }
 
-bool CheckLocalMastership(Action* action, set<string>& keys) {
+uint32 BTreeStore::GetLocalKeyMastership(string) {
+  return -1;
+}
+
+bool BTreeStore::CheckLocalMastership(Action* action, set<string>& keys) {
   return false;
 }
 

@@ -26,6 +26,7 @@ class BTreeStore : public KVStore {
   virtual uint32 LookupReplicaByDir(string dir);
   virtual uint64 GetHeadMachine(uint64 machine_id);
   virtual uint32 LocalReplica();
+  virtual uint32 GetLocalKeyMastership(string);
   virtual bool CheckLocalMastership(Action* action, set<string>& keys);
 
  protected:
