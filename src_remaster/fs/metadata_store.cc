@@ -193,7 +193,7 @@ class DistributedExecutionContext : public ExecutionContext {
     
       // Figure out what machines are readers (and perform local reads).
       set<uint64> remote_readers_and_writers;
-      uint32 remote_replica;
+      uint32 remote_replica = -1;
       reader_ = false;
       set<uint64> remote_readers;
       bool partial_local = false;
@@ -505,8 +505,10 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
       usleep(100);
     }
     
-    string key = (*m)[0];
     Scalar s;
+    s.ParseFromArray((*m)[0].data(), (*m)[0].size());
+    string key = FromScalar<string>(s);
+
     s.ParseFromArray((*m)[1].data(), (*m)[1].size());
     uint32 replica = FromScalar<uint32>(s);
     replica_involved.insert(replica);
@@ -955,7 +957,7 @@ void MetadataStore::Remaster_Internal(ExecutionContext* context, Action* action)
     m->Append(ToScalar<uint32>(keys_size));
     
     for (uint32 i = 0; i < keys_size; i++) {
-      m->Append(new string(remastered_keys[i]));
+      m->Append(ToScalar<string>(remastered_keys[i]));
     }
     machine_->SendMessage(header, m);
   }

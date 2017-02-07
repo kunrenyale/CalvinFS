@@ -339,7 +339,8 @@ class BlockLogApp : public App {
       uint32 keys_num = FromScalar<uint32>(s);
 
       for (uint32 i = 0; i < keys_num; i++) {
-        string key = (*message)[i+1];
+        s.ParseFromArray((*message)[i+1].data(), (*message)[i+1].size());
+        string key = FromScalar<string>(s);
 
         recent_remastered_keys[key] = replica_;
 
