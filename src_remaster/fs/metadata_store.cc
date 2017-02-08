@@ -477,6 +477,11 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
       uint32 replica = GetLocalKeyMastership(action->readset(i));
       replica_involved.insert(replica);
       machines_involved.insert(machine_id_);
+      
+      KeyValueEntry map_entry;
+      map_entry.set_key(action->readset(i));
+      map_entry.set_value(replica);
+      action->add_keys_origins()->CopyFrom(map_entry);
     } else {
       uint64 mds = config_->HashFileName(action->readset(i));
       uint64 remote_machine_id = config_->LookupMetadataShard(mds, replica_);
