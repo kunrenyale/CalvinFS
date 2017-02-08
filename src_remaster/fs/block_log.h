@@ -342,16 +342,16 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
       }
 
     } else if (header->rpc() == "COMPLETED_REMASTER")  {
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMPLETED_REMASTER messagea. from machine:"<<header->from();
       // After the completed remaster, now it might be safe to get multi-replica actions and relevant blocked actions off from the queue.
       Scalar s;
       s.ParseFromArray((*message)[0].data(), (*message)[0].size());
       uint32 keys_num = FromScalar<uint32>(s);
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMPLETED_REMASTER messagea. from machine:"<<header->from()<<"keys num is:"<<keys_num;
 
       for (uint32 i = 0; i < keys_num; i++) {
         s.ParseFromArray((*message)[i+1].data(), (*message)[i+1].size());
         string key = FromScalar<string>(s);
-
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMPLETED_REMASTER messagea. from machine:"<<header->from()<<"keys is:"<<key;
         recent_remastered_keys[key] = replica_;
 
         if (delayed_actions_by_key.find(key) != delayed_actions_by_key.end()) {

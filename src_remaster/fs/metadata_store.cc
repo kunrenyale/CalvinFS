@@ -952,6 +952,8 @@ void MetadataStore::Remaster_Internal(ExecutionContext* context, Action* action)
     }
   }
 
+LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::Remaster_Internal^^^^^^  distinct id is:"<<action->distinct_id();
+
   if (origin_master == replica_) {
     // Need to send message to confirm the completation of the remaster operation
     uint32 keys_size = remastered_keys.size();
@@ -971,6 +973,7 @@ void MetadataStore::Remaster_Internal(ExecutionContext* context, Action* action)
       m->Append(ToScalar<string>(remastered_keys[i]));
     }
     machine_->SendMessage(header, m);
+LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::Remaster_Internal^^^^^^(send COMPLETED_REMASTER)  distinct id is:"<<action->distinct_id();
   }
 }
 

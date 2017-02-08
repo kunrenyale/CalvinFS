@@ -79,6 +79,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action
       // Request the lock
       for (int i = 0; i < action->remastered_keys_size(); i++) {
         if (store_->IsLocal(action->remastered_keys(i))) {
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action:" << action->version()<<" distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin()<<"### key:"<<action->remastered_keys(i);
           if (!lm_.WriteLock(action, action->remastered_keys(i))) {
             ungranted_requests++;
           }
