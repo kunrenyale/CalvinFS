@@ -40,11 +40,14 @@ void LockingScheduler::MainLoopBody() {
     active_actions_.insert(action->version());
     int ungranted_requests = 0;
 
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action:" << action->version()<<" distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin();
     
     if (action->wait_for_remaster_pros() == false && blocking_replica_ == true && blocking_replica_id_ == action->origin()) {
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action:" << action->version()<<" distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin()<<"-- temporarily block the actions";
       // Temporarily block the actions from replica:blocking_replica_id_
       blocking_actions.push(action);
     } else if (action->wait_for_remaster_pros() == true && action->remaster_to() != local_replica_) {
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action:" << action->version()<<" distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin()<<"-- check for pros actions";
       blocking_actions.push(action);
       // Check the mastership of the records without locking
       set<string> keys;
@@ -72,6 +75,7 @@ void LockingScheduler::MainLoopBody() {
 
 
     if (action->remaster() == true) {
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action:" << action->version()<<" distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin()<<"-- received a remaster action";
       // Request the lock
       for (int i = 0; i < action->remastered_keys_size(); i++) {
         if (store_->IsLocal(action->remastered_keys(i))) {

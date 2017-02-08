@@ -302,6 +302,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
         if (should_wait == false) {
           a->set_single_replica(true);
           queue_.Push(a);
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a multi-replica action. action id is:"<< a->distinct_id() <<" from machine:"<<header->from()<<"-- put it into queue";
         } else {
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a multi-replica action. action id is:"<< a->distinct_id() <<" from machine:"<<header->from()<<"-- send remaster action";
           // Send the remaster actions(generate a new action) to the involved replicas;
@@ -312,6 +313,8 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
           remaster_action->clear_readset();
           remaster_action->clear_writeset();
           remaster_action->clear_keys_origins();
+          remaster_action->clear_distinct_id();
+          remaster_action->set_distinct_id(machine()->GetGUID());
 
           for (auto it = involved_other_replicas.begin(); it != involved_other_replicas.end(); ++it) {
             uint32 sentto_replica = *it;

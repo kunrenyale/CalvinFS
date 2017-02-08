@@ -176,6 +176,7 @@ class DistributedExecutionContext : public ExecutionContext {
     // Look up what replica we're at.
     replica_ = config_->LookupReplica(machine_->machine_id());
 
+LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext received a txn:: data_channel_version:"<<data_channel_version;
 
     if (action->remaster() == true) {
       writer_ = true;
@@ -339,7 +340,7 @@ class DistributedExecutionContext : public ExecutionContext {
           string* block = new string();
           action->SerializeToString(block);
           machine_->SendMessage(header, new MessageBuffer(Slice(*block)));
-
+LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext received a txn:: data_channel_version:"<<data_channel_version<<"-- abort this action, and forward this action to"<<machine_sent;
         }
         return;
       }
