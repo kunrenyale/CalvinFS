@@ -318,6 +318,9 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
           remaster_action->clear_keys_origins();
           remaster_action->clear_distinct_id();
           remaster_action->set_distinct_id(machine()->GetGUID());
+          remaster_action->set_single_replica(true);
+          a->set_wait_for_remaster_pros(false);
+
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a multi-replica action. action id is:"<< remaster_action->distinct_id() <<" from machine:"<<header->from()<<"-- send remaster action";
           for (auto it = involved_other_replicas.begin(); it != involved_other_replicas.end(); ++it) {
             uint32 sentto_replica = *it;
