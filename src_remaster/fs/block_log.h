@@ -220,6 +220,8 @@ class BlockLogApp : public App {
         queue_.Push(a);
 if (a->remaster() == true) {
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a remaster action. action id is:"<< a->distinct_id() <<" from machine:"<<header->from();
+} else {
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a normal action. action id is:"<< a->distinct_id() <<" from machine:"<<header->from();
 }
       } else if (a->single_replica() == true && a->wait_for_remaster_pros() == true) {
         a->set_remaster_to(replica_);
@@ -319,7 +321,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
           remaster_action->clear_distinct_id();
           remaster_action->set_distinct_id(machine()->GetGUID());
           remaster_action->set_single_replica(true);
-          a->set_wait_for_remaster_pros(false);
+          remaster_action->set_wait_for_remaster_pros(false);
 
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a multi-replica action. action id is:"<< remaster_action->distinct_id() <<" from machine:"<<header->from()<<"-- send remaster action";
           for (auto it = involved_other_replicas.begin(); it != involved_other_replicas.end(); ++it) {
@@ -345,6 +347,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
       }
 
     } else if (header->rpc() == "COMPLETED_REMASTER")  {
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMPLETED_REMASTER messagea. from machine:"<<header->from();
       // After the completed remaster, now it might be safe to get multi-replica actions and relevant blocked actions off from the queue.
       Scalar s;
       s.ParseFromArray((*message)[0].data(), (*message)[0].size());
