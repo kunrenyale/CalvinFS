@@ -134,9 +134,6 @@ class BlockLogApp : public App {
           Action* a = NULL;
           queue_.Pop(&a);
           a->set_version_offset(actual_offset++);
-
-
-	  a->set_origin(config_->LookupReplica(machine()->machine_id()));
           batch.mutable_entries()->AddAllocated(a);
         }
 
@@ -153,14 +150,12 @@ class BlockLogApp : public App {
              i++) {
           Header* header = new Header();
           header->set_from(machine()->machine_id());
-          header->set_to(
-              config_->LookupBlucket(config_->HashBlockID(block_id), i));
+          header->set_to(config_->LookupBlucket(config_->HashBlockID(block_id), i));
           header->set_type(Header::RPC);
           header->set_app(name());
           header->set_rpc("BATCH");
           header->add_misc_int(block_id);
           header->add_misc_int(actual_offset);
-          header->add_misc_bool(true);
           machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
         }
 
@@ -384,7 +379,6 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMP
       // Write batch block to local block store.
       uint64 block_id = header->misc_int(0);
       uint64 batch_size = header->misc_int(1);
-      bool need_submit = header->misc_bool(0);
 
       blocks_->Put(block_id, (*message)[0]);
 //LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a BATCH request. block id is:"<< block_id <<" from machine:"<<header->from()<<" , batch size is:"<<batch_size;
@@ -394,7 +388,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMP
       uint64 message_from_ = header->from();
 
       //  If (This batch come from this replica) → send SUBMIT to the Sequencer(LogApp) on the master node of the local paxos participants
-      if (config_->LookupReplica(message_from_) == replica_ && need_submit == true) {
+      if (config_->LookupReplica(message_from_) == replica_) {
         Header* header = new Header();
         header->set_from(machine()->machine_id());
         header->set_to(local_paxos_leader_);  // Local Paxos leader.
@@ -411,14 +405,18 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMP
       for (int i = 0; i < batch.entries_size(); i++) {
         set<uint64> recipients;
 
-        for (int j = 0; j < batch.entries(i).readset_size(); j++) {
-          if (config_->LookupReplicaByDir(batch.entries(i).readset(j)) == batch.entries(i).origin()) {
+        if (batch.entries(i).remaster() == true) {
+          for (int j = 0; j < batch.entries(i).remastered_keys_size(); j++) {
+            uint64 mds = config_->HashFileName(batch.entries(i).remastered_keys(j));
+            recipients.insert(config_->LookupMetadataShard(mds, replica_));
+          }
+        } else {
+
+          for (int j = 0; j < batch.entries(i).readset_size(); j++) {
             uint64 mds = config_->HashFileName(batch.entries(i).readset(j));
             recipients.insert(config_->LookupMetadataShard(mds, replica_));
           }
-        }
-        for (int j = 0; j < batch.entries(i).writeset_size(); j++) {
-          if (config_->LookupReplicaByDir(batch.entries(i).writeset(j)) == batch.entries(i).origin()) {
+          for (int j = 0; j < batch.entries(i).writeset_size(); j++) {
             uint64 mds = config_->HashFileName(batch.entries(i).writeset(j));
             recipients.insert(config_->LookupMetadataShard(mds, replica_));
           }

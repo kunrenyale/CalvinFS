@@ -248,6 +248,9 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
       } else {
         abort_decision = 2;
       }
+
+LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext received a txn:: data_channel_version:"<<data_channel_version<<"abort_decision is:"<<abort_decision;
+
       // Check whether this action can be executed now or aborted
       for (auto it = remote_readers_and_writers.begin(); it != remote_readers_and_writers.end(); ++it) {
         Header* header = new Header();
@@ -382,7 +385,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
           }
         }
         // Close channel.
-        machine_->CloseDataChannel("action-" + UInt32ToString(origin_) + "-" + UInt64ToString(data_channel_version));
+        machine_->CloseDataChannel("action-" + UInt64ToString(data_channel_version));
       }
     }
   }
@@ -393,14 +396,14 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
       for (auto it = writes_.begin(); it != writes_.end(); ++it) {
         uint64 mds = config_->HashFileName(it->first);
         uint64 machine = config_->LookupMetadataShard(mds, replica_);
-        if (machine == machine_->machine_id() && config_->LookupReplicaByDir(it->first) == origin_) {
+        if (machine == machine_->machine_id()) {
           store_->Put(it->first, it->second);
         }
       }
       for (auto it = deletions_.begin(); it != deletions_.end(); ++it) {
         uint64 mds = config_->HashFileName(*it);
         uint64 machine = config_->LookupMetadataShard(mds, replica_);
-        if (machine == machine_->machine_id() && config_->LookupReplicaByDir(*it) == origin_) {
+        if (machine == machine_->machine_id()) {
           store_->Delete(*it);
         }
       }
