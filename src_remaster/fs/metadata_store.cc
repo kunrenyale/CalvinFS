@@ -468,6 +468,8 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
   string channel_name = "get-replica-" + UInt64ToString(action->distinct_id());
   set<uint64> machines_involved;
 
+LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(begin)^^^^^^  distinct id is:"<<action->distinct_id();
+
   // Only need to check the readset(Note: read-write keys are also in the readset)
   for (int i = 0; i < action->readset_size(); i++) {
     if (IsLocal(action->readset(i))) {
@@ -519,6 +521,7 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
     action->add_keys_origins()->CopyFrom(map_entry);
   }
 
+LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(get master)^^^^^^  distinct id is:"<<action->distinct_id();
 
   CHECK(replica_involved.size() >= 1);
 
@@ -530,6 +533,7 @@ uint32 MetadataStore::GetMachineForReplica(Action* action) {
     action->set_single_replica(true);
   } else {
     action->set_single_replica(false);
+LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(multi-replica action)^^^^^^  distinct id is:"<<action->distinct_id();
   }
   
   for (set<uint32>::iterator it=replica_involved.begin(); it!=replica_involved.end(); ++it) {

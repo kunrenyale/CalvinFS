@@ -254,6 +254,9 @@ class BlockLogApp : public App {
         }
 
       } else {
+
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a multi-replica action. action id is:"<< a->distinct_id() <<" from machine:"<<header->from();
+
         // The multi-replica actions that generate remaster actions
         a->set_wait_for_remaster_pros(true);
         a->set_remaster_to(replica_);
@@ -300,7 +303,7 @@ class BlockLogApp : public App {
           a->set_single_replica(true);
           queue_.Push(a);
         } else {
-
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a multi-replica action. action id is:"<< a->distinct_id() <<" from machine:"<<header->from()<<"-- send remaster action";
           // Send the remaster actions(generate a new action) to the involved replicas;
           Action* remaster_action = new Action();
           remaster_action->CopyFrom(*a);
