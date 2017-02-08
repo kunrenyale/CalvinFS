@@ -464,7 +464,6 @@ uint32 MetadataStore::LookupReplicaByDir(string dir) {
 
 uint32 MetadataStore::GetMachineForReplica(Action* action) {
   set<uint32> replica_involved;
-  atomic<int> ack_counter = 0;
   uint32 to_expect = 0;
   string channel_name = "get-replica-" + UInt64ToString(action->distinct_id());
   set<uint64> machines_involved;

@@ -133,9 +133,8 @@ class BlockLogApp : public App {
         for (int i = 0; i < count; i++) {
           Action* a = NULL;
           queue_.Pop(&a);
-          if (a->fake_action() == false) {
-            a->set_version_offset(actual_offset++);
-          }
+          a->set_version_offset(actual_offset++);
+
 
 	  a->set_origin(config_->LookupReplica(machine()->machine_id()));
           batch.mutable_entries()->AddAllocated(a);
@@ -396,10 +395,6 @@ class BlockLogApp : public App {
       map<uint64, ActionBatch> subbatches;
       for (int i = 0; i < batch.entries_size(); i++) {
         set<uint64> recipients;
-    
-        if (batch.entries(i).fake_action() == true) {
-          continue;        
-        }
 
         for (int j = 0; j < batch.entries(i).readset_size(); j++) {
           if (config_->LookupReplicaByDir(batch.entries(i).readset(j)) == batch.entries(i).origin()) {
@@ -428,35 +423,7 @@ class BlockLogApp : public App {
         header->set_rpc("SUBBATCH");
         header->add_misc_int(block_id);
         machine()->SendMessage(header, new MessageBuffer(subbatches[*it]));
-      }
-
-      // Forward "relevant multi-replica action" to the head node 
-      if (config_->LookupReplica(message_from_) != replica_) {
-        ActionBatch fake_action_batch;
-        for (int i = 0; i < batch.entries_size(); i++) {
-          if (batch.entries(i).single_replica() == false && batch.entries(i).new_generated() == false) {
-            for (int j = 0; j < batch.entries(i).involved_replicas_size(); j++) {
-              if (batch.entries(i).involved_replicas(j) == replica_) {
-//LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the faked multi-replicas actions into batch. block id: "<<block_id<<"  distinct_id:"<<batch.entries(i).distinct_id();
-                 fake_action_batch.add_entries()->CopyFrom(batch.entries(i));
-                 break;
-              }
-            }
-          }
-        }
-
-        // Send to the head node
-        header = new Header();
-        header->set_from(machine()->machine_id());
-        header->set_to(local_paxos_leader_);
-        header->set_type(Header::RPC);
-        header->set_app(name());
-        header->set_rpc("FAKEACTIONBATCH");
-        header->add_misc_int(block_id);
-        machine()->SendMessage(header, new MessageBuffer(fake_action_batch));
-//LOG(ERROR) << "Machine: "<<machine()->machine_id() << " Send FAKEACTIONBATCH . block id: "<<block_id<<"  size(): "<<fake_action_batch.entries_size();
-      }
-      
+      }      
 
     } else if (header->rpc() == "SUBMIT") {
 
@@ -471,128 +438,6 @@ class BlockLogApp : public App {
       batch->ParseFromArray((*message)[0].data(), (*message)[0].size());
       subbatches_.Put(block_id, batch);
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log recevie a SUBBATCH request. block id is:"<< block_id<<" from machine:"<<header->from();
-    } else if (header->rpc() == "FAKEACTIONBATCH") {
-      uint64 block_id = header->misc_int(0);
-      ActionBatch* batch = new ActionBatch();
-      batch->ParseFromArray((*message)[0].data(), (*message)[0].size());
-      fakebatches_.Put(block_id, batch);
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received FAKEACTIONBATCH request.  batch_id:"<<block_id<<"  size is:"<<batch->entries_size();  
-    } else if (header->rpc() == "APPEND_MULTIREPLICA_ACTIONS") {
-      MessageBuffer* m = NULL;
-      PairSequence sequence;
-      AtomicQueue<Action*> new_generated_queue;
-
-      paxos_leader_->GetRemoteSequence(&m);
-      CHECK(m != NULL);
-
-      sequence.ParseFromArray((*m)[0].data(), (*m)[0].size());
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request. version:"<<sequence.misc();
-      ActionBatch* fake_subbatch = NULL;
-      Action* new_action;
-
-      for (int i = 0; i < sequence.pairs_size();i++) {
-        uint64 fake_subbatch_id = sequence.pairs(i).first();
-
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  begin batch_id:"<<fake_subbatch_id<<" version:"<<sequence.misc();
-        bool got_it;
-        do {
-          got_it = fakebatches_.Lookup(fake_subbatch_id, &fake_subbatch);
-          usleep(10);
-        } while (got_it == false);
-
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request. (after get the fake_subbatch):"<<fake_subbatch_id<<"  size is:"<<fake_subbatch->entries_size();
-
-        if (fake_subbatch->entries_size() == 0) {
-          continue;
-        }
-        
-        int subbatch_size = fake_subbatch->entries_size();
-
-        for (int j = 0; j < subbatch_size / 2; j++) {
-          fake_subbatch->mutable_entries()->SwapElements(j, fake_subbatch->entries_size()-1-j);
-        }
-        
-        for (int j = 0; j < subbatch_size; j++) {
-          new_action = new Action();
-          new_action->CopyFrom(*(fake_subbatch->mutable_entries()->ReleaseLast()));
-          if (new_action->fake_action() == false) {
-            new_action->clear_client_machine();
-            new_action->clear_client_channel();
-          } else {
-            new_action->set_fake_action(false);
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request(fake_action). append a action:"<<new_action->distinct_id()<<" block id:"<<fake_subbatch_id;
-          }
-
-          new_action->set_new_generated(true);
-          new_generated_queue.Push(new_action);
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  append a action:"<<new_action->distinct_id()<<" batch size is:"<<fake_subbatch->entries_size()<<" block id:"<<fake_subbatch_id;   
-        }
-
-        fakebatches_.Erase(fake_subbatch_id);
-        delete fake_subbatch;
-        fake_subbatch = NULL;
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  finish batch_id:"<<fake_subbatch_id;   
-      }
-
-      if (new_generated_queue.Size() > 0) {
-        // Generated a new batch and submit to paxos leader.
-        int count = new_generated_queue.Size();
-        uint64 block_id = 0;
-
-        if (count != 0) {
-          ActionBatch batch;
-
-          for (int i = 0; i < count; i++) {
-            Action* a = NULL;
-            new_generated_queue.Pop(&a);
-
-            a->set_version_offset(i);
-	    a->set_origin(config_->LookupReplica(machine()->machine_id()));
-            batch.mutable_entries()->AddAllocated(a);
-          }
-
-          // Avoid multiple allocation.
-          string* block = new string();
-          batch.SerializeToString(block);
-
-          // Choose block_id.
-          block_id = machine()->GetGUID() * 2 + (block->size() > 1024 ? 1 : 0);
-
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  new_generated batch id:"<<block_id; 
-
-          // Send batch to block stores.
-          for (uint64 i = 0; i < config_->config().block_replication_factor(); i++) {
-            Header* header = new Header();
-            header->set_from(machine()->machine_id());
-            header->set_to(config_->LookupBlucket(config_->HashBlockID(block_id), i));
-            header->set_type(Header::RPC);
-            header->set_app(name());
-            header->set_rpc("BATCH");
-            header->add_misc_int(block_id);
-            header->add_misc_int(count);
-            header->add_misc_bool(false);
-            machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
-          }
-          
-          //to_delete_.Push(block);
-        }
-
-         // Submit to paxos leader
-         paxos_leader_->Append(block_id, count);
-       }
-
-      // Send ack to paxos_leader.
-      Header* h = new Header();
-      h->set_from(machine()->machine_id());
-      h->set_to(machine()->machine_id());
-      h->set_type(Header::ACK);
-
-      Scalar s;
-      s.ParseFromArray((*message)[0].data(), (*message)[0].size());
-      h->set_ack_counter(FromScalar<uint64>(s));
-      machine()->SendMessage(h, new MessageBuffer());   
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log send back a APPEND_MULTIREPLICA_ACTIONS request.  from machine:"<<header->from();     
-
     } else {
       LOG(FATAL) << "unknown RPC type: " << header->rpc();
     }
@@ -647,9 +492,6 @@ class BlockLogApp : public App {
   map<uint64, set<string>> delayed_mp_actions_by_id_;
 
   map<string, uint32> recent_remastered_keys;
-
-  // fake multi-replicas actions batch received.
-  AtomicMap<uint64, ActionBatch*> fakebatches_;
 
   friend class ActionSource;
   class ActionSource : public Source<Action*> {

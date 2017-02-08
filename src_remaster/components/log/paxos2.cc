@@ -77,11 +77,6 @@ void Paxos2App::Append(uint64 blockid, uint64 count) {
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " ++Paxos2 recevie a Append request. block id is:"<< header->misc_int(0)<<"  count is:"<<header->misc_int(1)<<" from machine:"<<header->from();
 }
 
-void Paxos2App::GetRemoteSequence(MessageBuffer** result) {
-  bool get_it = sequences_other_replicas.Front(result);
-  CHECK(get_it == true);
-}
-
 void Paxos2App::Start() {
   going_ = true;
   replica_count = (machine()->config().size() >= 3) ? 3 : 1;
@@ -210,22 +205,6 @@ void Paxos2App::RunLeader() {
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new sequence from local: version:"<< version<< " next_version is: "<<next_version;
       }
     } else if (sequences_other_replicas.Size() != 0) {
-      atomic<int>* ack = new atomic<int>(0);
-
-      Header* header = new Header();
-      header->set_from(machine()->machine_id());
-      header->set_to(machine()->machine_id());
-      header->set_type(Header::RPC);
-      header->set_app("blocklog");
-      header->set_rpc("APPEND_MULTIREPLICA_ACTIONS");
-      MessageBuffer* n = new MessageBuffer();
-      n->Append(ToScalar<uint64>(reinterpret_cast<uint64>(ack)));
-      machine()->SendMessage(header, n);
-
-          // Collect Ack.
-      while (ack->load() < 1) {
-        usleep(10);
-      }
 
       sequences_other_replicas.Pop(&m);
       version = next_version;
@@ -242,7 +221,7 @@ CHECK(other_sequence.pairs_size() != 0);
       s.ParseFromArray((*m)[2].data(), (*m)[2].size());
       from_machine = FromScalar<uint32>(s);
       isLocal = false;
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Paxos2 proposes a new sequence from other replicas: version:"<< version << " next_version is: "<<next_version<<". from: "<<from_machine;
+
     }
 
 
