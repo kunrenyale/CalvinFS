@@ -749,7 +749,7 @@ void LatencyExperimentAppend() {
     for (int j = 0; j < 1; j++) {
       
       // Only test 1 rename operation for now
-      if (machine()->machine_id() == 0) {
+      if (machine()->machine_id() != 1) {
         int a1 = rand() % 1000;
         int a2 = rand() % 1000;
         while (a2 == a1) {
