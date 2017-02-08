@@ -161,7 +161,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action
           lm_.Release(action, action->remastered_keys(i));
         }
       }
-
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler finish running a remaster action:  distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin();
 
     } else {
       set<string> writeset;
@@ -183,6 +183,8 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action
         }
       }
     }
+
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler finish running an action:  distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin();
 
     active_actions_.erase(action->version());
     running_action_count_--;

@@ -746,10 +746,10 @@ void LatencyExperimentAppend() {
       }
     }**/
 
-    for (int j = 0; j < 5; j++) {
+    for (int j = 0; j < 1; j++) {
       
       // Only test 1 rename operation for now
-      if (j != 3) {
+      if (machine()->machine_id() == 0) {
         int a1 = rand() % 1000;
         int a2 = rand() % 1000;
         while (a2 == a1) {
@@ -757,7 +757,7 @@ void LatencyExperimentAppend() {
         }
         BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a1) + "/c" + IntToString(j),
                              "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a2) + "/d" + IntToString(machine()->GetGUID()));
-      } else if (j == 3 && machine()->machine_id() == 1){
+      } else {
         // Rename operations that cross data centers
          BackgroundRenameFile("/a" + IntToString(1) + "/b" + IntToString(1) + "/c" + IntToString(j),
                              "/a" + IntToString(0) + "/b" + IntToString(1) + "/d" + IntToString(machine()->GetGUID()));
