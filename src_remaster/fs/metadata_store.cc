@@ -212,7 +212,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
 
           MetadataEntry entry;
           GetEntry(action->readset(i), &entry);
-          if (entry.master() != replica_) { 
+          if (entry.master() != origin_) { 
             aborted_ = true;
             remote_replica = entry.master();
           } else {
@@ -249,7 +249,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
         abort_decision = 2;
       }
 
-LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext received a txn:: data_channel_version:"<<data_channel_version<<"abort_decision is:"<<abort_decision;
+LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext received a txn:: data_channel_version:"<<data_channel_version<<"  abort_decision is:"<<abort_decision;
 
       // Check whether this action can be executed now or aborted
       for (auto it = remote_readers_and_writers.begin(); it != remote_readers_and_writers.end(); ++it) {
@@ -838,6 +838,7 @@ void MetadataStore::Run(Action* action) {
   }
 
   if (context->Abort() == true) {
+LOG(ERROR) << "Machine: "<<machine_->machine_id()<< " MetadataStore::Run(&&& Abort &&&)， action:"<<action->distinct_id();
     action->clear_client_machine();
     delete context;
     return;
@@ -880,7 +881,7 @@ void MetadataStore::Run(Action* action) {
     in.ParseFromString(action->input());
     Rename_Internal(context, in, &out);
     out.SerializeToString(action->mutable_output());
-
+LOG(ERROR) << "Machine: "<<machine_->machine_id()<< " MetadataStore::Run(*** finish RENAME)， action:"<<action->distinct_id();
   } else if (type == MetadataAction::LOOKUP) {
     MetadataAction::LookupInput in;
     MetadataAction::LookupOutput out;
