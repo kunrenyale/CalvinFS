@@ -23,7 +23,7 @@ REGISTER_APP(LockingScheduler) {
 }
 
 void LockingScheduler::MainLoopBody() {
-  Action* action;
+  Action* action = NULL;
 
   // Start processing the next incoming action request.
   if (static_cast<int>(active_actions_.size()) < kMaxActiveActions &&
@@ -32,10 +32,11 @@ void LockingScheduler::MainLoopBody() {
     if (ready_actions.size() != 0) {
       action = ready_actions.front();
       ready_actions.pop();
-    } else if (!action_requests_->Get(&action)) {
-      return;
+    } else {
+      action_requests_->Get(&action);
     }
 
+    if (action != NULL) {
     high_water_mark_ = action->version();
     active_actions_.insert(action->version());
     int ungranted_requests = 0;
@@ -123,10 +124,11 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action
     } 
 
   }
+  }
 
   // Process all actions that have finished running.
   while (completed_.Pop(&action)) {
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler will release locks， action:"<<action->distinct_id();
+//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler will release locks， action:"<<action->distinct_id();
     if (action->remaster() == true) {
       // Release the locks and wake up the waiting actions.
       for (int i = 0; i < action->remastered_keys_size(); i++) {
