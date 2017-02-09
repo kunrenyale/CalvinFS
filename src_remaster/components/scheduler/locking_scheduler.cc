@@ -126,7 +126,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action
 
   // Process all actions that have finished running.
   while (completed_.Pop(&action)) {
-
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler will release locks， action:"<<action->distinct_id();
     if (action->remaster() == true) {
       // Release the locks and wake up the waiting actions.
       for (int i = 0; i < action->remastered_keys_size(); i++) {
