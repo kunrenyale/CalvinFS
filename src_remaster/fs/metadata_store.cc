@@ -534,10 +534,6 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
 
   CHECK(replica_involved.size() >= 1);
 
-  if (machines_involved.size() > 1) {
-    action->set_mp_action(true);
-  }
-
   if (replica_involved.size() == 1) {
     action->set_single_replica(true);
   } else {

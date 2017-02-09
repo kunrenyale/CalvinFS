@@ -237,15 +237,16 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a no
               actions.push_back(a);
               delayed_actions_by_key[map_entry.key()] = actions;
             }
-            if (a->mp_action() == true) {
-              if (delayed_mp_actions_by_id_.find(a->distinct_id()) != delayed_mp_actions_by_id_.end()) {
-                delayed_mp_actions_by_id_[a->distinct_id()].insert(map_entry.key());
-              } else {
-                set<string> keys;
-                keys.insert(map_entry.key());
-                delayed_mp_actions_by_id_[a->distinct_id()] = keys;
-              }
+
+
+            if (delayed_actions_by_id_.find(a->distinct_id()) != delayed_actions_by_id_.end()) {
+              delayed_actions_by_id_[a->distinct_id()].insert(map_entry.key());
+            } else {
+              set<string> keys;
+              keys.insert(map_entry.key());
+              delayed_actions_by_id_[a->distinct_id()] = keys;
             }
+
           }
         }
 
@@ -287,15 +288,15 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
               actions.push_back(a);
               delayed_actions_by_key[map_entry.key()] = actions;
             }
-            if (a->mp_action() == true) {
-              if (delayed_mp_actions_by_id_.find(a->distinct_id()) != delayed_mp_actions_by_id_.end()) {
-                delayed_mp_actions_by_id_[a->distinct_id()].insert(map_entry.key());
-              } else {
-                set<string> keys;
-                keys.insert(map_entry.key());
-                delayed_mp_actions_by_id_[a->distinct_id()] = keys;
-              }
+
+            if (delayed_actions_by_id_.find(a->distinct_id()) != delayed_actions_by_id_.end()) {
+              delayed_actions_by_id_[a->distinct_id()].insert(map_entry.key());
+            } else {
+              set<string> keys;
+              keys.insert(map_entry.key());
+              delayed_actions_by_id_[a->distinct_id()] = keys;
             }
+
           }
         }
 
@@ -359,21 +360,19 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMP
           vector<Action*> delayed_queue = delayed_actions_by_key[key];
           for (uint32 j = 0; j < delayed_queue.size(); j++) {
             Action* action = delayed_queue[j];
-            if (action->mp_action() == false) {
-              // Now we can append this action safely
+  
+            delayed_actions_by_id_[action->distinct_id()].erase(key);
+            if (delayed_actions_by_id_[action->distinct_id()].size() == 0) {
               queue_.Push(action);
-            } else {
-              delayed_mp_actions_by_id_[action->distinct_id()].erase(key);
-              if (delayed_mp_actions_by_id_[action->distinct_id()].size() == 0) {
-                queue_.Push(action);
-                delayed_mp_actions_by_id_.erase(action->distinct_id());
-              }
+              delayed_actions_by_id_.erase(action->distinct_id());
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log receive COMPLETED_REMASTER messagea. from machine:"<<header->from()<<"One action is ready now, is:"<<action->distinct_id();
             }
+
           }
           delayed_actions_by_key.erase(key); 
         }
       }
-
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log finished COMPLETED_REMASTER messagea. from machine:"<<header->from();
 
     } else if (header->rpc() == "BATCH") {
       // Write batch block to local block store.
@@ -502,7 +501,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMP
 
   map<string, vector<Action*>> delayed_actions_by_key;
 
-  map<uint64, set<string>> delayed_mp_actions_by_id_;
+  map<uint64, set<string>> delayed_actions_by_id_;
 
   map<string, uint32> recent_remastered_keys;
 
