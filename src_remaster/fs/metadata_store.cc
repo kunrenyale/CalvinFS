@@ -852,6 +852,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< " MetadataStore::Run(&&& Abo
 
   if (action->remaster() == true) {
     Remaster_Internal(context, action);
+LOG(ERROR) << "Machine: "<<machine_->machine_id()<< " MetadataStore::Run(*** finish Remaster_Internal)， action:"<<action->distinct_id();
   } else {
 
   if (type == MetadataAction::CREATE_FILE) {
