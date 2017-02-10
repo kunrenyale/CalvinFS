@@ -347,12 +347,12 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
       Scalar s;
       s.ParseFromArray((*message)[0].data(), (*message)[0].size());
       uint32 keys_num = FromScalar<uint32>(s);
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMPLETED_REMASTER messagea. from machine:"<<header->from()<<"keys num is:"<<keys_num;
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMPLETED_REMASTER messagea. from machine:"<<header->from()<<"  keys num is:"<<keys_num;
 
       for (uint32 i = 0; i < keys_num; i++) {
         s.ParseFromArray((*message)[i+1].data(), (*message)[i+1].size());
         string key = FromScalar<string>(s);
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMPLETED_REMASTER messagea. from machine:"<<header->from()<<"keys is:"<<key;
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMPLETED_REMASTER messagea. from machine:"<<header->from()<<"  keys is:"<<key;
         recent_remastered_keys[key] = replica_;
 
         if (delayed_actions_by_key.find(key) != delayed_actions_by_key.end()) {
@@ -365,7 +365,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMP
             if (delayed_actions_by_id_[action->distinct_id()].size() == 0) {
               queue_.Push(action);
               delayed_actions_by_id_.erase(action->distinct_id());
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log receive COMPLETED_REMASTER messagea. from machine:"<<header->from()<<"One action is ready now, is:"<<action->distinct_id();
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log receive COMPLETED_REMASTER messagea. from machine:"<<header->from()<<"  One action is ready now, is:"<<action->distinct_id();
             }
 
           }

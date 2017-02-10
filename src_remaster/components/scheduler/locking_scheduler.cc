@@ -134,6 +134,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action
       // Release the locks and wake up the waiting actions.
       for (int i = 0; i < action->remastered_keys_size(); i++) {
         if (store_->IsLocal(action->remastered_keys(i))) {
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler: remaster action completed， action:"<<action->distinct_id()<<" so can wake up key: "<<action->remastered_keys(i);
           vector<Action*> blocked_actions = waiting_actions_by_key[action->remastered_keys(i)];
 
           for (auto it = blocked_actions.begin(); it != blocked_actions.end(); it++) {
@@ -141,6 +142,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action
             (waiting_actions_by_actionid[a->distinct_id()]).erase(action->remastered_keys(i));
 
             if ((waiting_actions_by_actionid[a->distinct_id()]).size() == 0) {
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler: remaster action completed， action:"<<action->distinct_id()<<" so can wake up key: "<<action->remastered_keys(i)<<"   now action can be run, id:"<<a->distinct_id();
               a->set_wait_for_remaster_pros(false);
               waiting_actions_by_actionid.erase(a->distinct_id());
 
