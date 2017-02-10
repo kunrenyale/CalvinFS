@@ -61,7 +61,7 @@ void StoreApp::HandleMessageBase(Header* header, MessageBuffer* message) {
     m->Append(ToScalar<string>(key));
     m->Append(ToScalar<uint32>(replica));
     machine()->SendMessage(header, m);
-
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":^^^^^^^^ StoreApp::HandleMessageBase(GETMASTER)^^^^^^  --key is remote:"<<key;
   } else {
     LOG(FATAL) << "unknown RPC type";
   }

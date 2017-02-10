@@ -759,7 +759,7 @@ void LatencyExperimentAppend() {
                              "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a2) + "/d" + IntToString(machine()->GetGUID()));
       } else {
         // Rename operations that cross data centers
-         BackgroundRenameFile("/a" + IntToString(1) + "/b" + IntToString(1) + "/c" + IntToString(j),
+         BackgroundRenameFile("/a" + IntToString(2) + "/b" + IntToString(1) + "/c" + IntToString(j),
                              "/a" + IntToString(0) + "/b" + IntToString(1) + "/d" + IntToString(machine()->GetGUID()));
       }
 

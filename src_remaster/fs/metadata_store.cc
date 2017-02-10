@@ -485,6 +485,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
       map_entry.set_key(action->readset(i));
       map_entry.set_value(replica);
       action->add_keys_origins()->CopyFrom(map_entry);
+LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(begin)^^^^^^  distinct id is:"<<action->distinct_id()<<" --key is local:"<<action->readset(i);
     } else {
       uint64 mds = config_->HashFileName(action->readset(i));
       uint64 remote_machine_id = config_->LookupMetadataShard(mds, replica_);
@@ -500,13 +501,13 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
       header->add_misc_string(channel_name);
       machine_->SendMessage(header, new MessageBuffer());
       to_expect++;
+LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(begin)^^^^^^  distinct id is:"<<action->distinct_id()<<" --key is remote:"<<action->readset(i);
     }
   }
 
 
   // now that all RPCs have been sent, wait for responses
-  AtomicQueue<MessageBuffer*>* channel =
-          machine_->DataChannel(channel_name);
+  AtomicQueue<MessageBuffer*>* channel = machine_->DataChannel(channel_name);
   while (to_expect > 0) {
     MessageBuffer* m = NULL;
     while (!channel->Pop(&m)) {
@@ -528,6 +529,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
     map_entry.set_key(key);
     map_entry.set_value(replica);
     action->add_keys_origins()->CopyFrom(map_entry);
+LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(begin)^^^^^^  distinct id is:"<<action->distinct_id()<<" --receive a remote result, key:"<<key;
   }
 
 LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(get master)^^^^^^  distinct id is:"<<action->distinct_id();
