@@ -150,11 +150,12 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler: remaster act
               ready_actions.push(a);
               blocking_actions.pop();
 
-              while (blocking_actions.front()->wait_for_remaster_pros() == false) {
+              while (!blocking_actions.empty() && blocking_actions.front()->wait_for_remaster_pros() == false) {
                 ready_actions.push(blocking_actions.front());
                 blocking_actions.pop();
               }
 
+              
               if (blocking_actions.empty()) {
                 blocking_replica_ = false;
               }
