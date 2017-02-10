@@ -47,6 +47,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action:" << action->version()<<" distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin()<<"-- temporarily block the actions";
         // Temporarily block the actions from replica:blocking_replica_id_
         blocking_actions.push(action);
+        return;
       } else if (action->wait_for_remaster_pros() == true && action->remaster_to() != local_replica_) {
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action:" << action->version()<<" distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin()<<"-- check for pros actions";
         blocking_actions.push(action);
@@ -54,6 +55,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action
         set<string> keys;
         bool can_execute_now = store_->CheckLocalMastership(action, keys);
         if (can_execute_now == false) {
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action:" << action->version()<<" distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin()<<"-- check for pros actions(** check pros failed)";
           blocking_replica_ = true;
           blocking_replica_id_ = action->origin();
 
@@ -68,7 +70,8 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action
               waiting_actions_by_key[*it] = actions;
             }
           }
-   
+
+          return ;
         } else if (action == blocking_actions.front()) {
           blocking_actions.pop();
         }
