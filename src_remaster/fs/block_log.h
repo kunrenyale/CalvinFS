@@ -222,7 +222,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a no
         a->set_remaster_to(replica_);
         
         bool should_wait = false;
-        // Queue the multi-replica actions in the delayed queue, and send the remaster actions(generate a new action) to the involved replicas;
+        // Queue the conflicted "single replica" actions in the delayed queue;
         for (int i = 0; i < a->keys_origins_size(); i++) {
           KeyValueEntry map_entry = a->keys_origins(i);
 

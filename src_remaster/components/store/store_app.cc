@@ -44,7 +44,6 @@ void StoreApp::HandleMessageBase(Header* header, MessageBuffer* message) {
     // Run action and push onto queue.
     Run(action);
     queue->Push(action);
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "StoreApp::HandleMessageBase: finish run and queue. distinct_id:"<<action->distinct_id();
 
   } else if (header->rpc() == "GETMASTER") {
     string key = header->misc_string(0);
@@ -61,7 +60,6 @@ void StoreApp::HandleMessageBase(Header* header, MessageBuffer* message) {
     m->Append(ToScalar<string>(key));
     m->Append(ToScalar<uint32>(replica));
     machine()->SendMessage(header2, m);
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":^^^^^^^^ StoreApp::HandleMessageBase(GETMASTER)^^^^^^  --key is remote:"<<key;
   } else {
     LOG(FATAL) << "unknown RPC type";
   }
