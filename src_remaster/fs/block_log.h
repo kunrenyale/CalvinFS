@@ -213,14 +213,31 @@ class BlockLogApp : public App {
 
       if (a->single_replica() == true && a->wait_for_remaster_pros() == false) {
         queue_.Push(a);
-if (a->remaster() == true) {
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a remaster action. action id is:"<< a->distinct_id() <<" from machine:"<<header->from();
-} else {
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a normal action. action id is:"<< a->distinct_id() <<" from machine:"<<header->from();
-}
+
       } else if (a->remaster() == true) {
+        Lock l(&remaster_latch);
+        bool should_wait = false;
+        for (int i = 0; i < a->remastered_keys_size(); i++) {
+          if (delayed_actions_by_key.find(a->remastered_keys(i)) != delayed_actions_by_key.end()) {
+              should_wait = true;
+              delayed_actions_by_key[a->remastered_keys(i)].push_back(a);
+
+            if (delayed_actions_by_id_.find(a->distinct_id()) != delayed_actions_by_id_.end()) {
+              delayed_actions_by_id_[a->distinct_id()].insert(a->remastered_keys(i));
+            } else {
+              set<string> keys;
+              keys.insert(a->remastered_keys(i));
+              delayed_actions_by_id_[a->distinct_id()] = keys;
+            }
+          } 
+        }
+
+        if (should_wait == false) {
+          queue_.Push(a); 
+        }          
         
       } else if (a->single_replica() == true && a->wait_for_remaster_pros() == true) {
+        Lock l(&remaster_latch);
         a->set_remaster_to(replica_);
       // TODO: For concurrent remaster actions, we need latch while handle this message and the above message        
         bool should_wait = false;
@@ -259,7 +276,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a no
       } else {
       // TODO: For concurrent remaster actions, we need latch while handle this message and the above message
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a multi-replica action. action id is:"<< a->distinct_id() <<" from machine:"<<header->from();
-
+        Lock l(&remaster_latch);
         // The multi-replica actions that generate remaster actions
         a->set_wait_for_remaster_pros(true);
         a->set_remaster_to(replica_);
@@ -274,14 +291,6 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
             continue;
           } else if (map_entry.value() != replica_) {
             should_wait = true;
-            involved_other_replicas.insert(map_entry.value());
-            if (remastered_keys.find(map_entry.value()) != remastered_keys.end()) {
-              remastered_keys[map_entry.value()].insert(map_entry.key());
-            } else {
-              set<string> keys;
-              keys.insert(map_entry.key());
-              remastered_keys[map_entry.value()] = keys;
-            }
             
             if (delayed_actions_by_key.find(map_entry.key()) != delayed_actions_by_key.end()) {
               delayed_actions_by_key[map_entry.key()].push_back(a);
@@ -299,6 +308,17 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
               delayed_actions_by_id_[a->distinct_id()] = keys;
             }
 
+            if (remastering_keys.find(map_entry.key()) == remastering_keys.end()) {
+              involved_other_replicas.insert(map_entry.value());
+              if (remastered_keys.find(map_entry.value()) != remastered_keys.end()) {
+                remastered_keys[map_entry.value()].insert(map_entry.key());
+              } else {
+                set<string> keys;
+                keys.insert(map_entry.key());
+                remastered_keys[map_entry.value()] = keys;
+              }
+            }
+
           }
         }
 
@@ -306,7 +326,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
           a->set_single_replica(true);
           queue_.Push(a);
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a multi-replica action. action id is:"<< a->distinct_id() <<" from machine:"<<header->from()<<"-- put it into queue";
-        } else {
+        } else if (should_wait == true && involved_other_replicas.size() > 0) {
 
           // Send the remaster actions(generate a new action) to the involved replicas;
           Action* remaster_action = new Action();
@@ -328,6 +348,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
             set<string> keys = remastered_keys[sentto_replica];
             for (auto it = keys.begin(); it != keys.end(); it++) {
               remaster_action->add_remastered_keys(*it);
+              remastering_keys.insert(*it);
             }
           
             Header* header = new Header();
@@ -347,32 +368,40 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
     } else if (header->rpc() == "COMPLETED_REMASTER")  {
       // After the completed remaster, now it might be safe to get multi-replica actions and relevant blocked actions off from the queue.
       // TODO: For concurrent remaster actions, we need latch while handle this message and the above message
+      Lock l(&remaster_latch);
       Scalar s;
       s.ParseFromArray((*message)[0].data(), (*message)[0].size());
+      bool remaster_to = FromScalar<bool>(s);
+
+      s.ParseFromArray((*message)[1].data(), (*message)[1].size());
       uint32 keys_num = FromScalar<uint32>(s);
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMPLETED_REMASTER messagea. from machine:"<<header->from()<<"  keys num is:"<<keys_num;
 
       for (uint32 i = 0; i < keys_num; i++) {
-        s.ParseFromArray((*message)[i+1].data(), (*message)[i+1].size());
+        s.ParseFromArray((*message)[i+2].data(), (*message)[i+2].size());
         string key = FromScalar<string>(s);
+        if (remaster_to == true) {
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMPLETED_REMASTER messagea. from machine:"<<header->from()<<"  keys is:"<<key;
-        recent_remastered_keys[key] = replica_;
+          recent_remastered_keys.insert(key);
+          remastering_keys.erase(key);
+       
+          if (delayed_actions_by_key.find(key) != delayed_actions_by_key.end()) {
 
-        if (delayed_actions_by_key.find(key) != delayed_actions_by_key.end()) {
-
-          vector<Action*> delayed_queue = delayed_actions_by_key[key];
-          for (uint32 j = 0; j < delayed_queue.size(); j++) {
-            Action* action = delayed_queue[j];
+            vector<Action*> delayed_queue = delayed_actions_by_key[key];
+            for (uint32 j = 0; j < delayed_queue.size(); j++) {
+              Action* action = delayed_queue[j];
   
-            delayed_actions_by_id_[action->distinct_id()].erase(key);
-            if (delayed_actions_by_id_[action->distinct_id()].size() == 0) {
-              queue_.Push(action);
-              delayed_actions_by_id_.erase(action->distinct_id());
+              delayed_actions_by_id_[action->distinct_id()].erase(key);
+              if (delayed_actions_by_id_[action->distinct_id()].size() == 0) {
+                queue_.Push(action);
+                delayed_actions_by_id_.erase(action->distinct_id());
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log receive COMPLETED_REMASTER messagea. from machine:"<<header->from()<<"  One action is ready now, is:"<<action->distinct_id();
+              }
             }
-
+            delayed_actions_by_key.erase(key); 
           }
-          delayed_actions_by_key.erase(key); 
+        } else {
+          recent_remastered_keys.erase(key);  
         }
       }
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log finished COMPLETED_REMASTER messagea. from machine:"<<header->from();
@@ -506,9 +535,11 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log finished COM
 
   map<uint64, set<string>> delayed_actions_by_id_;
 
-  map<string, uint32> recent_remastered_keys;
+  set<string> recent_remastered_keys;
 
-  map<string, uint32> remastering_keys;
+  set<string> remastering_keys;
+
+  Mutex remaster_latch;
 
   friend class ActionSource;
   class ActionSource : public Source<Action*> {
