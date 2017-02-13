@@ -195,7 +195,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
 
           MetadataEntry entry;
           GetEntry(action->remastered_keys(i), &entry);
-          if (entry.master() != action->from()) {
+          if (entry.master() != action->remaster_from()) {
             remote_remaster = true;
             if (forward_remaster.find(entry.master()) != forward_remaster.end()) {
               forward_remaster[entry.master()].insert(action->remastered_keys(i));
@@ -230,7 +230,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
           Action* remaster_action = new Action();
           remaster_action->CopyFrom(*action);
           remaster_action->set_remaster_from(remote_replica);
-          remaster_action->set_distinct_id(machine()->GetGUID());
+          remaster_action->set_distinct_id(machine_->GetGUID());
           remaster_action->set_wait_for_remaster_pros(true);
           remaster_action->clear_remastered_keys();
           
@@ -239,14 +239,14 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
           }
 
           Header* header = new Header();
-          header->set_from(machine()->machine_id());
+          header->set_from(machine_->machine_id());
           header->set_to(remote_replica*config_->GetPartitionsPerReplica());
           header->set_type(Header::RPC);
-          header->set_app(name());
+          header->set_app("blocklog");
           header->set_rpc("APPEND");
           string* block = new string();
           remaster_action->SerializeToString(block);
-          machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
+          machine_->SendMessage(header, new MessageBuffer(Slice(*block)));
         }
       }
 
