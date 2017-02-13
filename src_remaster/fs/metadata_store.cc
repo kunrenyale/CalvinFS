@@ -180,6 +180,10 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
 
     if (action->remaster() == true) {
       writer_ = true;
+      map<uint32, set<string>> forward_remaster;
+      set<string> local_keys;
+      bool remote_remaster = false;
+
       for (int i = 0; i < action->remastered_keys_size(); i++) {
         uint64 mds = config_->HashFileName(action->remastered_keys(i));
         uint64 machine = config_->LookupMetadataShard(mds, replica_);
@@ -188,8 +192,65 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
           if (!store_->Get(action->remastered_keys(i), &reads_[action->remastered_keys(i)])) {
             reads_.erase(action->remastered_keys(i));
           }
+
+          MetadataEntry entry;
+          GetEntry(action->remastered_keys(i), &entry);
+          if (entry.master() != action->from()) {
+            remote_remaster = true;
+            if (forward_remaster.find(entry.master()) != forward_remaster.end()) {
+              forward_remaster[entry.master()].insert(action->remastered_keys(i));
+            } else {
+              set<string> keys;
+              keys.insert(action->remastered_keys(i));
+              forward_remaster[entry.master()] = keys;
+            }
+          } else {
+            local_keys.insert(action->remastered_keys(i));
+          }
+        }       
+      }
+
+
+      if (remote_remaster == true) {
+        if (local_keys.size() == 0) {
+          aborted_ = true;
+        } else {
+          action->clear_remastered_keys();
+          for (auto it = local_keys.begin(); it != local_keys.end(); it++) {
+            action->add_remastered_keys(*it);
+          }
         }
-      }       
+
+
+        for (auto it = forward_remaster.begin(); it != forward_remaster.end(); it++) {
+          uint32 remote_replica = it->first;
+          set<string> remote_keys = it->second;
+          
+          // Send the remaster actions(generate a new action) to the involved replicas;
+          Action* remaster_action = new Action();
+          remaster_action->CopyFrom(*action);
+          remaster_action->set_remaster_from(remote_replica);
+          remaster_action->set_distinct_id(machine()->GetGUID());
+          remaster_action->set_wait_for_remaster_pros(true);
+          remaster_action->clear_remastered_keys();
+          
+          for (auto it = remote_keys.begin(); it != remote_keys.end(); it++) {
+            remaster_action->add_remastered_keys(*it);
+          }
+
+          Header* header = new Header();
+          header->set_from(machine()->machine_id());
+          header->set_to(remote_replica*config_->GetPartitionsPerReplica());
+          header->set_type(Header::RPC);
+          header->set_app(name());
+          header->set_rpc("APPEND");
+          string* block = new string();
+          remaster_action->SerializeToString(block);
+          machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
+        }
+      }
+
+           
     } else {
     
       // Figure out what machines are readers (and perform local reads).

@@ -211,16 +211,18 @@ class BlockLogApp : public App {
       a->ParseFromArray((*message)[0].data(), (*message)[0].size());
       a->set_origin(replica_);
 
-      if ((a->single_replica() == true || a->remaster() == true) && a->wait_for_remaster_pros() == false) {
+      if (a->single_replica() == true && a->wait_for_remaster_pros() == false) {
         queue_.Push(a);
 if (a->remaster() == true) {
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a remaster action. action id is:"<< a->distinct_id() <<" from machine:"<<header->from();
 } else {
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a normal action. action id is:"<< a->distinct_id() <<" from machine:"<<header->from();
 }
+      } else if (a->remaster() == true) {
+        
       } else if (a->single_replica() == true && a->wait_for_remaster_pros() == true) {
         a->set_remaster_to(replica_);
-        
+      // TODO: For concurrent remaster actions, we need latch while handle this message and the above message        
         bool should_wait = false;
         // Queue the conflicted "single replica" actions in the delayed queue;
         for (int i = 0; i < a->keys_origins_size(); i++) {
@@ -255,7 +257,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a no
         }
 
       } else {
-
+      // TODO: For concurrent remaster actions, we need latch while handle this message and the above message
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a multi-replica action. action id is:"<< a->distinct_id() <<" from machine:"<<header->from();
 
         // The multi-replica actions that generate remaster actions
@@ -317,7 +319,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
           remaster_action->clear_distinct_id();
           remaster_action->set_distinct_id(machine()->GetGUID());
           remaster_action->set_single_replica(true);
-          remaster_action->set_wait_for_remaster_pros(false);
+          remaster_action->set_wait_for_remaster_pros(true);
 
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a multi-replica action. action id is:"<< remaster_action->distinct_id() <<" from machine:"<<header->from()<<"-- send remaster action";
           for (auto it = involved_other_replicas.begin(); it != involved_other_replicas.end(); ++it) {
@@ -330,7 +332,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
           
             Header* header = new Header();
             header->set_from(machine()->machine_id());
-            header->set_to(sentto_replica*config_->GetPartitionsPerReplica() + rand()%config_->GetPartitionsPerReplica());
+            header->set_to(sentto_replica*config_->GetPartitionsPerReplica());
             header->set_type(Header::RPC);
             header->set_app(name());
             header->set_rpc("APPEND");
@@ -344,6 +346,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
 
     } else if (header->rpc() == "COMPLETED_REMASTER")  {
       // After the completed remaster, now it might be safe to get multi-replica actions and relevant blocked actions off from the queue.
+      // TODO: For concurrent remaster actions, we need latch while handle this message and the above message
       Scalar s;
       s.ParseFromArray((*message)[0].data(), (*message)[0].size());
       uint32 keys_num = FromScalar<uint32>(s);
@@ -504,6 +507,8 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log finished COM
   map<uint64, set<string>> delayed_actions_by_id_;
 
   map<string, uint32> recent_remastered_keys;
+
+  map<string, uint32> remastering_keys;
 
   friend class ActionSource;
   class ActionSource : public Source<Action*> {
