@@ -177,7 +177,8 @@ class DistributedExecutionContext : public ExecutionContext {
     replica_ = config_->LookupReplica(machine_->machine_id());
 
 LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext received a txn:: data_channel_version:"<<data_channel_version;
-
+   
+    // Handle remaster action
     if (action->remaster() == true) {
       writer_ = true;
       map<uint32, set<string>> forward_remaster;
@@ -212,15 +213,10 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
 
 
       if (remote_remaster == true) {
-        if (local_keys.size() == 0) {
-          aborted_ = true;
-        } else {
-          action->clear_remastered_keys();
-          for (auto it = local_keys.begin(); it != local_keys.end(); it++) {
-            action->add_remastered_keys(*it);
-          }
+        action->clear_remastered_keys();
+        for (auto it = local_keys.begin(); it != local_keys.end(); it++) {
+          action->add_remastered_keys(*it);
         }
-
 
         for (auto it = forward_remaster.begin(); it != forward_remaster.end(); it++) {
           uint32 remote_replica = it->first;
@@ -248,18 +244,24 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
           remaster_action->SerializeToString(block);
           machine_->SendMessage(header, new MessageBuffer(Slice(*block)));
         }
+        
+        // If no local keys need to be remastered, then we can simply abort this action
+        if (local_keys.size() == 0) {
+          aborted_ = true;
+          return;
+        }
       }
 
            
     } else {
     
       // Figure out what machines are readers (and perform local reads).
-      set<uint64> remote_readers_and_writers;
-      uint32 remote_replica = -1;
       reader_ = false;
       set<uint64> remote_readers;
-      bool partial_local = false;
-      uint64 abort_decision;
+
+      uint64 max_machine_id = config_->LookupMetadataShard(action->max_machine_id(), replica_);
+
+      KeyValueEntries local_entries;
 
       for (int i = 0; i < action->readset_size(); i++) {
         uint64 mds = config_->HashFileName(action->readset(i));
@@ -270,19 +272,16 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
             reads_.erase(action->readset(i));
           }
           reader_ = true;
-
+          
           MetadataEntry entry;
           GetEntry(action->readset(i), &entry);
-          if (entry.master() != origin_) { 
-            aborted_ = true;
-            remote_replica = entry.master();
-          } else {
-            partial_local = true;
-          }
+
+          KeyValueEntries::KeyValueEntry* e = local_entries.add_entries();
+          e->set_key(action->readset(i));
+          e->set_value(entry.master());
 
         } else {
           remote_readers.insert(machine);
-          remote_readers_and_writers.insert(machine);
         }
       }
 
@@ -297,104 +296,100 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
           writer_ = true;
         } else {
           remote_writers.insert(machine);
-          remote_readers_and_writers.insert(machine);
         }
       }
-      
-      // 0: All local; 1: partial local/partial remote ; 2: all remote
-      if (aborted_ == false) {
-        abort_decision = 0;
-      } else if (partial_local == true) {
-        abort_decision = 1;
-      } else {
-        abort_decision = 2;
-      }
 
-LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext received a txn:: data_channel_version:"<<data_channel_version<<"  abort_decision is:"<<abort_decision;
-
-      // Check whether this action can be executed now or aborted
-      for (auto it = remote_readers_and_writers.begin(); it != remote_readers_and_writers.end(); ++it) {
+      if (max_machine_id != machine_->machine_id()) {
+        // Send local key/master to the max_machine_id
         Header* header = new Header();
         header->set_from(machine_->machine_id());
-        header->set_to(*it);
+        header->set_to(max_machine_id);
         header->set_type(Header::DATA);
         header->set_data_channel("action-check" + UInt64ToString(data_channel_version));
-        MessageBuffer* m = new MessageBuffer();
+        MessageBuffer* m = new MessageBuffer(local_entries);
         m->Append(ToScalar<uint64>(machine_->machine_id()));
+        machine_->SendMessage(header, m);
 
-        if (aborted_ == true) {
-          m->Append(ToScalar<uint64>(abort_decision));          
-
-          m->Append(ToScalar<uint64>(remote_replica));
-        } else {
-          m->Append(ToScalar<uint64>(0));
-        }
-
-        machine_->SendMessage(header, m); 
-      }
-
-      uint64 max_machine_id = machine_->machine_id();
-    
-      uint32 cnt_0 = 0, cnt_1 = 0, cnt_2 = 0;
-      switch(abort_decision) {
-        case 0: cnt_0++; break;
-        case 1: cnt_1++; break;
-        case 2: cnt_2++; break;
-      }
-
-      AtomicQueue<MessageBuffer*>* channel =
-          machine_->DataChannel("action-check" + UInt64ToString(data_channel_version));
-      for (uint32 i = 0; i < remote_readers_and_writers.size(); i++) {
-        MessageBuffer* m = NULL;
+        // Wait for the final decision
+        AtomicQueue<MessageBuffer*>* channel = machine_->DataChannel("action-check-ack" + UInt64ToString(data_channel_version));
         // Get results.
         while (!channel->Pop(&m)) {
           usleep(10);
         }
 
-        Scalar s, r, t;
+        Scalar s;
         s.ParseFromArray((*m)[0].data(), (*m)[0].size());
-        r.ParseFromArray((*m)[1].data(), (*m)[1].size());
+        bool abort_decision = FromScalar<bool>(s);
 
-        uint64 remote_machine_id = FromScalar<uint64>(s);
-        uint64 remote_abort_decision = FromScalar<uint64>(r);
-
-        if (remote_machine_id > max_machine_id) {
-          max_machine_id = remote_machine_id;
-        }
-
-        switch(remote_abort_decision) {
-          case 0: cnt_0++; break;
-          case 1: cnt_1++; break;
-          case 2: cnt_2++; break;
-        }
-
-        if (remote_abort_decision == 1 || remote_abort_decision == 2) {
+        if (abort_decision == true) {
           aborted_ = true;
-          t.ParseFromArray((*m)[1].data(), (*m)[1].size());
-          remote_replica = FromScalar<uint64>(t);
+          return;
         }
-      
-      }
+      } else {
+        // max_machine_id
+        action->clear_keys_origins();
+        set<uint32> involved_replicas;
+        involved_replicas.insert(replica_);
 
-      if (aborted_ == true) {
-        if (max_machine_id == machine_->machine_id() && replica_ == origin_) {
-          // Send this action to the correct replica, note that only the oringin replica
-          // needs to do so, and the other replicas can just ignore this action
-          if (cnt_1 == 0) {
-            // All remotely, but still single-replica action
-            action->set_single_replica(true);
-            action->clear_involved_replicas();
-            action->add_involved_replicas(remote_replica);
-          } else {
-            action->set_single_replica(false);
-            action->clear_involved_replicas();
-            action->add_involved_replicas(replica_);
-            action->add_involved_replicas(remote_replica);
+        // Collect local keys/masters
+        for (int j = 0; j < local_entries.entries_size(); j++) {
+          action->add_keys_origins()->CopyFrom(local_entries.entries(j));
+          uint32 key_replica = local_entries.entries(j).value();
+          if (key_replica != replica_) {
+            aborted_ = true;
+            involved_replicas.insert(key_replica);
+          }
+        }
+
+        // Wait to receive remote keys/masters
+        AtomicQueue<MessageBuffer*>* channel = machine_->DataChannel("action-check" + UInt64ToString(data_channel_version));
+        for (uint32 i = 0; i < action->involved_machines()-1; i++) {
+          MessageBuffer* m = NULL;
+          // Get results.
+          while (!channel->Pop(&m)) {
+            usleep(10);
           }
 
-          action->set_wait_for_remaster_pros(true);
+          KeyValueEntries remote_entries;
+          remote_entries.ParseFromArray((*m)[0].data(), (*m)[0].size());
 
-          uint32 machine_sent = remote_replica*config_->GetPartitionsPerReplica();
+          for (int j = 0; j < remote_entries.entries_size(); j++) {
+            action->add_keys_origins()->CopyFrom(local_entries.entries(j));
+            uint32 key_replica = local_entries.entries(j).value();
+            if (key_replica != replica_) {
+              aborted_ = true;
+              involved_replicas.insert(key_replica);
+            }
+          }      
+        }
+
+        // Send the final decision to all involved machines
+        for (auto it = remote_readers.begin(); it != remote_readers.end(); ++it) {
+          Header* header = new Header();
+          header->set_from(machine_->machine_id());
+          header->set_to(*it);
+          header->set_type(Header::DATA);
+          header->set_data_channel("action-check-ack" + UInt64ToString(data_channel_version));
+          MessageBuffer* m = new MessageBuffer();
+          m->Append(ToScalar<bool>(aborted_));
+          machine_->SendMessage(header, m); 
+        }
+
+        // Send the action to the new replica
+        if (aborted_ == true && replica_ == origin_) {
+          action->set_wait_for_remaster_pros(true);
+          if (involved_replicas.size() == 1) {
+            action->set_single_replica(true);
+          } else {
+            action->set_single_replica(false);
+          }
+
+          action->clear_involved_replicas();
+          for (auto it = involved_replicas.begin(); it != involved_replicas.end(); ++it) {
+            action->add_involved_replicas(*it);  
+          }
+
+          uint32 machine_sent = (*involved_replicas.begin())*config_->GetPartitionsPerReplica();
           Header* header = new Header();
           header->set_from(machine_->machine_id());
           header->set_to(machine_sent);
@@ -405,9 +400,12 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
           action->SerializeToString(block);
           machine_->SendMessage(header, new MessageBuffer(Slice(*block)));
 LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext received a txn:: data_channel_version:"<<data_channel_version<<"-- abort this action, and forward this action to"<<machine_sent;
+  
+          return;
         }
-        return;
+   
       }
+      
     
       // If any reads were performed locally, broadcast them to writers.
       if (reader_) {
@@ -537,10 +535,13 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
 
   // Only need to check the readset(Note: read-write keys are also in the readset)
   for (int i = 0; i < action->readset_size(); i++) {
-    if (IsLocal(action->readset(i))) {
+    uint64 mds = config_->HashFileName(action->readset(i));
+    uint64 remote_machine_id = config_->LookupMetadataShard(mds, replica_);
+    machines_involved.insert(mds);
+
+    if (remote_machine_id == machine_id_) {
       uint32 replica = GetLocalKeyMastership(action->readset(i));
       replica_involved.insert(replica);
-      machines_involved.insert(machine_id_);
       
       KeyValueEntry map_entry;
       map_entry.set_key(action->readset(i));
@@ -548,9 +549,6 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
       action->add_keys_origins()->CopyFrom(map_entry);
 LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(begin)^^^^^^  distinct id is:"<<action->distinct_id()<<" --key is local:"<<action->readset(i);
     } else {
-      uint64 mds = config_->HashFileName(action->readset(i));
-      uint64 remote_machine_id = config_->LookupMetadataShard(mds, replica_);
-      machines_involved.insert(remote_machine_id);
 
       Header* header = new Header();
       header->set_from(machine_id_);
@@ -596,6 +594,9 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
 LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(get master)^^^^^^  distinct id is:"<<action->distinct_id();
 
   CHECK(replica_involved.size() >= 1);
+
+  action->set_involved_machines(machines_involved.size());
+  action->set_max_machine_id(*(machines_involved.rbegin()));
 
   if (replica_involved.size() == 1) {
     action->set_single_replica(true);

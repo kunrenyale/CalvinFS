@@ -16,6 +16,14 @@ message KeyValueEntry {
   required uint32 value = 2;
 }
 
+message KeyValueEntries {
+  message KeyValueEntry {
+    required bytes key = 1;
+    required uint32 value = 2;
+  }
+  repeated KeyValueEntry entries = 1;
+}
+
 message Action {
   // Uniquely identifies the originator of the Action.
   optional uint64 client_machine = 1;
@@ -79,6 +87,8 @@ message Action {
   optional uint32 remaster_from = 72 [default = 99999];
   optional uint32 remaster_to = 73 [default = 99999];
   optional bool wait_for_remaster_pros = 74 [default = false];
+  optional uint64 max_machine_id = 75;
+  optional uint32 involved_machines = 76;  
 
   // Keys of records and its origins.
   repeated KeyValueEntry keys_origins = 81;
