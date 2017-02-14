@@ -335,7 +335,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
         for (int j = 0; j < local_entries.entries_size(); j++) {
           action->add_keys_origins()->CopyFrom(local_entries.entries(j));
           uint32 key_replica = local_entries.entries(j).value();
-          if (key_replica != replica_) {
+          if (key_replica != origin_) {
             aborted_ = true;
             involved_replicas.insert(key_replica);
           }
@@ -356,7 +356,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
           for (int j = 0; j < remote_entries.entries_size(); j++) {
             action->add_keys_origins()->CopyFrom(local_entries.entries(j));
             uint32 key_replica = local_entries.entries(j).value();
-            if (key_replica != replica_) {
+            if (key_replica != origin_) {
               aborted_ = true;
               involved_replicas.insert(key_replica);
             }
