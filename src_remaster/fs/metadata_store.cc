@@ -615,7 +615,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
 
   // Always send cross-replica actions to the first machine in the first replica (for debug reason, will change soon)
   if (replica_involved.size() == 1) {
-    return lowest_replica * machines_per_replica_;
+    return lowest_replica * machines_per_replica_ + rand() % machines_per_replica_;
   } else {
     return lowest_replica * machines_per_replica_;
   }
