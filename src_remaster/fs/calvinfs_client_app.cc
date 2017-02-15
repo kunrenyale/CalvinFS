@@ -293,7 +293,7 @@ MessageBuffer* CalvinFSClientApp::RenameFile(const Slice& from_path, const Slice
   metadata_->GetRWSets(a);
   
   // Send the action to the log of machine_sent
-  uint32 machine_sent = metadata_->GetMachineForReplica(a);
+  uint64 machine_sent = metadata_->GetMachineForReplica(a);
   Header* header = new Header();
   header->set_from(machine()->machine_id());
   header->set_to(machine_sent);

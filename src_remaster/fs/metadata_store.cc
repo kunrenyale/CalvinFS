@@ -276,7 +276,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
           MetadataEntry entry;
           GetEntry(action->readset(i), &entry);
 
-          KeyValueEntries::KeyValueEntry* e = local_entries.add_entries();
+          KeyValueEntry* e = local_entries.add_entries();
           e->set_key(action->readset(i));
           e->set_value(entry.master());
 
@@ -525,11 +525,13 @@ uint32 MetadataStore::LookupReplicaByDir(string dir) {
 }
 
 
-uint32 MetadataStore::GetMachineForReplica(Action* action) {
+uint64 MetadataStore::GetMachineForReplica(Action* action) {
   set<uint32> replica_involved;
   uint32 to_expect = 0;
   string channel_name = "get-replica-" + UInt64ToString(action->distinct_id());
   set<uint64> machines_involved;
+  map<uint64, set<string>> remote_keys;
+
 
 LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(begin)^^^^^^  distinct id is:"<<action->distinct_id();
 
@@ -543,25 +545,43 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
       uint32 replica = GetLocalKeyMastership(action->readset(i));
       replica_involved.insert(replica);
       
-      KeyValueEntry map_entry;
+      KeyValueMdsEntry map_entry;
       map_entry.set_key(action->readset(i));
       map_entry.set_value(replica);
+      map_entry.set_mds(mds);
       action->add_keys_origins()->CopyFrom(map_entry);
 LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(begin)^^^^^^  distinct id is:"<<action->distinct_id()<<" --key is local:"<<action->readset(i);
     } else {
 
-      Header* header = new Header();
-      header->set_from(machine_id_);
-      header->set_to(remote_machine_id);
-      header->set_type(Header::RPC);
-      header->set_app("metadata");
-      header->set_rpc("GETMASTER");
-      header->add_misc_string(action->readset(i));
-      header->add_misc_string(channel_name);
-      machine_->SendMessage(header, new MessageBuffer());
-      to_expect++;
-LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(begin)^^^^^^  distinct id is:"<<action->distinct_id()<<" --key is remote:"<<action->readset(i);
+      if (remote_keys.find(remote_machine_id) != remote_keys.end()) {
+        remote_keys[remote_machine_id].insert(action->readset(i));
+      } else {
+        set<string> keys;
+        keys.insert(action->readset(i));
+        remote_keys[remote_machine_id] = keys;
+      }
+
     }
+  }
+
+  for(auto it = remote_keys.begin(); it != remote_keys.end();it++) {
+    uint64 remote_machineid = it->first;
+    set<string> keys = it->second;
+
+    Header* header = new Header();
+    header->set_from(machine_id_);
+    header->set_to(remote_machineid);
+    header->set_type(Header::RPC);
+    header->set_app("metadata");
+    header->set_rpc("GETMASTER");
+    header->add_misc_string(channel_name);
+    header->add_misc_int(keys.size());
+    for (auto it2 = keys.begin(); it2 != keys.end(); it2++) {
+      header->add_misc_string(*it2);
+    }
+
+    machine_->SendMessage(header, new MessageBuffer());
+    to_expect++;
   }
 
 
@@ -574,20 +594,18 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
       usleep(100);
     }
     
-    Scalar s;
-    s.ParseFromArray((*m)[0].data(), (*m)[0].size());
-    string key = FromScalar<string>(s);
 
-    s.ParseFromArray((*m)[1].data(), (*m)[1].size());
-    uint32 replica = FromScalar<uint32>(s);
-    replica_involved.insert(replica);
+    KeyValueEntries remote_entries;
+    remote_entries.ParseFromArray((*m)[0].data(), (*m)[0].size());
+
+    for (int j = 0; j < remote_entries.entries_size(); j++) {
+      action->add_keys_origins()->CopyFrom(local_entries.entries(j));
+      uint32 key_replica = local_entries.entries(j).value();
+      replica_involved.insert(key_replica);
+    } 
+
 
     to_expect--;
-
-    KeyValueEntry map_entry;
-    map_entry.set_key(key);
-    map_entry.set_value(replica);
-    action->add_keys_origins()->CopyFrom(map_entry);
 LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(begin)^^^^^^  distinct id is:"<<action->distinct_id()<<" --receive a remote result, key:"<<key;
   }
 

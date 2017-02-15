@@ -82,6 +82,10 @@ uint64 CalvinFSConfigMap::GetPartitionsPerReplica () {
   return config_.metadata_shard_count();
 }
 
+uint64 CalvinFSConfigMap::GetMdsFromMachine(uint64 machineid) {
+  return machineid % config_.metadata_shard_count();
+}
+
 uint64 CalvinFSConfigMap::GetReplicas () {
   return config_.metadata_replication_factor();
 }

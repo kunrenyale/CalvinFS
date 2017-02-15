@@ -39,7 +39,7 @@ class MetadataStore : public Store {
   virtual uint32 GetLocalKeyMastership(string);
   virtual bool CheckLocalMastership(Action* action, set<string>& keys);
 
-  uint32 GetMachineForReplica(Action* action);
+  uint64 GetMachineForReplica(Action* action);
 
  private:
 

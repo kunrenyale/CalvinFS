@@ -17,11 +17,13 @@ message KeyValueEntry {
 }
 
 message KeyValueEntries {
-  message KeyValueEntry {
-    required bytes key = 1;
-    required uint32 value = 2;
-  }
   repeated KeyValueEntry entries = 1;
+}
+
+message KeyValueMdsEntry {
+  required bytes key = 1;
+  required uint32 value = 2;
+  required uint64 mds = 3;
 }
 
 message Action {
@@ -91,7 +93,7 @@ message Action {
   optional uint32 involved_machines = 76;  
 
   // Keys of records and its origins.
-  repeated KeyValueEntry keys_origins = 81;
+  repeated KeyValueMdsEntry keys_origins = 81;
 
   repeated bytes remastered_keys = 82;
   // Also should take some information about which records will be remaster
