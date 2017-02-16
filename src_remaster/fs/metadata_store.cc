@@ -261,7 +261,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
 
       uint64 max_machine_id = config_->LookupMetadataShard(action->max_machine_id(), replica_);
 
-      KeyValueEntries local_entries;
+      KeyMasterEntries local_entries;
 
       for (int i = 0; i < action->readset_size(); i++) {
         uint64 mds = config_->HashFileName(action->readset(i));
@@ -276,9 +276,9 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
           MetadataEntry entry;
           GetEntry(action->readset(i), &entry);
 
-          KeyValueEntry* e = local_entries.add_entries();
+          KeyMasterEntry* e = local_entries.add_entries();
           e->set_key(action->readset(i));
-          e->set_value(entry.master());
+          e->set_master(entry.master());
 
         } else {
           remote_readers.insert(machine);
@@ -334,7 +334,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
         // Collect local keys/masters
         for (int j = 0; j < local_entries.entries_size(); j++) {
           action->add_keys_origins()->CopyFrom(local_entries.entries(j));
-          uint32 key_replica = local_entries.entries(j).value();
+          uint32 key_replica = local_entries.entries(j).master();
           if (key_replica != origin_) {
             aborted_ = true;
             involved_replicas.insert(key_replica);
@@ -350,12 +350,12 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
             usleep(10);
           }
 
-          KeyValueEntries remote_entries;
+          KeyMasterEntries remote_entries;
           remote_entries.ParseFromArray((*m)[0].data(), (*m)[0].size());
 
           for (int j = 0; j < remote_entries.entries_size(); j++) {
             action->add_keys_origins()->CopyFrom(local_entries.entries(j));
-            uint32 key_replica = local_entries.entries(j).value();
+            uint32 key_replica = local_entries.entries(j).master();
             if (key_replica != origin_) {
               aborted_ = true;
               involved_replicas.insert(key_replica);
@@ -545,10 +545,9 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
       uint32 replica = GetLocalKeyMastership(action->readset(i));
       replica_involved.insert(replica);
       
-      KeyMasterMdsEntry map_entry;
+      KeyMasterEntry map_entry;
       map_entry.set_key(action->readset(i));
       map_entry.set_master(replica);
-      map_entry.set_mds(mds);
       action->add_keys_origins()->CopyFrom(map_entry);
 LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(begin)^^^^^^  distinct id is:"<<action->distinct_id()<<" --key is local:"<<action->readset(i);
     } else {
@@ -629,9 +628,9 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
 
     machines_involved.clear();
     for (uint32 i = 0; i < action->keys_origins_size(); i++) {
-      KeyMasterMdsEntry map_entry = action->keys_origins(i);
+      KeyMasterEntry map_entry = action->keys_origins(i);
       if (map_entry.master() != lowest_replica) {
-        machines_involved.insert(map_entry.mds());
+        machines_involved.insert(config_->HashFileName(map_entry.key()));
       }
     }
 

@@ -236,148 +236,118 @@ class BlockLogApp : public App {
           queue_.Push(a); 
         }          
         
-      } else if (a->single_replica() == true && a->wait_for_remaster_pros() == true) {
-        Lock l(&remaster_latch);
-        a->set_remaster_to(replica_);
-      // TODO: For concurrent remaster actions, we need latch while handle this message and the above message        
-        bool should_wait = false;
-        // Queue the conflicted "single replica" actions in the delayed queue;
-        for (int i = 0; i < a->keys_origins_size(); i++) {
-          KeyValueEntry map_entry = a->keys_origins(i);
-
-          if (recent_remastered_keys.find(map_entry.key()) != recent_remastered_keys.end()) {
-            continue;
-          } else if (map_entry.value() != replica_) {
-            should_wait = true;
-            if (delayed_actions_by_key.find(map_entry.key()) != delayed_actions_by_key.end()) {
-              delayed_actions_by_key[map_entry.key()].push_back(a);
-            } else {
-              vector<Action*> actions;
-              actions.push_back(a);
-              delayed_actions_by_key[map_entry.key()] = actions;
-            }
-
-
-            if (delayed_actions_by_id_.find(a->distinct_id()) != delayed_actions_by_id_.end()) {
-              delayed_actions_by_id_[a->distinct_id()].insert(map_entry.key());
-            } else {
-              set<string> keys;
-              keys.insert(map_entry.key());
-              delayed_actions_by_id_[a->distinct_id()] = keys;
-            }
-
-          }
-        }
-
-        if (should_wait == false) {
-          queue_.Push(a);      
-        }
-
       } else {
-      // TODO: For concurrent remaster actions, we need latch while handle this message and the above message
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a multi-replica action. action id is:"<< a->distinct_id() <<" from machine:"<<header->from();
         Lock l(&remaster_latch);
         // The multi-replica actions that generate remaster actions
         a->set_wait_for_remaster_pros(true);
         a->set_remaster_to(replica_);
-
+        uint64 distinct_id = a->distinct_id();
         set<uint32> involved_other_replicas;
-        map<uint32, set<string>> remastered_keys;
-        bool should_wait = false;
+        map<uint32, set<string>> action_local_remastered_keys;
+
+        map<uint64, KeyMasterEntries> forwarded_entries;
   
         // Queue the multi-replica actions in the delayed queue, and send the remaster actions(generate a new action) to the involved replicas;
         for (int i = 0; i < a->keys_origins_size(); i++) {
-          KeyMasterMdsEntry map_entry = a->keys_origins(i);
+          KeyMasterEntry map_entry = a->keys_origins(i);
+          string key = map_entry.key();
           uint32 key_replica = map_entry.replica();
-          uint64 mds = map_entry.mds();
+          uint64 mds = config_->HashFileName(key);
           
           if (key_replica != replica_) {
-            
-          }
-
-
-
-
-
-
-          if (recent_remastered_keys.find(map_entry.key()) != recent_remastered_keys.end()) {
-            continue;
-          } else if (map_entry.value() != replica_) {
-            should_wait = true;
-            
-            if (delayed_actions_by_key.find(map_entry.key()) != delayed_actions_by_key.end()) {
-              delayed_actions_by_key[map_entry.key()].push_back(a);
-            } else {
-              vector<Action*> actions;
-              actions.push_back(a);
-              delayed_actions_by_key[map_entry.key()] = actions;
-            }
-
-            if (delayed_actions_by_id_.find(a->distinct_id()) != delayed_actions_by_id_.end()) {
-              delayed_actions_by_id_[a->distinct_id()].insert(map_entry.key());
-            } else {
-              set<string> keys;
-              keys.insert(map_entry.key());
-              delayed_actions_by_id_[a->distinct_id()] = keys;
-            }
-
-            if (remastering_keys.find(map_entry.key()) == remastering_keys.end()) {
-              involved_other_replicas.insert(map_entry.value());
-              if (remastered_keys.find(map_entry.value()) != remastered_keys.end()) {
-                remastered_keys[map_entry.value()].insert(map_entry.key());
-              } else {
-                set<string> keys;
-                keys.insert(map_entry.key());
-                remastered_keys[map_entry.value()] = keys;
+            uint64 machineid = config_->LookupMetadataShard(mds, replica_);
+            if (machineid == machine()->machine_id()) {
+              if (local_remastered_keys_.find(key) == local_remastered_keys_.end()) {
+                forwarded_entries[machineid].add_entries()->CopyFrom(map_entry);   
               }
-            }
-
+            } else {
+              forwarded_entries[machineid].add_entries()->CopyFrom(map_entry);
+            }       
           }
         }
 
-        if (should_wait == false) {
-          a->set_single_replica(true);
-          queue_.Push(a);
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a multi-replica action. action id is:"<< a->distinct_id() <<" from machine:"<<header->from()<<"-- put it into queue";
-        } else if (should_wait == true && involved_other_replicas.size() > 0) {
+        for (auto it = forwarded_entries.begin(); it != forwarded_entries.end();it++) {
+          unint64 machineid = it->first;
+          KeyMasterEntries entries = it->second;
 
-          // Send the remaster actions(generate a new action) to the involved replicas;
-          Action* remaster_action = new Action();
-          remaster_action->CopyFrom(*a);
-          remaster_action->set_remaster(true);
-          remaster_action->set_remaster_to(replica_);
-          remaster_action->clear_readset();
-          remaster_action->clear_writeset();
-          remaster_action->clear_keys_origins();
-          remaster_action->clear_distinct_id();
-          remaster_action->set_distinct_id(machine()->GetGUID());
-          remaster_action->set_single_replica(true);
-          remaster_action->set_wait_for_remaster_pros(true);
+          if (machineid == machine()->machine_id()) {
+            delayed_actions_[distinct_id] = a;
 
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a multi-replica action. action id is:"<< remaster_action->distinct_id() <<" from machine:"<<header->from()<<"-- send remaster action";
-          for (auto it = involved_other_replicas.begin(); it != involved_other_replicas.end(); ++it) {
-            uint32 sentto_replica = *it;
-            remaster_action->set_remaster_from(sentto_replica);
-            set<string> keys = remastered_keys[sentto_replica];
-            for (auto it = keys.begin(); it != keys.end(); it++) {
-              remaster_action->add_remastered_keys(*it);
-              remastering_keys.insert(*it);
+            for (uint32 i = 0; i < entries.entries_size(); i++) {
+              uint32 key = entries.entries(i).key();
+              uint32 key_replica = entries.entries(i).master();
+
+              delayed_actions_by_key_[key].push_back(distinct_id);
+              delayed_actions_by_id_[distinct_id].insert(key);
+
+              action_local_remastered_keys[key_replica].insert(key);   
             }
-          
+                      
+            // Generate remaster action
+            Action* remaster_action = new Action();
+            remaster_action->CopyFrom(*a);
+            remaster_action->set_remaster(true);
+            remaster_action->set_remaster_to(replica_);
+            remaster_action->clear_readset();
+            remaster_action->clear_writeset();
+            remaster_action->clear_keys_origins();
+            remaster_action->clear_distinct_id();
+            remaster_action->set_distinct_id(machine()->GetGUID());
+            remaster_action->set_single_replica(true);
+            remaster_action->set_wait_for_remaster_pros(true);
+
+            for (auto it2 = action_local_remastered_keys.begin(); it2 != action_local_remastered_keys.end(); it2++) {
+              uint32 remote_replica = it2->first;
+              set<string> remote_keys = it2->second;
+              
+              remaster_action->remaster_from(remote_replica);
+
+              for (auto it3 = remote_keys.begin(); it3 != remote_keys.end(); it3++) {
+                remaster_action->add_remastered_keys(*it3);
+                local_remastering_keys.insert(*it3);
+              }
+
+              // Send the action to the relevant replica
+              Header* header = new Header();
+              header->set_from(machine()->machine_id());
+              header->set_to(config_->LookupMetadataShard(config_->GetMdsFromMachine(machine()->machine_id()), remote_replica));
+              header->set_type(Header::RPC);
+              header->set_app(name());
+              header->set_rpc("APPEND");
+              string* block = new string();
+              remaster_action->SerializeToString(block);
+              machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
+            }
+
+            
+          } else {
+            // Send remote remaster requests to remote machine
             Header* header = new Header();
             header->set_from(machine()->machine_id());
-            header->set_to(sentto_replica*config_->GetPartitionsPerReplica());
+            header->set_to(machineid);
             header->set_type(Header::RPC);
             header->set_app(name());
-            header->set_rpc("APPEND");
-            string* block = new string();
-            remaster_action->SerializeToString(block);
-            machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
+            header->set_rpc("REMASTER_REQUEST");
+            MessageBuffer* m = new MessageBuffer(entries);
+            machine()->SendMessage(header, m);
           }
+        }
+
+        if (forwarded_entries.size() == 0) {
+          a->set_single_replica(true);
+          queue_.Push(a); 
         }
 
       }
 
+    } else if (header->rpc() == "REMASTER_REQUEST") {
+      KeyMasterEntries remote_entries;
+      remote_entries.ParseFromArray((*m)[0].data(), (*m)[0].size());
+
+      for (int j = 0; j < remote_entries.entries_size(); j++) {
+      
+      }
     } else if (header->rpc() == "COMPLETED_REMASTER")  {
       // After the completed remaster, now it might be safe to get multi-replica actions and relevant blocked actions off from the queue.
       // TODO: For concurrent remaster actions, we need latch while handle this message and the above message
@@ -552,9 +522,9 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log finished COM
   
   map<uint64, uint64>  coordinated_machine_by_id_;
 
-  set<string> recent_remastered_keys;
+  set<string> local_remastered_keys_;
 
-  set<string> remastering_keys;
+  set<string> local_remastering_keys_;
 
   Mutex remaster_latch;
 
