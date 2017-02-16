@@ -545,9 +545,9 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
       uint32 replica = GetLocalKeyMastership(action->readset(i));
       replica_involved.insert(replica);
       
-      KeyValueMdsEntry map_entry;
+      KeyMasterMdsEntry map_entry;
       map_entry.set_key(action->readset(i));
-      map_entry.set_value(replica);
+      map_entry.set_master(replica);
       map_entry.set_mds(mds);
       action->add_keys_origins()->CopyFrom(map_entry);
 LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(begin)^^^^^^  distinct id is:"<<action->distinct_id()<<" --key is local:"<<action->readset(i);
@@ -585,6 +585,9 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
   }
 
 
+  action->set_involved_machines(machines_involved.size());
+  action->set_max_machine_id(*(machines_involved.rbegin()));
+
   // now that all RPCs have been sent, wait for responses
   AtomicQueue<MessageBuffer*>* channel = machine_->DataChannel(channel_name);
   while (to_expect > 0) {
@@ -595,12 +598,12 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
     }
     
 
-    KeyValueEntries remote_entries;
+    KeyMasterEntries remote_entries;
     remote_entries.ParseFromArray((*m)[0].data(), (*m)[0].size());
 
     for (int j = 0; j < remote_entries.entries_size(); j++) {
       action->add_keys_origins()->CopyFrom(local_entries.entries(j));
-      uint32 key_replica = local_entries.entries(j).value();
+      uint32 key_replica = local_entries.entries(j).master();
       replica_involved.insert(key_replica);
     } 
 
@@ -613,31 +616,30 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
 
   CHECK(replica_involved.size() >= 1);
 
-  action->set_involved_machines(machines_involved.size());
-  action->set_max_machine_id(*(machines_involved.rbegin()));
-
-  if (replica_involved.size() == 1) {
-    action->set_single_replica(true);
-  } else {
-    action->set_single_replica(false);
-LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(multi-replica action)^^^^^^  distinct id is:"<<action->distinct_id();
-  }
-  
   for (set<uint32>::iterator it=replica_involved.begin(); it!=replica_involved.end(); ++it) {
     action->add_involved_replicas(*it);
   }
-  
   uint32 lowest_replica = *(replica_involved.begin());
 
-  action->set_remaster_to(lowest_replica);
-
-  // Always send cross-replica actions to the first machine in the first replica (for debug reason, will change soon)
   if (replica_involved.size() == 1) {
+    action->set_single_replica(true);
     return lowest_replica * machines_per_replica_ + rand() % machines_per_replica_;
   } else {
-    return lowest_replica * machines_per_replica_;
-  }
+    action->set_single_replica(false);
 
+    machines_involved.clear();
+    for (uint32 i = 0; i < action->keys_origins_size(); i++) {
+      KeyMasterMdsEntry map_entry = action->keys_origins(i);
+      if (map_entry.master() != lowest_replica) {
+        machines_involved.insert(map_entry.mds());
+      }
+    }
+
+    return config_->LookupMetadataShard(*(machines_involved.begin()), lowest_replica);
+
+
+LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(multi-replica action)^^^^^^  distinct id is:"<<action->distinct_id();
+  }
 
 }
 

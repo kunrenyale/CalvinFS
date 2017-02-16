@@ -280,13 +280,26 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
         // The multi-replica actions that generate remaster actions
         a->set_wait_for_remaster_pros(true);
         a->set_remaster_to(replica_);
+
         set<uint32> involved_other_replicas;
         map<uint32, set<string>> remastered_keys;
         bool should_wait = false;
   
         // Queue the multi-replica actions in the delayed queue, and send the remaster actions(generate a new action) to the involved replicas;
         for (int i = 0; i < a->keys_origins_size(); i++) {
-          KeyValueEntry map_entry = a->keys_origins(i);
+          KeyMasterMdsEntry map_entry = a->keys_origins(i);
+          uint32 key_replica = map_entry.replica();
+          uint64 mds = map_entry.mds();
+          
+          if (key_replica != replica_) {
+            
+          }
+
+
+
+
+
+
           if (recent_remastered_keys.find(map_entry.key()) != recent_remastered_keys.end()) {
             continue;
           } else if (map_entry.value() != replica_) {
@@ -531,9 +544,13 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log finished COM
 
   uint64 local_paxos_leader_;
 
-  map<string, vector<Action*>> delayed_actions_by_key;
+  map<string, vector<uint64>> delayed_actions_by_key_;
 
   map<uint64, set<string>> delayed_actions_by_id_;
+
+  map<uint64, Action*> delayed_actions_;
+  
+  map<uint64, uint64>  coordinated_machine_by_id_;
 
   set<string> recent_remastered_keys;
 
