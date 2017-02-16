@@ -1038,7 +1038,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::Remaster_Inter
   if (origin_master == replica_ || action->remaster_from() == replica_) {
     // Need to send message to confirm the completation of the remaster operation
     uint32 keys_size = remastered_keys.size();
-    uint64 machine_sent = replica_ * machines_per_replica_;
+    uint64 machine_sent = machine_->machine_id();
 
     Header* header = new Header();
     header->set_from(machine_->machine_id());
