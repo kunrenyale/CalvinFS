@@ -32,7 +32,6 @@ void LockingScheduler::MainLoopBody() {
     if (action->remaster() == true) {
       // Release the locks and wake up the waiting actions.
       for (int i = 0; i < action->remastered_keys_size(); i++) {
-        if (store_->IsLocal(action->remastered_keys(i))) {
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler: remaster action completed， action:"<<action->distinct_id()<<" so can wake up key: "<<action->remastered_keys(i);
           vector<Action*> blocked_actions = waiting_actions_by_key[action->remastered_keys(i)];
 
@@ -65,7 +64,6 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler: remaster act
           waiting_actions_by_key.erase(action->remastered_keys(i));
 
           lm_.Release(action, action->remastered_keys(i));
-        }
       }
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler finish running a remaster action:  distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin();
 
@@ -163,12 +161,10 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action:" << action->version()<<" distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin()<<"-- received a remaster action";
       // Request the lock
       for (int i = 0; i < action->remastered_keys_size(); i++) {
-        if (store_->IsLocal(action->remastered_keys(i))) {
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action:" << action->version()<<" distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin()<<"### key:"<<action->remastered_keys(i);
           if (!lm_.WriteLock(action, action->remastered_keys(i))) {
             ungranted_requests++;
           }
-        }
       }
     } else {
       // Request write locks. Track requests so we can check that we don't re-request any as read locks.

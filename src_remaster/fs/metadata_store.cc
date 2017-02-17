@@ -186,38 +186,29 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
       bool remote_remaster = false;
 
       for (int i = 0; i < action->remastered_keys_size(); i++) {
-        uint64 mds = config_->HashFileName(action->remastered_keys(i));
-        uint64 machine = config_->LookupMetadataShard(mds, replica_);
-        if ((machine == machine_->machine_id())) {
-          // Local read.
-          if (!store_->Get(action->remastered_keys(i), &reads_[action->remastered_keys(i)])) {
-            reads_.erase(action->remastered_keys(i));
-          }
+        // Local read.
+        if (!store_->Get(action->remastered_keys(i), &reads_[action->remastered_keys(i)])) {
+          reads_.erase(action->remastered_keys(i));
+        }
 
-          MetadataEntry entry;
-          GetEntry(action->remastered_keys(i), &entry);
-          if (entry.master() != action->remaster_from()) {
-            remote_remaster = true;
-            if (forward_remaster.find(entry.master()) != forward_remaster.end()) {
-              forward_remaster[entry.master()].insert(action->remastered_keys(i));
-            } else {
-              set<string> keys;
-              keys.insert(action->remastered_keys(i));
-              forward_remaster[entry.master()] = keys;
-            }
+        MetadataEntry entry;
+        GetEntry(action->remastered_keys(i), &entry);
+        if (entry.master() != action->remaster_from()) {
+          remote_remaster = true;
+          if (forward_remaster.find(entry.master()) != forward_remaster.end()) {
+            forward_remaster[entry.master()].insert(action->remastered_keys(i));
           } else {
-            local_keys.insert(action->remastered_keys(i));
+            set<string> keys;
+            keys.insert(action->remastered_keys(i));
+            forward_remaster[entry.master()] = keys;
           }
-        }       
+        } else {
+          local_keys.insert(action->remastered_keys(i));
+        }     
       }
 
 
       if (remote_remaster == true) {
-        action->clear_remastered_keys();
-        for (auto it = local_keys.begin(); it != local_keys.end(); it++) {
-          action->add_remastered_keys(*it);
-        }
-
         for (auto it = forward_remaster.begin(); it != forward_remaster.end(); it++) {
           uint32 remote_replica = it->first;
           set<string> remote_keys = it->second;
@@ -251,7 +242,6 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
           return;
         }
       }
-
            
     } else {
     
@@ -259,7 +249,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
       reader_ = false;
       set<uint64> remote_readers;
 
-      uint64 max_machine_id = config_->LookupMetadataShard(action->max_machine_id(), replica_);
+      uint64 min_machine_id = config_->LookupMetadataShard(action->min_machine_id(), replica_);
 
       KeyMasterEntries local_entries;
 
@@ -299,11 +289,11 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
         }
       }
 
-      if (max_machine_id != machine_->machine_id()) {
-        // Send local key/master to the max_machine_id
+      if (min_machine_id != machine_->machine_id()) {
+        // Send local key/master to the min_machine_id
         Header* header = new Header();
         header->set_from(machine_->machine_id());
-        header->set_to(max_machine_id);
+        header->set_to(min_machine_id);
         header->set_type(Header::DATA);
         header->set_data_channel("action-check" + UInt64ToString(data_channel_version));
         MessageBuffer* m = new MessageBuffer(local_entries);
@@ -326,15 +316,17 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
           return;
         }
       } else {
-        // max_machine_id
+        // min_machine_id
         action->clear_keys_origins();
         set<uint32> involved_replicas;
         involved_replicas.insert(replica_);
+        map<uint64, set<uint32>> machine_replicas;
 
         // Collect local keys/masters
         for (int j = 0; j < local_entries.entries_size(); j++) {
           action->add_keys_origins()->CopyFrom(local_entries.entries(j));
           uint32 key_replica = local_entries.entries(j).master();
+          machine_replicas[machine_->machine_id()].insert(key_replica);
           if (key_replica != origin_) {
             aborted_ = true;
             involved_replicas.insert(key_replica);
@@ -352,10 +344,15 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
 
           KeyMasterEntries remote_entries;
           remote_entries.ParseFromArray((*m)[0].data(), (*m)[0].size());
+          Scalar s;
+          s.ParseFromArray((*m)[1].data(), (*m)[1].size());
+          uint64 remote_machine_id = FromScalar<uint64>(s);
 
           for (int j = 0; j < remote_entries.entries_size(); j++) {
             action->add_keys_origins()->CopyFrom(local_entries.entries(j));
             uint32 key_replica = local_entries.entries(j).master();
+            machine_replicas[remote_machine_id].insert(key_replica);
+
             if (key_replica != origin_) {
               aborted_ = true;
               involved_replicas.insert(key_replica);
@@ -389,7 +386,24 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
             action->add_involved_replicas(*it);  
           }
 
-          uint32 machine_sent = (*involved_replicas.begin())*config_->GetPartitionsPerReplica();
+          uint32 lowest_replica = *(involved_replicas.begin());
+
+          for (auto it = machine_replicas.begin(); it != machine_replicas.end(); it++) {
+            if ((it->second).find(lowest_replica)) { 
+              (it->second).erase(lowest_replica);
+            }
+          }
+
+          uint64 new_min_machine = 0;
+          for (auto it = machine_replicas.begin(); it != machine_replicas.end(); it++) {
+            if((it->second).size() > 0) {
+              if (it->first < new_min_machine) {
+                new_min_machine = it->first;
+              }
+            }
+          }
+
+          uint32 machine_sent = config_->LookupMetadataShard(config_->GetMdsFromMachine(new_min_machine), lowest_replica);
           Header* header = new Header();
           header->set_from(machine_->machine_id());
           header->set_to(machine_sent);
@@ -585,7 +599,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
 
 
   action->set_involved_machines(machines_involved.size());
-  action->set_max_machine_id(*(machines_involved.rbegin()));
+  action->set_min_machine_id(*(machines_involved.begin()));
 
   // now that all RPCs have been sent, wait for responses
   AtomicQueue<MessageBuffer*>* channel = machine_->DataChannel(channel_name);
@@ -1013,24 +1027,22 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< " MetadataStore::Run(*** fin
 void MetadataStore::Remaster_Internal(ExecutionContext* context, Action* action) {
   MetadataEntry entry;
   uint32 origin_master = action->remaster_to();
+  uint32 origin_from = action->remaster_from();
   vector<string> remastered_keys;
 
   for (int i = 0; i < action->remastered_keys_size(); i++) {
-    uint64 mds = config_->HashFileName(action->remastered_keys(i));
-    uint64 machine = config_->LookupMetadataShard(mds, replica_);
-    if ((machine == machine_->machine_id())) {
-      if (!context->GetEntry(action->remastered_keys(i), &entry)) {
-        // Entry doesn't exist!
-        LOG(ERROR) <<"Entry doesn't exist!, should not happen!";
-        return;
-      }
-      
+    if (!context->GetEntry(action->remastered_keys(i), &entry)) {
+      // Entry doesn't exist!
+      LOG(ERROR) <<"Entry doesn't exist!, should not happen!";
+      return;
+    }
+    
+    if (entry.master() == origin_from) {
       remastered_keys.push_back(action->remastered_keys(i));
-
       entry.set_master(origin_master);
       context->PutEntry(action->remastered_keys(i), entry);
-
     }
+
   }
 
 LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::Remaster_Internal^^^^^^  distinct id is:"<<action->distinct_id();
