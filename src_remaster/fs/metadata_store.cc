@@ -388,7 +388,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
           uint32 lowest_replica = *(involved_replicas.begin());
 
           for (auto it = machine_replicas.begin(); it != machine_replicas.end(); it++) {
-            if ((it->second).find(lowest_replica)) { 
+            if ((it->second).count(lowest_replica) > 0) { 
               (it->second).erase(lowest_replica);
             }
           }
@@ -486,7 +486,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
   // Local machine.
   Machine* machine_;
 
-  uint64 machine_id_
+  uint64 machine_id_;
 
   // Deployment configuration.
   CalvinFSConfigMap* config_;
@@ -607,14 +607,13 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
     remote_entries.ParseFromArray((*m)[0].data(), (*m)[0].size());
 
     for (int j = 0; j < remote_entries.entries_size(); j++) {
-      action->add_keys_origins()->CopyFrom(local_entries.entries(j));
-      uint32 key_replica = local_entries.entries(j).master();
+      action->add_keys_origins()->CopyFrom(remote_entries.entries(j));
+      uint32 key_replica = remote_entries.entries(j).master();
       replica_involved.insert(key_replica);
     } 
 
 
     to_expect--;
-LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(begin)^^^^^^  distinct id is:"<<action->distinct_id()<<" --receive a remote result, key:"<<key;
   }
 
 LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(get master)^^^^^^  distinct id is:"<<action->distinct_id();
@@ -634,7 +633,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
     action->set_single_replica(false);
 
     machines_involved.clear();
-    for (uint32 i = 0; i < action->keys_origins_size(); i++) {
+    for (int i = 0; i < action->keys_origins_size(); i++) {
       KeyMasterEntry map_entry = action->keys_origins(i);
       if (map_entry.master() != lowest_replica) {
         machines_involved.insert(config_->HashFileName(map_entry.key()));

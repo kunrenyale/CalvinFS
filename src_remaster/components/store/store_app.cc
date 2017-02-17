@@ -49,14 +49,14 @@ void StoreApp::HandleMessageBase(Header* header, MessageBuffer* message) {
     string channel = header->misc_string(0);
     uint32 cnt = header->misc_int(0);
 
-    KeyValueEntries local_entries;
+    KeyMasterEntries local_entries;
     for (uint32 i = 0; i < cnt;i++) {
       string key = header->misc_string(i+1);
       uint32 replica = store_->GetLocalKeyMastership(key);
 
-      KeyValueEntry* e = local_entries.add_entries();
+      KeyMasterEntry* e = local_entries.add_entries();
       e->set_key(key);
-      e->set_value(replica);
+      e->set_master(replica);
     }
     
     Header* header2 = new Header();

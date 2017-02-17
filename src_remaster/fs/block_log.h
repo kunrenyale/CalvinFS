@@ -229,7 +229,7 @@ class BlockLogApp : public App {
           queue_.Push(a); 
         } else {
           delayed_actions_[a->distinct_id()] = a;
-          coordinated_machins_[a->distinct()].insert(machine()->machine_id());
+          coordinated_machins_[a->distinct_id()].insert(machine()->machine_id());
         }
         
       } else {
@@ -249,7 +249,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
         for (int i = 0; i < a->keys_origins_size(); i++) {
           KeyMasterEntry map_entry = a->keys_origins(i);
           string key = map_entry.key();
-          uint32 key_replica = map_entry.replica();
+          uint32 key_replica = map_entry.master();
           uint64 mds = config_->HashFileName(key);
           
           if (key_replica != replica_) {
@@ -265,7 +265,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
         }
 
         for (auto it = forwarded_entries.begin(); it != forwarded_entries.end();it++) {
-          unint64 machineid = it->first;
+          uint64 machineid = it->first;
           KeyMasterEntries entries = it->second;
 
           coordinated_machins_[distinct_id].insert(machineid);
@@ -273,8 +273,8 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
           if (machineid == machine()->machine_id()) {
             delayed_actions_[distinct_id] = a;
 
-            for (uint32 i = 0; i < entries.entries_size(); i++) {
-              uint32 key = entries.entries(i).key();
+            for (int i = 0; i < entries.entries_size(); i++) {
+              string key = entries.entries(i).key();
               uint32 key_replica = entries.entries(i).master();
 
               delayed_actions_by_key_[key].push_back(distinct_id);
@@ -300,11 +300,11 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
               uint32 remote_replica = it2->first;
               set<string> remote_keys = it2->second;
               
-              remaster_action->remaster_from(remote_replica);
+              remaster_action->set_remaster_from(remote_replica);
 
               for (auto it3 = remote_keys.begin(); it3 != remote_keys.end(); it3++) {
                 remaster_action->add_remastered_keys(*it3);
-                local_remastering_keys.insert(*it3);
+                local_remastering_keys_.insert(*it3);
               }
 
               // Send the action to the relevant replica
@@ -344,13 +344,13 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
 
     } else if (header->rpc() == "REMASTER_REQUEST") {
       KeyMasterEntries remote_entries;
-      remote_entries.ParseFromArray((*m)[0].data(), (*m)[0].size());
+      remote_entries.ParseFromArray((*message)[0].data(), (*message)[0].size());
       uint64 distinct_id = header->misc_int(0);
       map<uint32, set<string>> action_local_remastered_keys;
 
       for (int j = 0; j < remote_entries.entries_size(); j++) {
-        string key = local_entries.entries(j).key();
-        uint32 key_replica = local_entries.entries(j).master();
+        string key = remote_entries.entries(j).key();
+        uint32 key_replica = remote_entries.entries(j).master();
 
         if (local_remastered_keys_.find(key) != local_remastered_keys_.end()) {
           continue;
@@ -370,27 +370,21 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
 
       // Generate remaster action
       Action* remaster_action = new Action();
-      remaster_action->CopyFrom(*a);
       remaster_action->set_remaster(true);
       remaster_action->set_remaster_to(replica_);
-      remaster_action->clear_readset();
-      remaster_action->clear_writeset();
-      remaster_action->clear_keys_origins();
-      remaster_action->clear_distinct_id();
       remaster_action->set_distinct_id(machine()->GetGUID());
       remaster_action->set_single_replica(true);
       remaster_action->set_wait_for_remaster_pros(true);
-
 
       for (auto it2 = action_local_remastered_keys.begin(); it2 != action_local_remastered_keys.end(); it2++) {
         uint32 remote_replica = it2->first;
         set<string> remote_keys = it2->second;
               
-        remaster_action->remaster_from(remote_replica);
+        remaster_action->set_remaster_from(remote_replica);
 
         for (auto it3 = remote_keys.begin(); it3 != remote_keys.end(); it3++) {
           remaster_action->add_remastered_keys(*it3);
-          local_remastering_keys.insert(*it3);
+          local_remastering_keys_.insert(*it3);
         }
 
         // Send the action to the relevant replica
@@ -408,7 +402,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
     } else if (header->rpc() == "REMASTER_REQUEST_ACK") {
       Lock l(&remaster_latch);
       uint64 machine_from = header->from();
-      uint64 distinct_id = header->mist_int(0);
+      uint64 distinct_id = header->misc_int(0);
     
       CHECK(coordinated_machins_.find(distinct_id) != coordinated_machins_.end());
       coordinated_machins_[distinct_id].erase(machine_from);
@@ -435,17 +429,17 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMP
         string key = FromScalar<string>(s);
         if (remaster_to == true) {
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMPLETED_REMASTER messagea. from machine:"<<header->from()<<"  keys is:"<<key;
-          local_remastered_keys.insert(key);
-          local_remastering_keys.erase(key);
+          local_remastered_keys_.insert(key);
+          local_remastering_keys_.erase(key);
        
           CHECK(delayed_actions_by_key_.find(key) != delayed_actions_by_key_.end());
 
           vector<uint64> delayed_queue = delayed_actions_by_key_[key];
           for (uint32 j = 0; j < delayed_queue.size(); j++) {
             uint64 distinct_id = delayed_queue[j];
-            delayed_actions_by_id_[distinct_id.erase(key);
+            delayed_actions_by_id_[distinct_id].erase(key);
             if (delayed_actions_by_id_[distinct_id].size() == 0) {
-              delayed_actions_by_id_.erase(action->distinct_id());
+              delayed_actions_by_id_.erase(distinct_id);
               if (delayed_actions_.find(distinct_id) != delayed_actions_.end()) {
                 // The master node
                 coordinated_machins_[distinct_id].erase(machine()->machine_id());
@@ -475,8 +469,8 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMP
           delayed_actions_by_key_.erase(key); 
 
         } else {
-          if (local_remastered_keys.count(key) > 0) {
-            local_remastered_keys.erase(key);  
+          if (local_remastered_keys_.count(key) > 0) {
+            local_remastered_keys_.erase(key);  
           }
         }
       }
