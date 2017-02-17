@@ -240,8 +240,9 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
         a->set_remaster_to(replica_);
         uint64 distinct_id = a->distinct_id();
         set<uint32> involved_other_replicas;
+        // action_local_remastered_keys: local entries that need to remaster, replica_id=>keys
         map<uint32, set<string>> action_local_remastered_keys;
-
+        // forwarded_entries： all entries that need to remaster, machine_id=>entries
         map<uint64, KeyMasterEntries> forwarded_entries;
   
         // Queue the multi-replica actions in the delayed queue, and send the remaster actions(generate a new action) to the involved replicas;
@@ -335,6 +336,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
 
         if (forwarded_entries.size() == 0) {
           a->set_single_replica(true);
+          a->set_wait_for_remaster_pros(false);
           queue_.Push(a); 
         }
 

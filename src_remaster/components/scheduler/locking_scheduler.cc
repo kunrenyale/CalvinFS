@@ -33,6 +33,7 @@ void LockingScheduler::MainLoopBody() {
       // Release the locks and wake up the waiting actions.
       for (int i = 0; i < action->remastered_keys_size(); i++) {
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler: remaster action completed， action:"<<action->distinct_id()<<" so can wake up key: "<<action->remastered_keys(i);
+        if (waiting_actions_by_key.find(action->remastered_keys(i)) != waiting_actions_by_key.end()) { 
           vector<Action*> blocked_actions = waiting_actions_by_key[action->remastered_keys(i)];
 
           for (auto it = blocked_actions.begin(); it != blocked_actions.end(); it++) {
@@ -52,8 +53,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler: remaster act
                 ready_actions.push(blocking_actions.front());
                 blocking_actions.pop();
               }
-
-              
+            
               if (blocking_actions.empty()) {
                 blocking_replica_ = false;
               }
@@ -62,40 +62,41 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler: remaster act
           }
 
           waiting_actions_by_key.erase(action->remastered_keys(i));
+       }
 
-          lm_.Release(action, action->remastered_keys(i));
-      }
+       lm_.Release(action, action->remastered_keys(i));
+    }
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler finish running a remaster action:  distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin();
 
-    } else {
-      set<string> writeset;
+  } else {
+    set<string> writeset;
 
-      // Release write locks. 
-      for (int i = 0; i < action->writeset_size(); i++) {
-        if (store_->IsLocal(action->writeset(i))) {
-          writeset.insert(action->writeset(i));
-          lm_.Release(action, action->writeset(i));
-        }
-      }
-
-      // Release read locks.
-      for (int i = 0; i < action->readset_size(); i++) {
-        if (store_->IsLocal(action->readset(i))) {
-          if (writeset.count(action->readset(i)) == 0) {
-            lm_.Release(action, action->readset(i));
-          }
-        }
+    // Release write locks. 
+    for (int i = 0; i < action->writeset_size(); i++) {
+      if (store_->IsLocal(action->writeset(i))) {
+        writeset.insert(action->writeset(i));
+        lm_.Release(action, action->writeset(i));
       }
     }
 
+    // Release read locks.
+    for (int i = 0; i < action->readset_size(); i++) {
+      if (store_->IsLocal(action->readset(i))) {
+        if (writeset.count(action->readset(i)) == 0) {
+          lm_.Release(action, action->readset(i));
+        }
+      }
+    }
+  }
+
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler finish running an action:  distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin();
 
-    active_actions_.erase(action->version());
-    running_action_count_--;
-    safe_version_.store(
-        active_actions_.empty()
-        ? (high_water_mark_ + 1)
-        : *active_actions_.begin());
+  active_actions_.erase(action->version());
+  running_action_count_--;
+  safe_version_.store(
+      active_actions_.empty()
+      ? (high_water_mark_ + 1)
+      : *active_actions_.begin());
   }
 
   // Start executing all actions that have newly acquired all their locks.

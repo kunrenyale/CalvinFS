@@ -176,11 +176,15 @@ class DistributedExecutionContext : public ExecutionContext {
     // Look up what replica we're at.
     replica_ = config_->LookupReplica(machine_->machine_id());
 
-LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext received a txn:: data_channel_version:"<<data_channel_version;
+    machine_id_ = machine_->machine_id();
+
+LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a txn:: data_channel_version:"<<data_channel_version;
    
     // Handle remaster action
     if (action->remaster() == true) {
       writer_ = true;
+
+      // Forward_remaster: all entries that need to remaster, replica_id=>keys
       map<uint32, set<string>> forward_remaster;
       set<string> local_keys;
       bool remote_remaster = false;
@@ -195,13 +199,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
         GetEntry(action->remastered_keys(i), &entry);
         if (entry.master() != action->remaster_from()) {
           remote_remaster = true;
-          if (forward_remaster.find(entry.master()) != forward_remaster.end()) {
-            forward_remaster[entry.master()].insert(action->remastered_keys(i));
-          } else {
-            set<string> keys;
-            keys.insert(action->remastered_keys(i));
-            forward_remaster[entry.master()] = keys;
-          }
+          forward_remaster[entry.master()].insert(action->remastered_keys(i));
         } else {
           local_keys.insert(action->remastered_keys(i));
         }     
@@ -209,16 +207,17 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
 
 
       if (remote_remaster == true) {
+        // Send the remaster actions(generate a new action) to the involved replicas;
+        Action* remaster_action = new Action();
+        remaster_action->CopyFrom(*action);
+        remaster_action->set_distinct_id(machine_->GetGUID());
+        remaster_action->set_wait_for_remaster_pros(true);
+
         for (auto it = forward_remaster.begin(); it != forward_remaster.end(); it++) {
           uint32 remote_replica = it->first;
           set<string> remote_keys = it->second;
           
-          // Send the remaster actions(generate a new action) to the involved replicas;
-          Action* remaster_action = new Action();
-          remaster_action->CopyFrom(*action);
           remaster_action->set_remaster_from(remote_replica);
-          remaster_action->set_distinct_id(machine_->GetGUID());
-          remaster_action->set_wait_for_remaster_pros(true);
           remaster_action->clear_remastered_keys();
           
           for (auto it = remote_keys.begin(); it != remote_keys.end(); it++) {
@@ -226,8 +225,8 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
           }
 
           Header* header = new Header();
-          header->set_from(machine_->machine_id());
-          header->set_to(remote_replica*config_->GetPartitionsPerReplica());
+          header->set_from(machine_id_);
+          header->set_to(config_->LookupMetadataShard(config_->GetMdsFromMachine(machine_id_), remote_replica));
           header->set_type(Header::RPC);
           header->set_app("blocklog");
           header->set_rpc("APPEND");
@@ -256,7 +255,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
       for (int i = 0; i < action->readset_size(); i++) {
         uint64 mds = config_->HashFileName(action->readset(i));
         uint64 machine = config_->LookupMetadataShard(mds, replica_);
-        if ((machine == machine_->machine_id())) {
+        if ((machine == machine_id_)) {
           // Local read.
           if (!store_->Get(action->readset(i), &reads_[action->readset(i)])) {
             reads_.erase(action->readset(i));
@@ -282,22 +281,22 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
       for (int i = 0; i < action->writeset_size(); i++) {
         uint64 mds = config_->HashFileName(action->writeset(i));
         uint64 machine = config_->LookupMetadataShard(mds, replica_);
-        if ((machine == machine_->machine_id())) {
+        if ((machine == machine_id_)) {
           writer_ = true;
         } else {
           remote_writers.insert(machine);
         }
       }
 
-      if (min_machine_id != machine_->machine_id()) {
+      if (min_machine_id != machine_id_) {
         // Send local key/master to the min_machine_id
         Header* header = new Header();
-        header->set_from(machine_->machine_id());
+        header->set_from(machine_id_);
         header->set_to(min_machine_id);
         header->set_type(Header::DATA);
         header->set_data_channel("action-check" + UInt64ToString(data_channel_version));
         MessageBuffer* m = new MessageBuffer(local_entries);
-        m->Append(ToScalar<uint64>(machine_->machine_id()));
+        m->Append(ToScalar<uint64>(machine_id_));
         machine_->SendMessage(header, m);
 
         // Wait for the final decision
@@ -320,16 +319,17 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
         action->clear_keys_origins();
         set<uint32> involved_replicas;
         involved_replicas.insert(replica_);
+        // machine_replicas: machine_id=>all involved replicas on that machine
         map<uint64, set<uint32>> machine_replicas;
 
         // Collect local keys/masters
         for (int j = 0; j < local_entries.entries_size(); j++) {
           action->add_keys_origins()->CopyFrom(local_entries.entries(j));
           uint32 key_replica = local_entries.entries(j).master();
-          machine_replicas[machine_->machine_id()].insert(key_replica);
+          machine_replicas[machine_id_].insert(key_replica);
+          involved_replicas.insert(key_replica);
           if (key_replica != origin_) {
             aborted_ = true;
-            involved_replicas.insert(key_replica);
           }
         }
 
@@ -352,10 +352,9 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
             action->add_keys_origins()->CopyFrom(local_entries.entries(j));
             uint32 key_replica = local_entries.entries(j).master();
             machine_replicas[remote_machine_id].insert(key_replica);
-
+            involved_replicas.insert(key_replica);
             if (key_replica != origin_) {
               aborted_ = true;
-              involved_replicas.insert(key_replica);
             }
           }      
         }
@@ -363,7 +362,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
         // Send the final decision to all involved machines
         for (auto it = remote_readers.begin(); it != remote_readers.end(); ++it) {
           Header* header = new Header();
-          header->set_from(machine_->machine_id());
+          header->set_from(machine_id_);
           header->set_to(*it);
           header->set_type(Header::DATA);
           header->set_data_channel("action-check-ack" + UInt64ToString(data_channel_version));
@@ -394,7 +393,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
             }
           }
 
-          uint64 new_min_machine = 0;
+          uint64 new_min_machine = UINT64_MAX;
           for (auto it = machine_replicas.begin(); it != machine_replicas.end(); it++) {
             if((it->second).size() > 0) {
               if (it->first < new_min_machine) {
@@ -405,7 +404,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
 
           uint32 machine_sent = config_->LookupMetadataShard(config_->GetMdsFromMachine(new_min_machine), lowest_replica);
           Header* header = new Header();
-          header->set_from(machine_->machine_id());
+          header->set_from(machine_id_);
           header->set_to(machine_sent);
           header->set_type(Header::RPC);
           header->set_app("blocklog");
@@ -413,7 +412,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
           string* block = new string();
           action->SerializeToString(block);
           machine_->SendMessage(header, new MessageBuffer(Slice(*block)));
-LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionContext received a txn:: data_channel_version:"<<data_channel_version<<"-- abort this action, and forward this action to"<<machine_sent;
+LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a txn:: data_channel_version:"<<data_channel_version<<"-- abort this action, and forward this action to"<<machine_sent;
   
           return;
         }
@@ -431,7 +430,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
         }
         for (auto it = remote_writers.begin(); it != remote_writers.end(); ++it) {
           Header* header = new Header();
-          header->set_from(machine_->machine_id());
+          header->set_from(machine_id_);
           header->set_to(*it);
           header->set_type(Header::DATA);
           header->set_data_channel("action-" + UInt64ToString(data_channel_version));
@@ -469,14 +468,14 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
       for (auto it = writes_.begin(); it != writes_.end(); ++it) {
         uint64 mds = config_->HashFileName(it->first);
         uint64 machine = config_->LookupMetadataShard(mds, replica_);
-        if (machine == machine_->machine_id()) {
+        if (machine == machine_id_) {
           store_->Put(it->first, it->second);
         }
       }
       for (auto it = deletions_.begin(); it != deletions_.end(); ++it) {
         uint64 mds = config_->HashFileName(*it);
         uint64 machine = config_->LookupMetadataShard(mds, replica_);
-        if (machine == machine_->machine_id()) {
+        if (machine == machine_id_) {
           store_->Delete(*it);
         }
       }
@@ -486,6 +485,8 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< "  DistributedExecutionConte
  private:
   // Local machine.
   Machine* machine_;
+
+  uint64 machine_id_
 
   // Deployment configuration.
   CalvinFSConfigMap* config_;
@@ -565,15 +566,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
       action->add_keys_origins()->CopyFrom(map_entry);
 LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(begin)^^^^^^  distinct id is:"<<action->distinct_id()<<" --key is local:"<<action->readset(i);
     } else {
-
-      if (remote_keys.find(remote_machine_id) != remote_keys.end()) {
-        remote_keys[remote_machine_id].insert(action->readset(i));
-      } else {
-        set<string> keys;
-        keys.insert(action->readset(i));
-        remote_keys[remote_machine_id] = keys;
-      }
-
+      remote_keys[remote_machine_id].insert(action->readset(i));
     }
   }
 
@@ -610,7 +603,6 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
       usleep(100);
     }
     
-
     KeyMasterEntries remote_entries;
     remote_entries.ParseFromArray((*m)[0].data(), (*m)[0].size());
 
@@ -635,6 +627,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
   uint32 lowest_replica = *(replica_involved.begin());
 
   if (replica_involved.size() == 1) {
+    // For single replica action, we can randomly send it to one machine of that replica
     action->set_single_replica(true);
     return lowest_replica * machines_per_replica_ + rand() % machines_per_replica_;
   } else {
