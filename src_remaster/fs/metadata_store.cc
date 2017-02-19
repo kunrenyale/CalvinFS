@@ -210,7 +210,6 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
         // Send the remaster actions(generate a new action) to the involved replicas;
         Action* remaster_action = new Action();
         remaster_action->CopyFrom(*action);
-        remaster_action->set_distinct_id(machine_->GetGUID());
         remaster_action->set_wait_for_remaster_pros(true);
 
         for (auto it = forward_remaster.begin(); it != forward_remaster.end(); it++) {
@@ -219,6 +218,8 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
           
           remaster_action->set_remaster_from(remote_replica);
           remaster_action->clear_remastered_keys();
+          remaster_action->clear_distinct_id();
+          remaster_action->set_distinct_id(machine_->GetGUID());
           
           for (auto it = remote_keys.begin(); it != remote_keys.end(); it++) {
             remaster_action->add_remastered_keys(*it);
@@ -557,6 +558,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
     machines_involved.insert(mds);
 
     if (remote_machine_id == machine_id_) {
+      // Get the mastership of the local records directly
       uint32 replica = GetLocalKeyMastership(action->readset(i));
       replica_involved.insert(replica);
       
@@ -571,6 +573,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
   }
 
   for(auto it = remote_keys.begin(); it != remote_keys.end();it++) {
+    // Send message to remote machines to get the mastership of remote records
     uint64 remote_machineid = it->first;
     set<string> keys = it->second;
 

@@ -210,11 +210,8 @@ class BlockLogApp : public App {
       Action* a = new Action();
       a->ParseFromArray((*message)[0].data(), (*message)[0].size());
       a->set_origin(replica_);
-
-      if (a->single_replica() == true && a->wait_for_remaster_pros() == false) {
-        queue_.Push(a);
-
-      } else if (a->remaster() == true) {
+ 
+      if (a->remaster() == true) {
         Lock l(&remaster_latch);
         bool should_wait = false;
         for (int i = 0; i < a->remastered_keys_size(); i++) {
@@ -232,6 +229,8 @@ class BlockLogApp : public App {
           coordinated_machins_[a->distinct_id()].insert(machine()->machine_id());
         }
         
+      } else if (a->single_replica() == true && a->wait_for_remaster_pros() == false) {
+        queue_.Push(a);
       } else {
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a multi-replica action. action id is:"<< a->distinct_id() <<" from machine:"<<header->from();
         Lock l(&remaster_latch);
@@ -291,8 +290,6 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
             remaster_action->clear_readset();
             remaster_action->clear_writeset();
             remaster_action->clear_keys_origins();
-            remaster_action->clear_distinct_id();
-            remaster_action->set_distinct_id(machine()->GetGUID());
             remaster_action->set_single_replica(true);
             remaster_action->set_wait_for_remaster_pros(true);
 
@@ -301,23 +298,30 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
               set<string> remote_keys = it2->second;
               
               remaster_action->set_remaster_from(remote_replica);
+              remaster_action->clear_distinct_id();
+              remaster_action->set_distinct_id(machine()->GetGUID());
+              remaster_action->clear_remastered_keys();
 
               for (auto it3 = remote_keys.begin(); it3 != remote_keys.end(); it3++) {
-                remaster_action->add_remastered_keys(*it3);
-                local_remastering_keys_.insert(*it3);
+                if (local_remastering_keys_.find(*it3) == local_remastering_keys_.end()) {
+                  remaster_action->add_remastered_keys(*it3);
+                  local_remastering_keys_.insert(*it3);
+                }
               }
 
-              // Send the action to the relevant replica
-              Header* header = new Header();
-              header->set_from(machine()->machine_id());
-              header->set_to(config_->LookupMetadataShard(config_->GetMdsFromMachine(machine()->machine_id()), remote_replica));
-              header->set_type(Header::RPC);
-              header->set_app(name());
-              header->set_rpc("APPEND");
-              header->add_misc_int(distinct_id);
-              string* block = new string();
-              remaster_action->SerializeToString(block);
-              machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
+              if (remaster_action->remastered_keys_size() > 0) {
+                // Send the action to the relevant replica
+                Header* header = new Header();
+                header->set_from(machine()->machine_id());
+                header->set_to(config_->LookupMetadataShard(config_->GetMdsFromMachine(machine()->machine_id()), remote_replica));
+                header->set_type(Header::RPC);
+                header->set_app(name());
+                header->set_rpc("APPEND");
+                header->add_misc_int(distinct_id);
+                string* block = new string();
+                remaster_action->SerializeToString(block);
+                machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
+              }
             }
 
             
@@ -329,6 +333,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
             header->set_type(Header::RPC);
             header->set_app(name());
             header->set_rpc("REMASTER_REQUEST");
+            header->add_misc_int(distinct_id);
             MessageBuffer* m = new MessageBuffer(entries);
             machine()->SendMessage(header, m);
           }
@@ -343,6 +348,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
       }
 
     } else if (header->rpc() == "REMASTER_REQUEST") {
+      // Slave machines receive the remaster request
       KeyMasterEntries remote_entries;
       remote_entries.ParseFromArray((*message)[0].data(), (*message)[0].size());
       uint64 distinct_id = header->misc_int(0);
@@ -372,7 +378,6 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
       Action* remaster_action = new Action();
       remaster_action->set_remaster(true);
       remaster_action->set_remaster_to(replica_);
-      remaster_action->set_distinct_id(machine()->GetGUID());
       remaster_action->set_single_replica(true);
       remaster_action->set_wait_for_remaster_pros(true);
 
@@ -381,25 +386,33 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
         set<string> remote_keys = it2->second;
               
         remaster_action->set_remaster_from(remote_replica);
+        remaster_action->clear_distinct_id();
+        remaster_action->set_distinct_id(machine()->GetGUID());
+        remaster_action->clear_remastered_keys();
 
         for (auto it3 = remote_keys.begin(); it3 != remote_keys.end(); it3++) {
-          remaster_action->add_remastered_keys(*it3);
-          local_remastering_keys_.insert(*it3);
+          if (local_remastering_keys_.find(*it3) == local_remastering_keys_.end()) {
+            remaster_action->add_remastered_keys(*it3);
+            local_remastering_keys_.insert(*it3);
+          }
         }
 
-        // Send the action to the relevant replica
-        Header* header = new Header();
-        header->set_from(machine()->machine_id());
-        header->set_to(config_->LookupMetadataShard(config_->GetMdsFromMachine(machine()->machine_id()), remote_replica));
-        header->set_type(Header::RPC);
-        header->set_app(name());
-        header->set_rpc("APPEND");
-        string* block = new string();
-        remaster_action->SerializeToString(block);
-        machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
+        if (remaster_action->remastered_keys_size() > 0) {
+          // Send the action to the relevant replica
+          Header* header = new Header();
+          header->set_from(machine()->machine_id());
+          header->set_to(config_->LookupMetadataShard(config_->GetMdsFromMachine(machine()->machine_id()), remote_replica));
+          header->set_type(Header::RPC);
+          header->set_app(name());
+          header->set_rpc("APPEND");
+          string* block = new string();
+          remaster_action->SerializeToString(block);
+          machine()->SendMessage(header, new MessageBuffer(Slice(*block)));
+        }
       }
 
     } else if (header->rpc() == "REMASTER_REQUEST_ACK") {
+      // Slave machines send ack to master machine when it finishes its local remaster
       Lock l(&remaster_latch);
       uint64 machine_from = header->from();
       uint64 distinct_id = header->misc_int(0);
@@ -415,6 +428,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
       }
       
     } else if (header->rpc() == "COMPLETED_REMASTER")  {
+      // Local machine finishes local remaster
       Lock l(&remaster_latch);
       Scalar s;
       s.ParseFromArray((*message)[0].data(), (*message)[0].size());

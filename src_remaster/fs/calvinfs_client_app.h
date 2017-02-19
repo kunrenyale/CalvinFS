@@ -746,7 +746,7 @@ void LatencyExperimentAppend() {
       }
     }**/
 
-    for (int j = 0; j < 20; j++) {
+    for (int j = 0; j < 10; j++) {
       
         int a1 = rand() % 1000;
         int a2 = rand() % 1000;
@@ -754,14 +754,14 @@ void LatencyExperimentAppend() {
           a2 = rand() % 1000;
         }
 
-      if (machine()->machine_id() != 2) {
+      if (machine()->machine_id() != 1) {
 
         BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a1) + "/c" + IntToString(j),
                              "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a2) + "/d" + IntToString(machine()->GetGUID()));
       } else {
          // Only test 1 multi-replica rename operation for now
          if (j == 10) {
-           BackgroundRenameFile("/a" + IntToString(2) + "/b" + IntToString(1) + "/c" + IntToString(j),
+           BackgroundRenameFile("/a" + IntToString(1) + "/b" + IntToString(1) + "/c" + IntToString(j),
                              "/a" + IntToString(0) + "/b" + IntToString(1) + "/d" + IntToString(machine()->GetGUID()));
          } else {
            BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a1) + "/c" + IntToString(j),
