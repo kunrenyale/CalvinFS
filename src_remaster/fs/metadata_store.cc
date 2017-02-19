@@ -239,10 +239,11 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
         // If no local keys need to be remastered, then we can simply abort this action
         if (local_keys.size() == 0) {
           aborted_ = true;
+LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a remaster txn(will abort):: data_channel_version:"<<data_channel_version; 
           return;
         }
       }
-           
+LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a remaster txn:: data_channel_version:"<<data_channel_version;           
     } else {
     
       // Figure out what machines are readers (and perform local reads).
@@ -417,7 +418,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
   
           return;
         }
-   
+LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a txn:: data_channel_version:"<<data_channel_version<<"-- will continue running this action. min machine is:"<<min_machine_id;   
       }
       
     
@@ -643,10 +644,9 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
       }
     }
 
+LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(multi-replica action)^^^^^^  distinct id is:"<<action->distinct_id()<<"  will forward to machine:"<<config_->LookupMetadataShard(*(machines_involved.begin()), lowest_replica);
+
     return config_->LookupMetadataShard(*(machines_involved.begin()), lowest_replica);
-
-
-LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(multi-replica action)^^^^^^  distinct id is:"<<action->distinct_id();
   }
 
 }
