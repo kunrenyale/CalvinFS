@@ -230,7 +230,8 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a re
           coordinated_machins_[a->distinct_id()].insert(machine()->machine_id());
         }
         
-      } else if (a->single_replica() == true && header->from()/conf_->GetPartitionsPerReplica() == replica) {
+      } else if (a->single_replica() == true && header->from()/config_->GetPartitionsPerReplica() == replica_) {
+        // Directly push the action into the queue if it is from local replica, otherwise double check
         queue_.Push(a);
       } else {
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a multi-replica action. action id is:"<< a->distinct_id() <<" from machine:"<<header->from();
@@ -294,7 +295,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
             remaster_action->clear_writeset();
             remaster_action->clear_keys_origins();
             remaster_action->set_single_replica(true);
-            remaster_action->set_wait_for_remaster_pros(true);
+            remaster_action->set_wait_for_remaster_pros(false);
 
             for (auto it2 = action_local_remastered_keys.begin(); it2 != action_local_remastered_keys.end(); it2++) {
               uint32 remote_replica = it2->first;
@@ -400,7 +401,6 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMP
       remaster_action->set_remaster(true);
       remaster_action->set_remaster_to(replica_);
       remaster_action->set_single_replica(true);
-      remaster_action->set_wait_for_remaster_pros(true);
 
       for (auto it2 = action_local_remastered_keys.begin(); it2 != action_local_remastered_keys.end(); it2++) {
         uint32 remote_replica = it2->first;

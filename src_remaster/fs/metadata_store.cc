@@ -210,7 +210,6 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
         // Send the remaster actions(generate a new action) to the involved replicas;
         Action* remaster_action = new Action();
         remaster_action->CopyFrom(*action);
-        remaster_action->set_wait_for_remaster_pros(true);
 
         for (auto it = forward_remaster.begin(); it != forward_remaster.end(); it++) {
           uint32 remote_replica = it->first;
@@ -375,7 +374,6 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
 
         // Send the action to the new replica
         if (aborted_ == true && replica_ == origin_) {
-          action->set_wait_for_remaster_pros(true);
           if (involved_replicas.size() == 1) {
             action->set_single_replica(true);
           } else {
@@ -385,6 +383,12 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
           action->clear_involved_replicas();
           for (auto it = involved_replicas.begin(); it != involved_replicas.end(); ++it) {
             action->add_involved_replicas(*it);  
+          }
+
+          if (involved_replicas.size() == 1) {
+            action->set_single_replica(true);
+          } else {
+            action->set_single_replica(false);
           }
 
           uint32 lowest_replica = *(involved_replicas.begin());
@@ -622,7 +626,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
       return lowest_replica * machines_per_replica_ + rand() % machines_per_replica_; 
     } else {
       // For single remote replica action, we should forward to the first involved machine of that replica
-      config_->LookupMetadataShard(*(machines_involved.begin()), lowest_replica);
+      return config_->LookupMetadataShard(*(machines_involved.begin()), lowest_replica);
     }
   } else {
     action->set_single_replica(false);

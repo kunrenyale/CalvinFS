@@ -26,7 +26,7 @@ class LockingScheduler : public Scheduler {
 
  public:
   LockingScheduler()
-      : running_action_count_(0), high_water_mark_(0), safe_version_(1), blocking_replica_(false) {
+      : running_action_count_(0), high_water_mark_(0), safe_version_(1) {
   }
   virtual ~LockingScheduler() {}
 
@@ -55,16 +55,14 @@ class LockingScheduler : public Scheduler {
 
   atomic<uint64> safe_version_;
 
-  map<string, vector<Action*>> waiting_actions_by_key;
-  map<uint64, set<string>> waiting_actions_by_actionid;
+  map<string, vector<Action*>> waiting_actions_by_key_;
+  map<uint64, set<string>> waiting_actions_by_actionid_;
 
-  queue<Action*> ready_actions;
+  queue<Action*> ready_actions_;
 
-  queue<Action*> blocking_actions;
-
-  bool blocking_replica_;
+  map<uint32, queue<Action*>> blocking_actions_;
  
-  uint32 blocking_replica_id_;
+  set<uint32> blocking_replica_id_;
 
   // DISALLOW_COPY_AND_ASSIGN
   LockingScheduler(const LockingScheduler&);
