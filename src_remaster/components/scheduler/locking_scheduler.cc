@@ -56,6 +56,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler: remaster act
             
               if (blocking_actions.empty()) {
                 blocking_replica_ = false;
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler: remaster action completed, blocking_replica is now false;
               }
 
             }

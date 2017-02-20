@@ -212,6 +212,7 @@ class BlockLogApp : public App {
       a->set_origin(replica_);
  
       if (a->remaster() == true) {
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a remaster action. action id is:"<< a->distinct_id() <<" from machine:"<<header->from();
         Lock l(&remaster_latch);
         bool should_wait = false;
         for (int i = 0; i < a->remastered_keys_size(); i++) {
@@ -229,7 +230,7 @@ class BlockLogApp : public App {
           coordinated_machins_[a->distinct_id()].insert(machine()->machine_id());
         }
         
-      } else if (a->single_replica() == true && a->wait_for_remaster_pros() == false) {
+      } else if (a->single_replica() == true && header->from()/conf_->GetPartitionsPerReplica() == replica) {
         queue_.Push(a);
       } else {
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a multi-replica action. action id is:"<< a->distinct_id() <<" from machine:"<<header->from();
@@ -249,18 +250,20 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
           KeyMasterEntry map_entry = a->keys_origins(i);
           string key = map_entry.key();
           uint32 key_replica = map_entry.master();
-          uint64 mds = config_->HashFileName(key);
-          
-          if (key_replica != replica_) {
-            uint64 machineid = config_->LookupMetadataShard(mds, replica_);
-            if (machineid == machine()->machine_id()) {
-              if (local_remastered_keys_.find(key) == local_remastered_keys_.end()) {
-                forwarded_entries[machineid].add_entries()->CopyFrom(map_entry);   
+          uint64 mds = config_->HashFileName(key);         
+          uint64 machineid = config_->LookupMetadataShard(mds, replica_);
+
+          if (machineid == machine()->machine_id()) {
+            if (local_remastered_keys_.find(key) == local_remastered_keys_.end()) {
+              if (key_replica != replica_) {
+                forwarded_entries[machineid].add_entries()->CopyFrom(map_entry);
+              } else if (local_remastering_keys_.find(key) != local_remastering_keys_.end()) {
+                forwarded_entries[machineid].add_entries()->CopyFrom(map_entry);
               }
-            } else {
-              forwarded_entries[machineid].add_entries()->CopyFrom(map_entry);
-            }       
-          }
+            }
+          } else {
+            forwarded_entries[machineid].add_entries()->CopyFrom(map_entry);
+          }       
         }
 
         for (auto it = forwarded_entries.begin(); it != forwarded_entries.end();it++) {
@@ -310,6 +313,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
               }
 
               if (remaster_action->remastered_keys_size() > 0) {
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log will generate a new action. action id is:"<< remaster_action->distinct_id() <<" to machine:"<<config_->LookupMetadataShard(config_->GetMdsFromMachine(machine()->machine_id()), remote_replica);
                 // Send the action to the relevant replica
                 Header* header = new Header();
                 header->set_from(machine()->machine_id());
@@ -353,6 +357,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
       remote_entries.ParseFromArray((*message)[0].data(), (*message)[0].size());
       uint64 distinct_id = header->misc_int(0);
       map<uint32, set<string>> action_local_remastered_keys;
+      coordinated_machine_by_id_[distinct_id] = header->from();
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie REMASTER_REQUEST messagea. from machine:"<<header->from()<<"  distinct_id is:"<<distinct_id;  
       for (int j = 0; j < remote_entries.entries_size(); j++) {
         string key = remote_entries.entries(j).key();
@@ -362,6 +367,10 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie REMA
           continue;
         }
 
+        if (key_replica == replica_ && local_remastering_keys_.find(key) == local_remastering_keys_.end()) {
+          continue;
+        }
+        
         action_local_remastered_keys[key_replica].insert(key);
               
         delayed_actions_by_key_[key].push_back(distinct_id);
@@ -369,10 +378,22 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie REMA
       }
 
       if (action_local_remastered_keys.size() == 0) {
+        // the slave node, should send remaster_request_ack to master node if no need to remaster
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMPLETED_REMASTER messagea. from machine:"<<header->from()<<"  slave send REMASTER_REQUEST_ACK to:"<<coordinated_machine_by_id_[distinct_id];
+        CHECK(coordinated_machine_by_id_.find(distinct_id) != coordinated_machine_by_id_.end());
+        Header* header = new Header();
+        header->set_from(machine()->machine_id());
+        header->set_to(coordinated_machine_by_id_[distinct_id]);
+        header->set_type(Header::RPC);
+        header->set_app(name());
+        header->set_rpc("REMASTER_REQUEST_ACK");
+        header->add_misc_int(distinct_id);
+        MessageBuffer* m = new MessageBuffer();
+        machine()->SendMessage(header, m);
+                
+        coordinated_machine_by_id_.erase(distinct_id);
         return;
       }
-
-      coordinated_machine_by_id_[distinct_id] = header->from();
 
       // Generate remaster action
       Action* remaster_action = new Action();
@@ -461,6 +482,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMP
                   coordinated_machins_.erase(distinct_id);
                   queue_.Push(delayed_actions_[distinct_id]);
                   delayed_actions_.erase(distinct_id);
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMPLETED_REMASTER messagea. from machine:"<<header->from()<<"  previous blocked action is now free:"<<distinct_id;
                 }
               } else {
                 // the slave node, should send remaster_request_ack to master node

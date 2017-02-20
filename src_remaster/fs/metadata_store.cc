@@ -389,22 +389,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
 
           uint32 lowest_replica = *(involved_replicas.begin());
 
-          for (auto it = machine_replicas.begin(); it != machine_replicas.end(); it++) {
-            if ((it->second).count(lowest_replica) > 0) { 
-              (it->second).erase(lowest_replica);
-            }
-          }
-
-          uint64 new_min_machine = UINT64_MAX;
-          for (auto it = machine_replicas.begin(); it != machine_replicas.end(); it++) {
-            if((it->second).size() > 0) {
-              if (it->first < new_min_machine) {
-                new_min_machine = it->first;
-              }
-            }
-          }
-
-          uint32 machine_sent = config_->LookupMetadataShard(config_->GetMdsFromMachine(new_min_machine), lowest_replica);
+          uint32 machine_sent = config_->LookupMetadataShard(config_->GetMdsFromMachine(min_machine_id), lowest_replica);
           Header* header = new Header();
           header->set_from(machine_id_);
           header->set_to(machine_sent);
@@ -630,19 +615,17 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
   uint32 lowest_replica = *(replica_involved.begin());
 
   if (replica_involved.size() == 1) {
-    // For single replica action, we can randomly send it to one machine of that replica
     action->set_single_replica(true);
-    return lowest_replica * machines_per_replica_ + rand() % machines_per_replica_;
+
+    if (lowest_replica == replica_) {
+      // For single local replica action, we can randomly send it to one machine of that replica
+      return lowest_replica * machines_per_replica_ + rand() % machines_per_replica_; 
+    } else {
+      // For single remote replica action, we should forward to the first involved machine of that replica
+      config_->LookupMetadataShard(*(machines_involved.begin()), lowest_replica);
+    }
   } else {
     action->set_single_replica(false);
-
-    machines_involved.clear();
-    for (int i = 0; i < action->keys_origins_size(); i++) {
-      KeyMasterEntry map_entry = action->keys_origins(i);
-      if (map_entry.master() != lowest_replica) {
-        machines_involved.insert(config_->HashFileName(map_entry.key()));
-      }
-    }
 
 LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(multi-replica action)^^^^^^  distinct id is:"<<action->distinct_id()<<"  will forward to machine:"<<config_->LookupMetadataShard(*(machines_involved.begin()), lowest_replica);
 
