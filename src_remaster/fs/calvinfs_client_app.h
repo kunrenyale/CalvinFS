@@ -763,6 +763,9 @@ void LatencyExperimentAppend() {
          if (j == 5) {
            BackgroundRenameFile("/a" + IntToString(1) + "/b" + IntToString(1) + "/c" + IntToString(j),
                              "/a" + IntToString(0) + "/b" + IntToString(1) + "/d" + IntToString(machine()->GetGUID()));
+         } else if (j == 8) {
+           BackgroundRenameFile("/a" + IntToString(1) + "/b" + IntToString(1) + "/c" + IntToString(j),
+                             "/a" + IntToString(1) + "/b" + IntToString(2) + "/d" + IntToString(machine()->GetGUID()));
          } else {
            BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a1) + "/c" + IntToString(j),
                              "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a2) + "/d" + IntToString(machine()->GetGUID()));

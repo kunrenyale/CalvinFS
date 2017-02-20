@@ -1,4 +1,3 @@
-// Author: Alexander Thomson <thomson@cs.yale.edu>
 // Author: Kun  Ren (kun.ren@yale.edu)
 //
 
@@ -215,6 +214,12 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
           uint32 remote_replica = it->first;
           set<string> remote_keys = it->second;
           
+          // Just ignore this action because the previous remaster action already did so
+          if (remote_replica == action->remaster_to()) {
+            continue;          
+          }
+          
+          // ignore the keys in this remaster action, and generate a new remaster action
           remaster_action->set_remaster_from(remote_replica);
           remaster_action->clear_remastered_keys();
           remaster_action->clear_distinct_id();
@@ -242,14 +247,12 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
           return;
         }
       }
-LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a remaster txn:: data_channel_version:"<<data_channel_version;           
+LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a remaster txn(will run):: data_channel_version:"<<data_channel_version;           
     } else {
     
       // Figure out what machines are readers (and perform local reads).
       reader_ = false;
       set<uint64> remote_readers;
-
-      uint64 min_machine_id = config_->LookupMetadataShard(action->min_machine_id(), replica_);
 
       KeyMasterEntries local_entries;
 
@@ -275,6 +278,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
         }
       }
 
+      uint64 min_machine_id = *(remote_readers.begin());
       // Figure out what machines are writers.
       writer_ = false;
       set<uint64> remote_writers;
@@ -336,7 +340,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
 
         // Wait to receive remote keys/masters
         AtomicQueue<MessageBuffer*>* channel = machine_->DataChannel("action-check" + UInt64ToString(data_channel_version));
-        for (uint32 i = 0; i < action->involved_machines()-1; i++) {
+        for (uint32 i = 0; i < remote_readers.size(); i++) {
           MessageBuffer* m = NULL;
           // Get results.
           while (!channel->Pop(&m)) {
@@ -374,17 +378,6 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
 
         // Send the action to the new replica
         if (aborted_ == true && replica_ == origin_) {
-          if (involved_replicas.size() == 1) {
-            action->set_single_replica(true);
-          } else {
-            action->set_single_replica(false);
-          }
-
-          action->clear_involved_replicas();
-          for (auto it = involved_replicas.begin(); it != involved_replicas.end(); ++it) {
-            action->add_involved_replicas(*it);  
-          }
-
           if (involved_replicas.size() == 1) {
             action->set_single_replica(true);
           } else {
@@ -583,10 +576,6 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
     to_expect++;
   }
 
-
-  action->set_involved_machines(machines_involved.size());
-  action->set_min_machine_id(*(machines_involved.begin()));
-
   // now that all RPCs have been sent, wait for responses
   AtomicQueue<MessageBuffer*>* channel = machine_->DataChannel(channel_name);
   while (to_expect > 0) {
@@ -609,13 +598,10 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
     to_expect--;
   }
 
-LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(get master)^^^^^^  distinct id is:"<<action->distinct_id();
+LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(finish getting all master)^^^^^^  distinct id is:"<<action->distinct_id();
 
   CHECK(replica_involved.size() >= 1);
 
-  for (set<uint32>::iterator it=replica_involved.begin(); it!=replica_involved.end(); ++it) {
-    action->add_involved_replicas(*it);
-  }
   uint32 lowest_replica = *(replica_involved.begin());
 
   if (replica_involved.size() == 1) {

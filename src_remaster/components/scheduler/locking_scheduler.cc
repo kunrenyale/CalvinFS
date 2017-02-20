@@ -1,4 +1,3 @@
-// Author: Alex Thomson (thomson@cs.yale.edu)
 // Author: Kun  Ren (kun.ren@yale.edu)
 //
 
@@ -28,7 +27,6 @@ void LockingScheduler::MainLoopBody() {
 
   // Process all actions that have finished running.
   while (completed_.Pop(&action)) {
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler will release locks， action:"<<action->distinct_id();
     if (action->remaster() == true) {
       // Release the locks and wake up the waiting actions.
       for (int i = 0; i < action->remastered_keys_size(); i++) {
@@ -148,10 +146,12 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action
 
         return ;
       } else {
+        action->set_wait_for_remaster_pros(false);
         if (action == blocking_actions_[action->origin()].front()) {
           blocking_actions_[action->origin()].pop();
+        } else {
+          return ;
         }
-        action->set_wait_for_remaster_pros(false);
       } 
     }
 
@@ -161,9 +161,9 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action
       // Request the lock
       for (int i = 0; i < action->remastered_keys_size(); i++) {
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action:" << action->version()<<" distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin()<<"### key:"<<action->remastered_keys(i);
-          if (!lm_.WriteLock(action, action->remastered_keys(i))) {
-            ungranted_requests++;
-          }
+        if (!lm_.WriteLock(action, action->remastered_keys(i))) {
+          ungranted_requests++;
+        }
       }
     } else {
       // Request write locks. Track requests so we can check that we don't re-request any as read locks.
@@ -190,7 +190,6 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action
       }
 
     }
-
 
     // If all read and write locks were immediately acquired, this action is ready to run.
     if (ungranted_requests == 0) {

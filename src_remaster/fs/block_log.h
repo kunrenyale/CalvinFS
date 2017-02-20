@@ -1,4 +1,3 @@
-// Author: Alex Thomson (thomson@cs.yale.edu)
 //         Kun  Ren <kun.ren@yale.edu>
 //
 // TODO(agt): Reduce number of string copies.
@@ -212,7 +211,6 @@ class BlockLogApp : public App {
       a->set_origin(replica_);
  
       if (a->remaster() == true) {
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a remaster action. action id is:"<< a->distinct_id() <<" from machine:"<<header->from();
         Lock l(&remaster_latch);
         bool should_wait = false;
         for (int i = 0; i < a->remastered_keys_size(); i++) {
@@ -224,10 +222,12 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a re
         }
 
         if (should_wait == false) {
-          queue_.Push(a); 
+          queue_.Push(a);
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a remaster action(Free and put into queue). action id is:"<< a->distinct_id() <<" from machine:"<<header->from();
         } else {
           delayed_actions_[a->distinct_id()] = a;
           coordinated_machins_[a->distinct_id()].insert(machine()->machine_id());
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a remaster action(have to wait). action id is:"<< a->distinct_id() <<" from machine:"<<header->from();
         }
         
       } else if (a->single_replica() == true && header->from()/config_->GetPartitionsPerReplica() == replica_) {
@@ -288,14 +288,9 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
                       
             // Generate remaster action
             Action* remaster_action = new Action();
-            remaster_action->CopyFrom(*a);
             remaster_action->set_remaster(true);
             remaster_action->set_remaster_to(replica_);
-            remaster_action->clear_readset();
-            remaster_action->clear_writeset();
-            remaster_action->clear_keys_origins();
             remaster_action->set_single_replica(true);
-            remaster_action->set_wait_for_remaster_pros(false);
 
             for (auto it2 = action_local_remastered_keys.begin(); it2 != action_local_remastered_keys.end(); it2++) {
               uint32 remote_replica = it2->first;
@@ -331,6 +326,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log will generat
 
             
           } else {
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log send REMASTER_REQUEST messagea. to machine:"<<machineid<<"  distinct_id is:"<<distinct_id;  
             // Send remote remaster requests to remote machine
             Header* header = new Header();
             header->set_from(machine()->machine_id());
@@ -348,6 +344,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log will generat
           a->set_single_replica(true);
           a->set_wait_for_remaster_pros(false);
           queue_.Push(a); 
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log receive a action. Action already is ready to go and put into the queue. distinct_id is:"<<distinct_id;  
         }
 
       }
@@ -359,6 +356,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log will generat
       uint64 distinct_id = header->misc_int(0);
       map<uint32, set<string>> action_local_remastered_keys;
       coordinated_machine_by_id_[distinct_id] = header->from();
+
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie REMASTER_REQUEST messagea. from machine:"<<header->from()<<"  distinct_id is:"<<distinct_id;  
       for (int j = 0; j < remote_entries.entries_size(); j++) {
         string key = remote_entries.entries(j).key();
@@ -367,7 +365,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie REMA
         if (local_remastered_keys_.find(key) != local_remastered_keys_.end()) {
           continue;
         }
-
+        
         if (key_replica == replica_ && local_remastering_keys_.find(key) == local_remastering_keys_.end()) {
           continue;
         }
@@ -446,6 +444,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie REMA
         coordinated_machins_.erase(distinct_id);
         queue_.Push(delayed_actions_[distinct_id]);
         delayed_actions_.erase(distinct_id);
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie REMASTER_REQUEST_ACK messagea. from machine:"<<header->from()<<"  distinct_id is:"<<distinct_id<<"-- Received all acks, now ready to go and push into the queue"; 
       }
       
     } else if (header->rpc() == "COMPLETED_REMASTER")  {
