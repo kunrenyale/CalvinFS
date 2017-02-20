@@ -51,12 +51,13 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler: remaster act
 
               while (!blocking_actions_[a->origin()].empty() && blocking_actions_[a->origin()].front()->wait_for_remaster_pros() == false) {
                 ready_actions_.push(blocking_actions_[a->origin()].front());
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler: remaster action completed, action now active:"<<blocking_actions_[a->origin()].front()->distinct_id();
                 blocking_actions_[a->origin()].pop();
               }
             
               if (blocking_actions_[a->origin()].empty()) {
                 blocking_replica_id_.erase(a->origin());
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler: remaster action completed, blocking_replica is now false";
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler: remaster action completed, blocking_replica is now active, replica is:"<<a->origin();
               }
 
             }
