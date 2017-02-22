@@ -358,7 +358,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  min_machine, wait for receiving the 
           Scalar s;
           s.ParseFromArray((*m)[1].data(), (*m)[1].size());
           uint64 remote_machine_id = FromScalar<uint64>(s);
-
+LOG(ERROR) << "Machine: "<<machine_id_<< "  min_machine, got data from one remote machine:: data_channel_version:"<<data_channel_version<<" from machine:"<<remote_machine_id; 
           for (int j = 0; j < remote_entries.entries_size(); j++) {
             action->add_keys_origins()->CopyFrom(local_entries.entries(j));
             uint32 key_replica = local_entries.entries(j).master();
