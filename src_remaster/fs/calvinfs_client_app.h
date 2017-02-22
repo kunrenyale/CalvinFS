@@ -762,7 +762,7 @@ void LatencyExperimentAppend() {
          // Only test 1 multi-replica rename operation for now
          if (j == 5) {
            BackgroundRenameFile("/a" + IntToString(2) + "/b" + IntToString(1) + "/c" + IntToString(j),
-                             "/a" + IntToString(0) + "/b" + IntToString(1) + "/d" + IntToString(machine()->GetGUID()));
+                             "/a" + IntToString(2) + "/b" + IntToString(1) + "/d" + IntToString(machine()->GetGUID()));
          } /**else if (j == 8) {
            BackgroundRenameFile("/a" + IntToString(2) + "/b" + IntToString(1) + "/c" + IntToString(j),
                              "/a" + IntToString(4) + "/b" + IntToString(2) + "/d" + IntToString(machine()->GetGUID()));

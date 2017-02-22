@@ -382,7 +382,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  min_machine, send decision to machin
           m->Append(ToScalar<bool>(aborted_));
           machine_->SendMessage(header, m); 
         }
-LOG(ERROR) << "Machine: "<<machine_id_<< "  min_machine, got all the data from all other machines:: data_channel_version:"<<data_channel_version;
+LOG(ERROR) << "Machine: "<<machine_id_<< "  min_machine, got all the data from all other machines:: data_channel_version:"<<data_channel_version<<" *** abort decision is:"<<aborted_;
         // Send the action to the new replica
         if (aborted_ == true && replica_ == origin_) {
           if (involved_replicas.size() == 1) {
@@ -450,6 +450,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
         // Close channel.
         machine_->CloseDataChannel("action-" + UInt64ToString(data_channel_version));
       }
+LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a txn:: data_channel_version:"<<data_channel_version<<"-- finish DistributedExecutionContext. min machine is:"<<min_machine_id;  
     }
   }
 
@@ -949,6 +950,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< " MetadataStore::Run(*** fin
     out.SerializeToString(action->mutable_output());
 
   } else if (type == MetadataAction::RENAME) {
+LOG(ERROR) << "Machine: "<<machine_->machine_id()<< " MetadataStore::Run(*** begin RENAME)， action:"<<action->distinct_id();
     MetadataAction::RenameInput in;
     MetadataAction::RenameOutput out;
     in.ParseFromString(action->input());
