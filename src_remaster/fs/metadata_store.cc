@@ -279,6 +279,10 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
       }
 
       uint64 min_machine_id = *(remote_readers.begin());
+      if (machine_id_ < min_machine_id) {
+        min_machine_id = machine_id_;      
+      }
+
       // Figure out what machines are writers.
       writer_ = false;
       set<uint64> remote_writers;
@@ -368,6 +372,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  min_machine, wait for receiving the 
 
         // Send the final decision to all involved machines
         for (auto it = remote_readers.begin(); it != remote_readers.end(); ++it) {
+LOG(ERROR) << "Machine: "<<machine_id_<< "  min_machine, send decision to machine:"<<(*it)<<" :: data_channel_version:"<<data_channel_version;
           Header* header = new Header();
           header->set_from(machine_id_);
           header->set_to(*it);
