@@ -294,11 +294,11 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
           remote_nonmin_machines.insert(machine);
         }
       }
-
       
       uint64 min_machine_id;
       if (reader_ == false) {
         min_machine_id = *(remote_readers.begin());
+LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a txn(reader_ == true), distinct id: "<<action->distinct_id();  
       }  else {
         min_machine_id = machine_id_; 
         if (remote_readers.size() > 0 && *(remote_readers.begin()) < min_machine_id) {
