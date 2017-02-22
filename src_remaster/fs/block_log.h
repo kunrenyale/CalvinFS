@@ -378,7 +378,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie REMA
 
       if (action_local_remastered_keys.size() == 0) {
         // the slave node, should send remaster_request_ack to master node if no need to remaster
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMPLETED_REMASTER messagea. from machine:"<<header->from()<<"  slave send REMASTER_REQUEST_ACK to:"<<coordinated_machine_by_id_[distinct_id];
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie REMASTER_REQUEST messagea, but no need to remaster. from machine:"<<header->from()<<"  slave send REMASTER_REQUEST_ACK to:"<<coordinated_machine_by_id_[distinct_id];
         CHECK(coordinated_machine_by_id_.find(distinct_id) != coordinated_machine_by_id_.end());
         Header* header = new Header();
         header->set_from(machine()->machine_id());

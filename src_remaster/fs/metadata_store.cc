@@ -250,6 +250,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
 LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a remaster txn(will run):: data_channel_version:"<<data_channel_version;           
     } else {
     
+      set<uint64> remote_nonmin_machines;
       // Figure out what machines are readers (and perform local reads).
       reader_ = false;
       set<uint64> remote_readers;
@@ -275,12 +276,8 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
 
         } else {
           remote_readers.insert(machine);
+          remote_nonmin_machines.insert(machine);
         }
-      }
-      
-      uint64 min_machine_id = machine_id_; 
-      if (remote_readers.size() > 0 && *(remote_readers.begin()) < min_machine_id) {
-        min_machine_id = *(remote_readers.begin());
       }
 
       // Figure out what machines are writers.
@@ -294,6 +291,18 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
           writer_ = true;
         } else {
           remote_writers.insert(machine);
+          remote_nonmin_machines.insert(machine);
+        }
+      }
+
+      
+      uint64 min_machine_id;
+      if (reader_ == false) {
+        min_machine_id = *(remote_readers.begin());
+      }  else {
+        min_machine_id = machine_id_; 
+        if (remote_readers.size() > 0 && *(remote_readers.begin()) < min_machine_id) {
+          min_machine_id = *(remote_readers.begin());
         }
       }
 
@@ -346,7 +355,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  not min_machine, got the decision(wi
 LOG(ERROR) << "Machine: "<<machine_id_<< "  min_machine, wait for receiving the data from all other machines:: data_channel_version:"<<data_channel_version;  
         // Wait to receive remote keys/masters
         AtomicQueue<MessageBuffer*>* channel = machine_->DataChannel("action-check" + UInt64ToString(data_channel_version));
-        for (uint32 i = 0; i < remote_readers.size(); i++) {
+        for (uint32 i = 0; i < remote_nonmin_machines.size(); i++) {
           MessageBuffer* m = NULL;
           // Get results.
           while (!channel->Pop(&m)) {
@@ -371,7 +380,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  min_machine, got data from one remot
         }
 
         // Send the final decision to all involved machines
-        for (auto it = remote_readers.begin(); it != remote_readers.end(); ++it) {
+        for (auto it = remote_nonmin_machines.begin(); it != remote_nonmin_machines.end(); ++it) {
 LOG(ERROR) << "Machine: "<<machine_id_<< "  min_machine, send decision to machine:"<<(*it)<<" :: data_channel_version:"<<data_channel_version;
           Header* header = new Header();
           header->set_from(machine_id_);
