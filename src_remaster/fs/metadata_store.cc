@@ -277,10 +277,10 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
           remote_readers.insert(machine);
         }
       }
-
-      uint64 min_machine_id = *(remote_readers.begin());
-      if (machine_id_ < min_machine_id) {
-        min_machine_id = machine_id_;      
+      
+      uint64 min_machine_id = machine_id_; 
+      if (remote_readers.size() > 0 && *(remote_readers.begin()) < min_machine_id) {
+        min_machine_id = *(remote_readers.begin());
       }
 
       // Figure out what machines are writers.
