@@ -417,6 +417,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMP
         }
 
         if (remaster_action->remastered_keys_size() > 0) {
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log will generate a new action. action id is:"<< remaster_action->distinct_id() <<" to machine:"<<config_->LookupMetadataShard(config_->GetMdsFromMachine(machine()->machine_id()), remote_replica);
           // Send the action to the relevant replica
           Header* header = new Header();
           header->set_from(machine()->machine_id());

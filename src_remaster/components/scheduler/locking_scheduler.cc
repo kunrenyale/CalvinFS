@@ -149,6 +149,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action
         action->set_wait_for_remaster_pros(false);
         if (action == blocking_actions_[action->origin()].front()) {
           blocking_actions_[action->origin()].pop();
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action:" << action->version()<<" distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin()<<"-- check for pros actions(** check pros succeed!)";
         } else {
           return ;
         }

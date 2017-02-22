@@ -213,7 +213,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
         for (auto it = forward_remaster.begin(); it != forward_remaster.end(); it++) {
           uint32 remote_replica = it->first;
           set<string> remote_keys = it->second;
-          
+         
           // Just ignore this action because the previous remaster action already did so
           if (remote_replica == action->remaster_to()) {
             continue;          
@@ -224,7 +224,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
           remaster_action->clear_remastered_keys();
           remaster_action->clear_distinct_id();
           remaster_action->set_distinct_id(machine_->GetGUID());
-          
+LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a remaster txn(will forward another remaster):: data_channel_version:"<<data_channel_version<<"  remaster id:"<<remaster_action->distinct_id();          
           for (auto it = remote_keys.begin(); it != remote_keys.end(); it++) {
             remaster_action->add_remastered_keys(*it);
           }
@@ -303,7 +303,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
         MessageBuffer* m = new MessageBuffer(local_entries);
         m->Append(ToScalar<uint64>(machine_id_));
         machine_->SendMessage(header, m);
-
+LOG(ERROR) << "Machine: "<<machine_id_<< "  not min_machine, wait for receiving the decision:: data_channel_version:"<<data_channel_version;   
         // Wait for the final decision
         AtomicQueue<MessageBuffer*>* channel = machine_->DataChannel("action-check-ack" + UInt64ToString(data_channel_version));
         // Get results.
@@ -317,8 +317,10 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
 
         if (abort_decision == true) {
           aborted_ = true;
+LOG(ERROR) << "Machine: "<<machine_id_<< "  not min_machine, got the decision(will abort):: data_channel_version:"<<data_channel_version;   
           return;
         }
+LOG(ERROR) << "Machine: "<<machine_id_<< "  not min_machine, got the decision(will execute):: data_channel_version:"<<data_channel_version; 
       } else {
         // min_machine_id
         action->clear_keys_origins();
@@ -337,7 +339,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
             aborted_ = true;
           }
         }
-
+LOG(ERROR) << "Machine: "<<machine_id_<< "  min_machine, wait for receiving the data from all other machines:: data_channel_version:"<<data_channel_version;  
         // Wait to receive remote keys/masters
         AtomicQueue<MessageBuffer*>* channel = machine_->DataChannel("action-check" + UInt64ToString(data_channel_version));
         for (uint32 i = 0; i < remote_readers.size(); i++) {
@@ -375,7 +377,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
           m->Append(ToScalar<bool>(aborted_));
           machine_->SendMessage(header, m); 
         }
-
+LOG(ERROR) << "Machine: "<<machine_id_<< "  min_machine, got all the data from all other machines:: data_channel_version:"<<data_channel_version;
         // Send the action to the new replica
         if (aborted_ == true && replica_ == origin_) {
           if (involved_replicas.size() == 1) {
