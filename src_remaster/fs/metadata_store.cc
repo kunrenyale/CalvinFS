@@ -329,7 +329,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  not min_machine, got the decision(wi
         // min_machine_id
         action->clear_keys_origins();
         set<uint32> involved_replicas;
-        involved_replicas.insert(replica_);
+
         // machine_replicas: machine_id=>all involved replicas on that machine
         map<uint64, set<uint32>> machine_replicas;
 
@@ -360,12 +360,9 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  min_machine, wait for receiving the 
           uint64 remote_machine_id = FromScalar<uint64>(s);
 LOG(ERROR) << "Machine: "<<machine_id_<< "  min_machine, got data from one remote machine:: data_channel_version:"<<data_channel_version<<" from machine:"<<remote_machine_id; 
           for (int j = 0; j < remote_entries.entries_size(); j++) {
-LOG(ERROR) << "Machine: "<<machine_id_<< "  min_machine, got data from one remote machine:: data_channel_version:"<<data_channel_version<<" from machine:"<<remote_machine_id<<" key is: "<<local_entries.entries(j).key(); 
-            action->add_keys_origins()->CopyFrom(local_entries.entries(j));
-LOG(ERROR) << "Machine: "<<machine_id_<< "  min_machine, got data from one remote machine:: data_channel_version:"<<data_channel_version<<" from machine:"<<remote_machine_id<<" key is: "<<local_entries.entries(j).key()<<"---1---"; 
-            uint32 key_replica = local_entries.entries(j).master();
+            action->add_keys_origins()->CopyFrom(remote_entries.entries(j));
+            uint32 key_replica = remote_entries.entries(j).master();
             machine_replicas[remote_machine_id].insert(key_replica);
-LOG(ERROR) << "Machine: "<<machine_id_<< "  min_machine, got data from one remote machine:: data_channel_version:"<<data_channel_version<<" from machine:"<<remote_machine_id<<" key is: "<<local_entries.entries(j).key()<<"---2---"; 
             involved_replicas.insert(key_replica);
             if (key_replica != origin_) {
               aborted_ = true;
