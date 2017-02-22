@@ -645,8 +645,13 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
 
 bool MetadataStore::CheckLocalMastership(Action* action, set<string>& keys) {
   bool can_execute_now = true;
-  for (int i = 0; i < action->readset_size(); i++) {
-    if (IsLocal(action->readset(i))) {
+
+  for (int i = 0; i < action->keys_origins_size(); i++) {
+    KeyMasterEntry map_entry = action->keys_origins(i);
+    string key = map_entry.key();
+    uint32 key_replica = map_entry.master();
+
+    if (IsLocal(key) && key_replica != action->origin()) {
       uint32 replica = GetLocalKeyMastership(action->readset(i));
       if (replica != action->origin()) {
         keys.insert(action->readset(i));
