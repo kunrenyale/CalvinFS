@@ -206,38 +206,41 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
 
 
       if (remote_remaster == true) {
-        // Send the remaster actions(generate a new action) to the involved replicas;
-        Action* remaster_action = new Action();
-        remaster_action->CopyFrom(*action);
+        // Only need to generate once
+        if (replica_ == action->origin()) {
+          // Send the remaster actions(generate a new action) to the involved replicas;
+          Action* remaster_action = new Action();
+          remaster_action->CopyFrom(*action);
 
-        for (auto it = forward_remaster.begin(); it != forward_remaster.end(); it++) {
-          uint32 remote_replica = it->first;
-          set<string> remote_keys = it->second;
+          for (auto it = forward_remaster.begin(); it != forward_remaster.end(); it++) {
+            uint32 remote_replica = it->first;
+            set<string> remote_keys = it->second;
          
-          // Just ignore this action because the previous remaster action already did so
-          if (remote_replica == action->remaster_to()) {
-            continue;          
-          }
+            // Just ignore this action because the previous remaster action already did so
+            if (remote_replica == action->remaster_to()) {
+              continue;          
+            }
           
-          // ignore the keys in this remaster action, and generate a new remaster action
-          remaster_action->set_remaster_from(remote_replica);
-          remaster_action->clear_remastered_keys();
-          remaster_action->clear_distinct_id();
-          remaster_action->set_distinct_id(machine_->GetGUID());
+            // ignore the keys in this remaster action, and generate a new remaster action
+            remaster_action->set_remaster_from(remote_replica);
+            remaster_action->clear_remastered_keys();
+            remaster_action->clear_distinct_id();
+            remaster_action->set_distinct_id(machine_->GetGUID());
 LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a remaster txn(will forward another remaster):: data_channel_version:"<<data_channel_version<<"  remaster id:"<<remaster_action->distinct_id();          
-          for (auto it = remote_keys.begin(); it != remote_keys.end(); it++) {
-            remaster_action->add_remastered_keys(*it);
-          }
+            for (auto it = remote_keys.begin(); it != remote_keys.end(); it++) {
+              remaster_action->add_remastered_keys(*it);
+            }
 
-          Header* header = new Header();
-          header->set_from(machine_id_);
-          header->set_to(config_->LookupMetadataShard(config_->GetMdsFromMachine(machine_id_), remote_replica));
-          header->set_type(Header::RPC);
-          header->set_app("blocklog");
-          header->set_rpc("APPEND");
-          string* block = new string();
-          remaster_action->SerializeToString(block);
-          machine_->SendMessage(header, new MessageBuffer(Slice(*block)));
+            Header* header = new Header();
+            header->set_from(machine_id_);
+            header->set_to(config_->LookupMetadataShard(config_->GetMdsFromMachine(machine_id_), remote_replica));
+            header->set_type(Header::RPC);
+            header->set_app("blocklog");
+            header->set_rpc("APPEND");
+            string* block = new string();
+            remaster_action->SerializeToString(block);
+            machine_->SendMessage(header, new MessageBuffer(Slice(*block)));
+          }
         }
         
         // If no local keys need to be remastered, then we can simply abort this action
