@@ -110,11 +110,11 @@ uint32 LevelDBStore::LocalReplica() {
   return -1;
 }
 
-uint32 LevelDBStore::GetLocalKeyMastership(string) {
-  return -1;
+pair<uint32, uint64> LevelDBStore::GetLocalKeyMastership(string) {
+  return make_pair(-1,-1);
 }
 
-bool LevelDBStore::CheckLocalMastership(Action* action, set<string>& keys) {
+bool LevelDBStore::CheckLocalMastership(Action* action, set<pair<string,uint64>>& keys) {
   return false;
 }
 

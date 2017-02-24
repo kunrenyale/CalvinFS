@@ -220,11 +220,11 @@ uint32 VersionedKVStore::LocalReplica() {
   return -1;
 }
 
-uint32 VersionedKVStore::GetLocalKeyMastership(string) {
-  return -1;
+pair<uint32, uint64> VersionedKVStore::GetLocalKeyMastership(string) {
+  return make_pair(-1,-1);
 }
 
-bool VersionedKVStore::CheckLocalMastership(Action* action, set<string>& keys) {
+bool VersionedKVStore::CheckLocalMastership(Action* action, set<pair<string,uint64>>& keys) {
   return false;
 }
 

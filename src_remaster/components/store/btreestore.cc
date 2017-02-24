@@ -77,11 +77,11 @@ uint32 BTreeStore::LocalReplica() {
   return -1;
 }
 
-uint32 BTreeStore::GetLocalKeyMastership(string) {
-  return -1;
+pair<uint32, uint64> BTreeStore::GetLocalKeyMastership(string) {
+  return make_pair(-1,-1);
 }
 
-bool BTreeStore::CheckLocalMastership(Action* action, set<string>& keys) {
+bool BTreeStore::CheckLocalMastership(Action* action, set<pair<string,uint64>>& keys) {
   return false;
 }
 

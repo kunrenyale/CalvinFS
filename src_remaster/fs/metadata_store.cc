@@ -204,7 +204,9 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
           forward_remaster[entry.master()].add_entries()->CopyFrom(map_entry);
           
           // mark the master() = remaster_to() if we don't have to remaster this record at this action
-          action->remastered_keys(i).set_master(action->remaster_to());
+          action->mutable_remastered_keys(i)->set_master(action->remaster_to());
+          CHECK(action->remastered_keys(i).master() == action->remaster_to());
+ 
         } else {
           local_keys.insert(map_entry.key());
         }     
@@ -235,8 +237,8 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
             remaster_action->clear_distinct_id();
             remaster_action->set_distinct_id(machine_->GetGUID());
 LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a remaster txn(will forward another remaster):: data_channel_version:"<<data_channel_version<<"  remaster id:"<<remaster_action->distinct_id();          
-            for (int i = 0; i < remote_keys.entries_size(); i++) {             
-              remaster_action->add_remastered_keys(remote_keys.entries(i));
+            for (int i = 0; i < remote_keys.entries_size(); i++) {
+              remaster_action->add_remastered_keys()->CopyFrom(remote_keys.entries(i));        
             }
 
             Header* header = new Header();
@@ -593,7 +595,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
       
       KeyMasterEntry map_entry;
       map_entry.set_key(action->readset(i));
-      map_entry.set_master(replica);
+      map_entry.set_master(replica_counter.first);
       map_entry.set_counter(replica_counter.second);
       action->add_keys_origins()->CopyFrom(map_entry);
 LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(begin)^^^^^^  distinct id is:"<<action->distinct_id()<<" --key is local:"<<action->readset(i);
@@ -678,7 +680,6 @@ bool MetadataStore::CheckLocalMastership(Action* action, set<pair<string,uint64>
     for (int i = 0; i < action->remastered_keys_size(); i++) {
       KeyMasterEntry map_entry = action->remastered_keys(i);
       string key = map_entry.key();
-      uint32 key_replica = map_entry.master();
       uint64 key_counter = map_entry.counter();
 
       pair<uint32, uint64> key_info = GetLocalKeyMastership(key);
@@ -1088,7 +1089,7 @@ void MetadataStore::Remaster_Internal(ExecutionContext* context, Action* action)
       remastered_keys.push_back(map_entry.key());
       entry.set_master(origin_master);
       entry.set_counter(entry.counter() + 1);
-      context->PutEntry(action->remastered_keys(i), entry);
+      context->PutEntry(map_entry.key(), entry);
     }
 
   }

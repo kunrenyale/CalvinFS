@@ -52,11 +52,11 @@ uint32 HybridVersionedKVStore::LocalReplica() {
   return -1;
 }
 
-uint32 HybridVersionedKVStore::GetLocalKeyMastership(string) {
-  return -1;
+pair<uint32, uint64> HybridVersionedKVStore::GetLocalKeyMastership(string) {
+  return make_pair(-1,-1);
 }
 
-bool HybridVersionedKVStore::CheckLocalMastership(Action* action, set<string>& keys) {
+bool HybridVersionedKVStore::CheckLocalMastership(Action* action, set<pair<string,uint64>>& keys) {
   return false;
 }
 

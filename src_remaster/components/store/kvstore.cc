@@ -60,11 +60,11 @@ uint32 KVStore::LocalReplica() {
   return -1;
 }
 
-uint32 KVStore::GetLocalKeyMastership(string) {
-  return -1;
+pair<uint32, uint64> KVStore::GetLocalKeyMastership(string) {
+  return make_pair(-1,-1);
 }
 
-bool KVStore::CheckLocalMastership(Action* action, set<string>& keys) {
+bool KVStore::CheckLocalMastership(Action* action, set<pair<string,uint64>>& keys) {
   return false;
 }
 

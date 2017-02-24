@@ -214,10 +214,11 @@ class BlockLogApp : public App {
         Lock l(&remaster_latch);
         bool should_wait = false;
         for (int i = 0; i < a->remastered_keys_size(); i++) {
-          if (delayed_actions_by_key_.find(a->remastered_keys(i)) != delayed_actions_by_key_.end()) {
+          KeyMasterEntry map_entry = a->remastered_keys(i);
+          if (delayed_actions_by_key_.find(map_entry.key()) != delayed_actions_by_key_.end()) {
             should_wait = true;
-            delayed_actions_by_key_[a->remastered_keys(i)].push_back(a->distinct_id());
-            delayed_actions_by_id_[a->distinct_id()].insert(a->remastered_keys(i));
+            delayed_actions_by_key_[map_entry.key()].push_back(a->distinct_id());
+            delayed_actions_by_id_[a->distinct_id()].insert(map_entry.key());
           }
         }
 
@@ -304,7 +305,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
 
               for (int i = 0; i < remote_keys.entries_size(); i++) {
                 if (local_remastering_keys_.find(remote_keys.entries(i).key()) == local_remastering_keys_.end()) {
-                  remaster_action->add_remastered_keys()->CopyFrom(remote_keys.entries(i));;
+                  remaster_action->add_remastered_keys()->CopyFrom(remote_keys.entries(i));
                   local_remastering_keys_.insert(remote_keys.entries(i).key());
                 }
               }
@@ -546,7 +547,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log finished COM
 
         if (batch.entries(i).remaster() == true) {
           for (int j = 0; j < batch.entries(i).remastered_keys_size(); j++) {
-            uint64 mds = config_->HashFileName(batch.entries(i).remastered_keys(j));
+            uint64 mds = config_->HashFileName(batch.entries(i).remastered_keys(j).key());
             recipients.insert(config_->LookupMetadataShard(mds, replica_));
           }
         } else {

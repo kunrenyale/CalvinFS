@@ -31,9 +31,9 @@ void LockingScheduler::MainLoopBody() {
       // Release the locks and wake up the waiting actions.
       for (int i = 0; i < action->remastered_keys_size(); i++) {
         KeyMasterEntry map_entry = action->remastered_keys(i);
-        pair<string, uint64> key_info = make_pair(entry.key(), entry.counter()+1);
+        pair <string, uint64> key_info = make_pair(map_entry.key(), map_entry.counter()+1);
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler: remaster action completed， action:"<<action->distinct_id()<<" so can wake up key: "<<action->remastered_keys(i).key();
-        if (map_entry.master() != action->remaster_to() && waiting_actions_by_key_.find(make_pair(key_info) != waiting_actions_by_key_.end()) {
+        if (map_entry.master() != action->remaster_to() && waiting_actions_by_key_.find(key_info) != waiting_actions_by_key_.end()) {
 
           vector<Action*> blocked_actions = waiting_actions_by_key_[key_info];
 
@@ -65,10 +65,10 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler: remaster act
             }
           }
 
-          waiting_actions_by_key_.erase(map_entry.key());
+          waiting_actions_by_key_.erase(key_info);
        }
 
-       lm_.Release(action, entry.key());
+       lm_.Release(action, map_entry.key());
     }
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler finish running a remaster action:  distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin();
 
@@ -139,7 +139,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action
         blocking_replica_id_.insert(action->origin());
 
         // Put it into the queue and wait for the remaster action come
-        waiting_actions_by_actionid_[action->distinct_id()].insert(keys);
+        waiting_actions_by_actionid_[action->distinct_id()] = keys;
         for (auto it = keys.begin(); it != keys.end(); it++) {
           waiting_actions_by_key_[*it].push_back(action);
         }
