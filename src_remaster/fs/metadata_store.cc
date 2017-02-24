@@ -184,23 +184,29 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
       writer_ = true;
 
       // Forward_remaster: all entries that need to remaster, replica_id=>keys
-      map<uint32, set<string>> forward_remaster;
+      map<uint32, KeyMasterEntries> forward_remaster;
       set<string> local_keys;
       bool remote_remaster = false;
 
       for (int i = 0; i < action->remastered_keys_size(); i++) {
+        KeyMasterEntry map_entry = action->remastered_keys(i);
         // Local read.
-        if (!store_->Get(action->remastered_keys(i), &reads_[action->remastered_keys(i)])) {
-          reads_.erase(action->remastered_keys(i));
+        if (!store_->Get(map_entry.key(), &reads_[map_entry.key()])) {
+          reads_.erase(map_entry.key());
         }
 
         MetadataEntry entry;
-        GetEntry(action->remastered_keys(i), &entry);
-        if (entry.master() != action->remaster_from()) {
+        GetEntry(map_entry.key(), &entry);
+        if (entry.master() != action->remaster_from() || entry.counter() != map_entry.counter()) {
           remote_remaster = true;
-          forward_remaster[entry.master()].insert(action->remastered_keys(i));
+          map_entry.set_master(entry.master());
+          map_entry.set_counter(entry.counter());
+          forward_remaster[entry.master()].add_entries()->CopyFrom(map_entry);
+          
+          // mark the master() = remaster_to() if we don't have to remaster this record at this action
+          action->remastered_keys(i).set_master(action->remaster_to());
         } else {
-          local_keys.insert(action->remastered_keys(i));
+          local_keys.insert(map_entry.key());
         }     
       }
 
@@ -210,11 +216,13 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
         if (replica_ == action->origin()) {
           // Send the remaster actions(generate a new action) to the involved replicas;
           Action* remaster_action = new Action();
-          remaster_action->CopyFrom(*action);
+          remaster_action->set_remaster(true);
+          remaster_action->set_remaster_to(action->remaster_to());
+          remaster_action->set_single_replica(true);
 
           for (auto it = forward_remaster.begin(); it != forward_remaster.end(); it++) {
             uint32 remote_replica = it->first;
-            set<string> remote_keys = it->second;
+            KeyMasterEntries remote_keys = it->second;
          
             // Just ignore this action because the previous remaster action already did so
             if (remote_replica == action->remaster_to()) {
@@ -227,8 +235,8 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
             remaster_action->clear_distinct_id();
             remaster_action->set_distinct_id(machine_->GetGUID());
 LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a remaster txn(will forward another remaster):: data_channel_version:"<<data_channel_version<<"  remaster id:"<<remaster_action->distinct_id();          
-            for (auto it = remote_keys.begin(); it != remote_keys.end(); it++) {
-              remaster_action->add_remastered_keys(*it);
+            for (int i = 0; i < remote_keys.entries_size(); i++) {             
+              remaster_action->add_remastered_keys(remote_keys.entries(i));
             }
 
             Header* header = new Header();
@@ -276,6 +284,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
           KeyMasterEntry* e = local_entries.add_entries();
           e->set_key(action->readset(i));
           e->set_master(entry.master());
+          e->set_counter(entry.counter());
 
         } else {
           remote_readers.insert(machine);
@@ -339,19 +348,29 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  not min_machine, got the decision(wi
 LOG(ERROR) << "Machine: "<<machine_id_<< "  not min_machine, got the decision(will execute):: data_channel_version:"<<data_channel_version; 
       } else {
         // min_machine_id
-        action->clear_keys_origins();
+        map<string, pair<uint32, uint64>> old_keys_origins;
         set<uint32> involved_replicas;
-
         // machine_replicas: machine_id=>all involved replicas on that machine
         map<uint64, set<uint32>> machine_replicas;
+
+        for (int i = 0; i < action->keys_origins_size(); i++) {
+          KeyMasterEntry map_entry = action->keys_origins(i);
+          old_keys_origins[map_entry.key()] = make_pair(map_entry.master(), map_entry.counter());
+        }
+        action->clear_keys_origins();
 
         // Collect local keys/masters
         for (int j = 0; j < local_entries.entries_size(); j++) {
           action->add_keys_origins()->CopyFrom(local_entries.entries(j));
+          string key = local_entries.entries(j).key();
           uint32 key_replica = local_entries.entries(j).master();
+          uint64 key_counter = local_entries.entries(j).counter();
           machine_replicas[machine_id_].insert(key_replica);
           involved_replicas.insert(key_replica);
+
           if (key_replica != origin_) {
+            aborted_ = true;
+          } else if (old_keys_origins[key].first == origin_ && key_counter != old_keys_origins[key].second) {
             aborted_ = true;
           }
         }
@@ -373,13 +392,18 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  min_machine, wait for receiving the 
 LOG(ERROR) << "Machine: "<<machine_id_<< "  min_machine, got data from one remote machine:: data_channel_version:"<<data_channel_version<<" from machine:"<<remote_machine_id; 
           for (int j = 0; j < remote_entries.entries_size(); j++) {
             action->add_keys_origins()->CopyFrom(remote_entries.entries(j));
+            string key = remote_entries.entries(j).key();
             uint32 key_replica = remote_entries.entries(j).master();
+            uint64 key_counter = remote_entries.entries(j).counter();
             machine_replicas[remote_machine_id].insert(key_replica);
             involved_replicas.insert(key_replica);
+
             if (key_replica != origin_) {
               aborted_ = true;
+            } else if (old_keys_origins[key].first == origin_ && key_counter != old_keys_origins[key].second) {
+              aborted_ = true;
             }
-          }      
+          }     
         }
 
         // Send the final decision to all involved machines
@@ -650,20 +674,35 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
 bool MetadataStore::CheckLocalMastership(Action* action, set<pair<string,uint64>>& keys) {
   bool can_execute_now = true;
 
-  for (int i = 0; i < action->keys_origins_size(); i++) {
-    KeyMasterEntry map_entry = action->keys_origins(i);
-    string key = map_entry.key();
-    uint32 key_replica = map_entry.master();
-    uint64 key_counter = map_entry.counter();
+  if (action->remaster() == true) {
+    for (int i = 0; i < action->remastered_keys_size(); i++) {
+      KeyMasterEntry map_entry = action->remastered_keys(i);
+      string key = map_entry.key();
+      uint32 key_replica = map_entry.master();
+      uint64 key_counter = map_entry.counter();
 
-    if (IsLocal(key) && key_replica != action->origin()) {
-      pair<uint32, uint64> key_info = GetLocalKeyMastership(action->readset(i));
-      if (key_info.first != action->origin() && key_info.second < key_counter + 1) {
-        keys.insert(make_pair(key, key_counter + 1));
-        can_execute_now = false;
+      pair<uint32, uint64> key_info = GetLocalKeyMastership(key);
+      if (key_counter > key_info.second) {
+        keys.insert(make_pair(key, key_counter));
+        can_execute_now = false;  
       }
     }
+  } else {
 
+    for (int i = 0; i < action->keys_origins_size(); i++) {
+      KeyMasterEntry map_entry = action->keys_origins(i);
+      string key = map_entry.key();
+      uint32 key_replica = map_entry.master();
+      uint64 key_counter = map_entry.counter();
+
+      if (IsLocal(key) && key_replica != action->origin()) {
+        pair<uint32, uint64> key_info = GetLocalKeyMastership(key);
+        if (key_info.first != action->origin() && key_info.second < key_counter + 1) {
+          keys.insert(make_pair(key, key_counter + 1));
+          can_execute_now = false;
+        }
+      }
+    }
   }
 
   return can_execute_now;
@@ -1038,15 +1077,17 @@ void MetadataStore::Remaster_Internal(ExecutionContext* context, Action* action)
   vector<string> remastered_keys;
 
   for (int i = 0; i < action->remastered_keys_size(); i++) {
-    if (!context->GetEntry(action->remastered_keys(i), &entry)) {
+    KeyMasterEntry map_entry = action->remastered_keys(i);
+    if (!context->GetEntry(map_entry.key(), &entry)) {
       // Entry doesn't exist!
       LOG(ERROR) <<"Entry doesn't exist!, should not happen!";
       return;
     }
     
-    if (entry.master() == origin_from) {
-      remastered_keys.push_back(action->remastered_keys(i));
+    if (entry.master() == origin_from && map_entry.counter() == entry.counter()) {
+      remastered_keys.push_back(map_entry.key());
       entry.set_master(origin_master);
+      entry.set_counter(entry.counter() + 1);
       context->PutEntry(action->remastered_keys(i), entry);
     }
 

@@ -30,10 +30,11 @@ void LockingScheduler::MainLoopBody() {
     if (action->remaster() == true) {
       // Release the locks and wake up the waiting actions.
       for (int i = 0; i < action->remastered_keys_size(); i++) {
+        KeyMasterEntry map_entry = action->remastered_keys(i);
+        pair<string, uint64> key_info = make_pair(entry.key(), entry.counter()+1);
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler: remaster action completed， action:"<<action->distinct_id()<<" so can wake up key: "<<action->remastered_keys(i).key();
-        if (waiting_actions_by_key_.find(action->remastered_keys(i)) != waiting_actions_by_key_.end()) {
-          KeyMasterEntry entry = action->remastered_keys(i);
-          pair<string, uint64> key_info = make_pair(entry.key(), entry.counter());
+        if (map_entry.master() != action->remaster_to() && waiting_actions_by_key_.find(make_pair(key_info) != waiting_actions_by_key_.end()) {
+
           vector<Action*> blocked_actions = waiting_actions_by_key_[key_info];
 
           for (auto it = blocked_actions.begin(); it != blocked_actions.end(); it++) {
@@ -64,7 +65,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler: remaster act
             }
           }
 
-          waiting_actions_by_key_.erase(entry.key());
+          waiting_actions_by_key_.erase(map_entry.key());
        }
 
        lm_.Release(action, entry.key());
