@@ -28,7 +28,7 @@ class StoreApp : public App {
   virtual uint32 LookupReplicaByDir(string dir);
   virtual uint64 GetHeadMachine(uint64 machine_id);
   virtual uint32 LocalReplica();
-  virtual bool CheckLocalMastership(Action* action, set<string>& keys);
+  virtual bool CheckLocalMastership(Action* action, set<pair<string,uint64>> & keys);
 
   // Run the action in a background thread. The action is pushed to '*queue'
   // after it is completed.

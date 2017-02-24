@@ -242,7 +242,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
         uint64 distinct_id = a->distinct_id();
         set<uint32> involved_other_replicas;
         // action_local_remastered_keys: local entries that need to remaster, replica_id=>keys
-        map<uint32, set<string>> action_local_remastered_keys;
+        map<uint32, KeyMasterEntries> action_local_remastered_keys;
         // forwarded_entries： all entries that need to remaster, machine_id=>entries
         map<uint64, KeyMasterEntries> forwarded_entries;
   
@@ -258,6 +258,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
             if (local_remastered_keys_.find(key) == local_remastered_keys_.end()) {
               if (key_replica != replica_) {
                 forwarded_entries[machineid].add_entries()->CopyFrom(map_entry);
+
               } else if (local_remastering_keys_.find(key) != local_remastering_keys_.end()) {
                 forwarded_entries[machineid].add_entries()->CopyFrom(map_entry);
               }
@@ -283,7 +284,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
               delayed_actions_by_key_[key].push_back(distinct_id);
               delayed_actions_by_id_[distinct_id].insert(key);
 
-              action_local_remastered_keys[key_replica].insert(key);   
+              action_local_remastered_keys[key_replica].add_entries()->CopyFrom(entries.entries(i)); 
             }
                       
             // Generate remaster action
@@ -294,17 +295,17 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
 
             for (auto it2 = action_local_remastered_keys.begin(); it2 != action_local_remastered_keys.end(); it2++) {
               uint32 remote_replica = it2->first;
-              set<string> remote_keys = it2->second;
+              KeyMasterEntries remote_keys = it2->second;
               
               remaster_action->set_remaster_from(remote_replica);
               remaster_action->clear_distinct_id();
               remaster_action->set_distinct_id(machine()->GetGUID());
               remaster_action->clear_remastered_keys();
 
-              for (auto it3 = remote_keys.begin(); it3 != remote_keys.end(); it3++) {
-                if (local_remastering_keys_.find(*it3) == local_remastering_keys_.end()) {
-                  remaster_action->add_remastered_keys(*it3);
-                  local_remastering_keys_.insert(*it3);
+              for (int i = 0; i < remote_keys.entries_size(); i++) {
+                if (local_remastering_keys_.find(remote_keys.entries(i).key()) == local_remastering_keys_.end()) {
+                  remaster_action->add_remastered_keys()->CopyFrom(remote_keys.entries(i));;
+                  local_remastering_keys_.insert(remote_keys.entries(i).key());
                 }
               }
 
@@ -354,7 +355,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log receive a ac
       KeyMasterEntries remote_entries;
       remote_entries.ParseFromArray((*message)[0].data(), (*message)[0].size());
       uint64 distinct_id = header->misc_int(0);
-      map<uint32, set<string>> action_local_remastered_keys;
+      map<uint32, KeyMasterEntries> action_local_remastered_keys;
       coordinated_machine_by_id_[distinct_id] = header->from();
 
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie REMASTER_REQUEST messagea. from machine:"<<header->from()<<"  distinct_id is:"<<distinct_id;  
@@ -370,7 +371,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie REMA
           continue;
         }
         
-        action_local_remastered_keys[key_replica].insert(key);
+        action_local_remastered_keys[key_replica].add_entries()->CopyFrom(remote_entries.entries(j));
               
         delayed_actions_by_key_[key].push_back(distinct_id);
         delayed_actions_by_id_[distinct_id].insert(key);
@@ -402,17 +403,17 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie REMA
 
       for (auto it2 = action_local_remastered_keys.begin(); it2 != action_local_remastered_keys.end(); it2++) {
         uint32 remote_replica = it2->first;
-        set<string> remote_keys = it2->second;
+        KeyMasterEntries remote_keys= it2->second;
               
         remaster_action->set_remaster_from(remote_replica);
         remaster_action->clear_distinct_id();
         remaster_action->set_distinct_id(machine()->GetGUID());
         remaster_action->clear_remastered_keys();
 
-        for (auto it3 = remote_keys.begin(); it3 != remote_keys.end(); it3++) {
-          if (local_remastering_keys_.find(*it3) == local_remastering_keys_.end()) {
-            remaster_action->add_remastered_keys(*it3);
-            local_remastering_keys_.insert(*it3);
+        for (int i = 0; i < remote_keys.entries_size(); i++) {
+          if (local_remastering_keys_.find(remote_keys.entries(i).key()) == local_remastering_keys_.end()) {
+            remaster_action->add_remastered_keys()->CopyFrom(remote_keys.entries(i));;
+            local_remastering_keys_.insert(remote_keys.entries(i).key());
           }
         }
 

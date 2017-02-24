@@ -30,16 +30,18 @@ void LockingScheduler::MainLoopBody() {
     if (action->remaster() == true) {
       // Release the locks and wake up the waiting actions.
       for (int i = 0; i < action->remastered_keys_size(); i++) {
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler: remaster action completed， action:"<<action->distinct_id()<<" so can wake up key: "<<action->remastered_keys(i);
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler: remaster action completed， action:"<<action->distinct_id()<<" so can wake up key: "<<action->remastered_keys(i).key();
         if (waiting_actions_by_key_.find(action->remastered_keys(i)) != waiting_actions_by_key_.end()) {
-          vector<Action*> blocked_actions = waiting_actions_by_key_[action->remastered_keys(i)];
+          KeyMasterEntry entry = action->remastered_keys(i);
+          pair<string, uint64> key_info = make_pair(entry.key(), entry.counter());
+          vector<Action*> blocked_actions = waiting_actions_by_key_[key_info];
 
           for (auto it = blocked_actions.begin(); it != blocked_actions.end(); it++) {
             Action* a = *it;
-            (waiting_actions_by_actionid_[a->distinct_id()]).erase(action->remastered_keys(i));
+            (waiting_actions_by_actionid_[a->distinct_id()]).erase(key_info);
 
             if ((waiting_actions_by_actionid_[a->distinct_id()]).size() == 0) {
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler: remaster action completed， action:"<<action->distinct_id()<<" so can wake up key: "<<action->remastered_keys(i)<<"   now action can be run, id:"<<a->distinct_id();
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler: remaster action completed， action:"<<action->distinct_id()<<" so can wake up key: "<<action->remastered_keys(i).key()<<"   now action can be run, id:"<<a->distinct_id();
               a->set_wait_for_remaster_pros(false);
               waiting_actions_by_actionid_.erase(a->distinct_id());
 
@@ -62,10 +64,10 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler: remaster act
             }
           }
 
-          waiting_actions_by_key_.erase(action->remastered_keys(i));
+          waiting_actions_by_key_.erase(entry.key());
        }
 
-       lm_.Release(action, action->remastered_keys(i));
+       lm_.Release(action, entry.key());
     }
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler finish running a remaster action:  distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin();
 
@@ -124,23 +126,19 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler finish running
 
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action, distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin();
     
-    if (action->wait_for_remaster_pros() == false && blocking_replica_id_.find(action->origin()) != blocking_replica_id_.end()) {
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action:" << action->version()<<" distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin()<<"-- temporarily block the actions";
-      // Temporarily block the actions from replica:blocking_replica_id_
-      blocking_actions_[action->origin()].push(action);
-      return;
-    } else if (action->wait_for_remaster_pros() == true && action->remaster_to() != local_replica_) {
+    if (action->origin() != local_replica_) {
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action:" << action->version()<<" distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin()<<"-- check for pros actions";
       blocking_actions_[action->origin()].push(action);
+      action->set_wait_for_remaster_pros(true);
       // Check the mastership of the records without locking
-      set<string> keys;
+      set<pair<string,uint64>> keys;
       bool can_execute_now = store_->CheckLocalMastership(action, keys);
       if (can_execute_now == false) {
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action:" << action->version()<<" distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin()<<"-- check for pros actions(** check pros failed)";
         blocking_replica_id_.insert(action->origin());
 
         // Put it into the queue and wait for the remaster action come
-        waiting_actions_by_actionid_[action->distinct_id()] = keys;
+        waiting_actions_by_actionid_[action->distinct_id()].insert(keys);
         for (auto it = keys.begin(); it != keys.end(); it++) {
           waiting_actions_by_key_[*it].push_back(action);
         }
@@ -162,8 +160,9 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action
 LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action:" << action->version()<<" distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin()<<"-- received a remaster action";
       // Request the lock
       for (int i = 0; i < action->remastered_keys_size(); i++) {
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action:" << action->version()<<" distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin()<<"### key:"<<action->remastered_keys(i);
-        if (!lm_.WriteLock(action, action->remastered_keys(i))) {
+        KeyMasterEntry entry = action->remastered_keys(i);
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action:" << action->version()<<" distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin()<<"### key:"<<entry.key();
+        if (!lm_.WriteLock(action, entry.key())) {
           ungranted_requests++;
         }
       }

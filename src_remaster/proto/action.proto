@@ -14,6 +14,7 @@ import "scalar.proto";
 message KeyMasterEntry {
   required bytes key = 1;
   required uint32 master = 2;
+  required uint64 counter = 3;
 }
 
 message KeyMasterEntries {
@@ -82,7 +83,7 @@ message Action {
   // Keys of records and its origins. for non remaster actions
   repeated KeyMasterEntry keys_origins = 81;
 
-  repeated bytes remastered_keys = 82;
+  repeated KeyMasterEntry remastered_keys = 82;
   // Also should take some information about which records will be remaster
 }
 

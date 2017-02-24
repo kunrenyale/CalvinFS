@@ -55,8 +55,8 @@ class LockingScheduler : public Scheduler {
 
   atomic<uint64> safe_version_;
 
-  map<string, vector<Action*>> waiting_actions_by_key_;
-  map<uint64, set<string>> waiting_actions_by_actionid_;
+  map<pair<string, uint64>, vector<Action*>> waiting_actions_by_key_;
+  map<uint64, set<pair<string, uint64>>> waiting_actions_by_actionid_;
 
   queue<Action*> ready_actions_;
 

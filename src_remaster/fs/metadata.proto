@@ -42,7 +42,11 @@ message MetadataEntry {
   // DIR files contain zero or more child files, whose names are listed here.
   repeated string dir_contents = 7;
 
+  // Current master of this record
   required uint32 master = 8;
+
+  // How many times that the master of this record has been changed
+  required uint64 counter = 9;
 
 }
 

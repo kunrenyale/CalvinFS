@@ -52,11 +52,13 @@ void StoreApp::HandleMessageBase(Header* header, MessageBuffer* message) {
     KeyMasterEntries local_entries;
     for (uint32 i = 0; i < cnt;i++) {
       string key = header->misc_string(i+1);
-      uint32 replica = store_->GetLocalKeyMastership(key);
+      
+      pair<uint32, uint64> replica_counter = store_->GetLocalKeyMastership(key);
 
       KeyMasterEntry* e = local_entries.add_entries();
       e->set_key(key);
-      e->set_master(replica);
+      e->set_master(replica_counter.first);
+      e->set_counter(replica_counter.second);
     }
     
     Header* header2 = new Header();
@@ -128,7 +130,7 @@ void StoreApp::RunAsync(Action* action, AtomicQueue<Action*>* queue) {
   machine()->SendMessage(header, new MessageBuffer());
 }
 
-bool StoreApp::CheckLocalMastership(Action* action, set<string>& keys) {
+bool StoreApp::CheckLocalMastership(Action* action, set<pair<string,uint64>>& keys) {
   return store_->CheckLocalMastership(action, keys);
 }
 

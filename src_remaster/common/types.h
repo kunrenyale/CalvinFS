@@ -8,11 +8,14 @@
 #include <stdint.h>
 #include <iostream>  // NOLINT
 #include <string>
+#include <utility> 
 #include "leveldb/slice.h"
 
 // Slice and string are common enough that they're worth including here.
 using std::string;
 using leveldb::Slice;
+using std::pair;
+using std::make_pair;
 
 // Abbreviated signed int types.
 typedef int8_t int8;

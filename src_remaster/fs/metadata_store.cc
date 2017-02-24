@@ -564,12 +564,13 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
 
     if (remote_machine_id == machine_id_) {
       // Get the mastership of the local records directly
-      uint32 replica = GetLocalKeyMastership(action->readset(i));
-      replica_involved.insert(replica);
+      pair<uint32, uint64> replica_counter = GetLocalKeyMastership(action->readset(i));
+      replica_involved.insert(replica_counter.first);
       
       KeyMasterEntry map_entry;
       map_entry.set_key(action->readset(i));
       map_entry.set_master(replica);
+      map_entry.set_counter(replica_counter.second);
       action->add_keys_origins()->CopyFrom(map_entry);
 LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(begin)^^^^^^  distinct id is:"<<action->distinct_id()<<" --key is local:"<<action->readset(i);
     } else {
@@ -646,21 +647,23 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForR
 
 }
 
-bool MetadataStore::CheckLocalMastership(Action* action, set<string>& keys) {
+bool MetadataStore::CheckLocalMastership(Action* action, set<pair<string,uint64>>& keys) {
   bool can_execute_now = true;
 
   for (int i = 0; i < action->keys_origins_size(); i++) {
     KeyMasterEntry map_entry = action->keys_origins(i);
     string key = map_entry.key();
     uint32 key_replica = map_entry.master();
+    uint64 key_counter = map_entry.counter();
 
     if (IsLocal(key) && key_replica != action->origin()) {
-      uint32 replica = GetLocalKeyMastership(action->readset(i));
-      if (replica != action->origin()) {
-        keys.insert(action->readset(i));
+      pair<uint32, uint64> key_info = GetLocalKeyMastership(action->readset(i));
+      if (key_info.first != action->origin() && key_info.second < key_counter + 1) {
+        keys.insert(make_pair(key, key_counter + 1));
         can_execute_now = false;
       }
     }
+
   }
 
   return can_execute_now;
@@ -675,13 +678,13 @@ uint32 MetadataStore::LocalReplica() {
   return replica_;
 }
 
-uint32 MetadataStore::GetLocalKeyMastership(string key) {
+pair<uint32, uint64> MetadataStore::GetLocalKeyMastership(string key) {
    string value;
    store_->Get(key, &value);
    MetadataEntry entry;
    entry.ParseFromString(value);
 
-  return entry.master();
+  return make_pair(entry.master(), entry.counter());
 }
 
 void MetadataStore::Init() {
@@ -700,6 +703,7 @@ void MetadataStore::Init() {
       entry.add_dir_contents("a" + IntToString(i));
     }
     entry.set_master(0);
+    entry.set_counter(0);
     string serialized_entry;
     entry.SerializeToString(&serialized_entry);
     store_->Put("", serialized_entry);
@@ -717,6 +721,7 @@ void MetadataStore::Init() {
       }
 
       entry.set_master(LookupReplicaByDir(dir));
+      entry.set_counter(0);
       string serialized_entry;
       entry.SerializeToString(&serialized_entry);
       store_->Put(dir, serialized_entry);
@@ -733,6 +738,7 @@ void MetadataStore::Init() {
         }
 
         entry.set_master(LookupReplicaByDir(subdir));
+        entry.set_counter(0);
         string serialized_entry;
         entry.SerializeToString(&serialized_entry);
         store_->Put(subdir, serialized_entry);
@@ -750,6 +756,7 @@ void MetadataStore::Init() {
           fp->set_block_offset(0);
 
           entry.set_master(LookupReplicaByDir(file));
+          entry.set_counter(0);
           string serialized_entry;
           entry.SerializeToString(&serialized_entry);
           store_->Put(file, serialized_entry);
@@ -783,6 +790,7 @@ void MetadataStore::InitSmall() {
     }
 
     entry.set_master(0);
+    entry.set_counter(0);
     string serialized_entry;
     entry.SerializeToString(&serialized_entry);
     store_->Put("", serialized_entry);
@@ -800,6 +808,7 @@ void MetadataStore::InitSmall() {
       }
 
       entry.set_master(LookupReplicaByDir(dir));
+      entry.set_counter(0);
       string serialized_entry;
       entry.SerializeToString(&serialized_entry);
       store_->Put(dir, serialized_entry);
@@ -814,6 +823,7 @@ void MetadataStore::InitSmall() {
         entry.add_dir_contents("c");
 
         entry.set_master(LookupReplicaByDir(subdir));
+        entry.set_counter(0);
         string serialized_entry;
         entry.SerializeToString(&serialized_entry);
         store_->Put(subdir, serialized_entry);
@@ -826,6 +836,7 @@ void MetadataStore::InitSmall() {
         entry.set_type(DATA);
 
         entry.set_master(LookupReplicaByDir(file));
+        entry.set_counter(0);
         string serialized_entry;
         entry.SerializeToString(&serialized_entry);
         store_->Put(file, serialized_entry);

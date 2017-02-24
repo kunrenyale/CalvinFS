@@ -7,7 +7,6 @@
 #ifndef CALVIN_FS_METADATA_STORE_H_
 #define CALVIN_FS_METADATA_STORE_H_
 
-#include <string>
 #include "btree/btree_map.h"
 #include "common/types.h"
 #include "common/mutex.h"
@@ -36,8 +35,8 @@ class MetadataStore : public Store {
   virtual uint32 LookupReplicaByDir(string dir);
   virtual uint64 GetHeadMachine(uint64 machine_id);
   virtual uint32 LocalReplica();
-  virtual uint32 GetLocalKeyMastership(string);
-  virtual bool CheckLocalMastership(Action* action, set<string>& keys);
+  virtual pair<uint32, uint64> GetLocalKeyMastership(string);
+  virtual bool CheckLocalMastership(Action* action, set<pair<string,uint64>>& keys);
 
   uint64 GetMachineForReplica(Action* action);
 
