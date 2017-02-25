@@ -696,11 +696,18 @@ bool MetadataStore::CheckLocalMastership(Action* action, set<pair<string,uint64>
       uint32 key_replica = map_entry.master();
       uint64 key_counter = map_entry.counter();
 
-      if (IsLocal(key) && key_replica != action->origin()) {
+      if (IsLocal(key)) {
         pair<uint32, uint64> key_info = GetLocalKeyMastership(key);
-        if (key_info.first != action->origin() && key_info.second < key_counter + 1) {
-          keys.insert(make_pair(key, key_counter + 1));
-          can_execute_now = false;
+        if (key_replica != action->origin()) {
+          if (key_info.first != action->origin() && key_info.second < key_counter + 1) {
+            keys.insert(make_pair(key, key_counter + 1));
+            can_execute_now = false;
+          }
+        } else {
+          if (key_info.first != action->origin() && key_info.second < key_counter) {
+            keys.insert(make_pair(key, key_counter));
+            can_execute_now = false;
+          }
         }
       }
     }
@@ -1075,7 +1082,7 @@ void MetadataStore::Remaster_Internal(ExecutionContext* context, Action* action)
   MetadataEntry entry;
   uint32 origin_master = action->remaster_to();
   uint32 origin_from = action->remaster_from();
-  vector<string> remastered_keys;
+  KeyMasterEntries remastered_entries;
 
   for (int i = 0; i < action->remastered_keys_size(); i++) {
     KeyMasterEntry map_entry = action->remastered_keys(i);
@@ -1086,10 +1093,13 @@ void MetadataStore::Remaster_Internal(ExecutionContext* context, Action* action)
     }
     
     if (entry.master() == origin_from && map_entry.counter() == entry.counter()) {
-      remastered_keys.push_back(map_entry.key());
       entry.set_master(origin_master);
       entry.set_counter(entry.counter() + 1);
       context->PutEntry(map_entry.key(), entry);
+
+      map_entry.set_master(origin_master);
+      map_entry.set_counter(entry.counter());
+      remaster_entries.add_entries()->CopyFrom(map_entry);
     }
 
   }
@@ -1098,7 +1108,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::Remaster_Inter
 
   if (origin_master == replica_ || action->remaster_from() == replica_) {
     // Need to send message to confirm the completation of the remaster operation
-    uint32 keys_size = remastered_keys.size();
+    uint32 keys_size = remastered_entries.entries_size();
     uint64 machine_sent = machine_->machine_id();
 
     Header* header = new Header();
@@ -1119,10 +1129,8 @@ LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::Remaster_Inter
     
     m->Append(ToScalar<bool>(remaster_to));
     m->Append(ToScalar<uint32>(keys_size));
-    
-    for (uint32 i = 0; i < keys_size; i++) {
-      m->Append(ToScalar<string>(remastered_keys[i]));
-    }
+    m->Append(entries);
+
     machine_->SendMessage(header, m);
 LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::Remaster_Internal^^^^^^(send COMPLETED_REMASTER)  distinct id is:"<<action->distinct_id();
   }
