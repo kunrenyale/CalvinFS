@@ -238,7 +238,6 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a re
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a multi-replica action. action id is:"<< a->distinct_id() <<" from machine:"<<header->from();
         Lock l(&remaster_latch);
         // The multi-replica actions that generate remaster actions
-        a->set_wait_for_remaster_pros(true);
         a->set_remaster_to(replica_);
         uint64 distinct_id = a->distinct_id();
         set<uint32> involved_other_replicas;
@@ -247,9 +246,16 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
         // forwarded_entries： all entries that need to remaster, machine_id=>entries
         map<uint64, KeyMasterEntries> forwarded_entries;
   
-        // Queue the multi-replica actions in the delayed queue, and send the remaster actions(generate a new action) to the involved replicas;
+
+        KeyMasterEntries old_keys_origins;
         for (int i = 0; i < a->keys_origins_size(); i++) {
-          KeyMasterEntry map_entry = a->keys_origins(i);
+          old_keys_origins.add_entries()->CopyFrom(a->keys_origins(i));
+        }
+        a->clear_keys_origins();
+
+        // Queue the multi-replica actions in the delayed queue, and send the remaster actions(generate a new action) to the involved replicas;
+        for (int i = 0; i < old_keys_origins.entries_size(); i++) {
+          KeyMasterEntry map_entry = old_keys_origins.entries(i);
           string key = map_entry.key();
           uint32 key_replica = map_entry.master();
           uint64 mds = config_->HashFileName(key);         
@@ -260,9 +266,17 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
               if (key_replica != replica_) {
                 forwarded_entries[machineid].add_entries()->CopyFrom(map_entry);
 
-              } else if (local_remastering_keys_.find(key) != local_remastering_keys_.end()) {
-                forwarded_entries[machineid].add_entries()->CopyFrom(map_entry);
+              } else { 
+                if (local_remastering_keys_.find(key) != local_remastering_keys_.end()) {
+                  forwarded_entries[machineid].add_entries()->CopyFrom(map_entry);
+                } else {
+                  a->add_keys_origins()->CopyFrom(map_entry); 
+                }
               }
+            } else {
+              map_entry.set_master(replica_);
+              map_entry.set_counter(local_remastered_keys_[key]);
+              a->add_keys_origins()->CopyFrom(map_entry);
             }
           } else {
             forwarded_entries[machineid].add_entries()->CopyFrom(map_entry);
@@ -344,7 +358,6 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log send REMASTE
 
         if (forwarded_entries.size() == 0) {
           a->set_single_replica(true);
-          a->set_wait_for_remaster_pros(false);
           queue_.Push(a); 
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log receive a action. Action already is ready to go and put into the queue. distinct_id is:"<<distinct_id;  
         }
@@ -361,14 +374,19 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log receive a ac
 
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie REMASTER_REQUEST messagea. from machine:"<<header->from()<<"  distinct_id is:"<<distinct_id;  
       for (int j = 0; j < remote_entries.entries_size(); j++) {
-        string key = remote_entries.entries(j).key();
-        uint32 key_replica = remote_entries.entries(j).master();
+        KeyMasterEntry map_entry = remote_entries.entries(j);
+        string key = map_entry.key();
+        uint32 key_replica = map_entry.master();
 
         if (local_remastered_keys_.find(key) != local_remastered_keys_.end()) {
+          map_entry.set_master(replica_);
+          map_entry.set_counter(local_remastered_keys_[key]); 
+          slave_entries[distinct_id].add_entries()->CopyFrom(map_entry);
           continue;
         }
         
         if (key_replica == replica_ && local_remastering_keys_.find(key) == local_remastering_keys_.end()) {
+          slave_entries[distinct_id].add_entries()->CopyFrom(map_entry);
           continue;
         }
         
@@ -389,7 +407,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie REMA
         header->set_app(name());
         header->set_rpc("REMASTER_REQUEST_ACK");
         header->add_misc_int(distinct_id);
-        MessageBuffer* m = new MessageBuffer();
+        MessageBuffer* m = new MessageBuffer(slave_entries[distinct_id]);
         machine()->SendMessage(header, m);
                 
         coordinated_machine_by_id_.erase(distinct_id);
@@ -442,6 +460,13 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie REMA
       CHECK(coordinated_machins_.find(distinct_id) != coordinated_machins_.end());
       coordinated_machins_[distinct_id].erase(machine_from);
      
+      KeyMasterEntries remote_entries;
+      remote_entries.ParseFromArray((*message)[0].data(), (*message)[0].size());
+
+      for (int j = 0; j < remote_entries.entries_size(); j++) {
+        delayed_actions_[distinct_id]->add_keys_origins()->CopyFrom(remote_entries.entries(j)); 
+      }
+
       if (coordinated_machins_[distinct_id].size() == 0) {
         // Now the action can go to log
         coordinated_machins_.erase(distinct_id);
@@ -457,16 +482,19 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie REMA
       s.ParseFromArray((*message)[0].data(), (*message)[0].size());
       bool remaster_to = FromScalar<bool>(s);
 
-      s.ParseFromArray((*message)[1].data(), (*message)[1].size());
-      uint32 keys_num = FromScalar<uint32>(s);
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMPLETED_REMASTER messagea. from machine:"<<header->from()<<"  keys num is:"<<keys_num;
+      KeyMasterEntries remastered_entries;
+      remastered_entries.ParseFromArray((*message)[1].data(), (*message)[1].size());
 
-      for (uint32 i = 0; i < keys_num; i++) {
-        s.ParseFromArray((*message)[i+2].data(), (*message)[i+2].size());
-        string key = FromScalar<string>(s);
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMPLETED_REMASTER messagea. from machine:"<<header->from()<<"  keys num is:"<<remastered_entries.entries_size();
+
+      for (int i = 0; i < remastered_entries.entries_size(); i++) {
+        KeyMasterEntry map_entry = remastered_entries.entries(i);
+        string key = map_entry.key();
+        uint64 counter = map_entry.counter();
+
         if (remaster_to == true) {
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMPLETED_REMASTER messagea. from machine:"<<header->from()<<"  keys is:"<<key;
-          local_remastered_keys_.insert(key);
+          local_remastered_keys_[key] = counter;
           local_remastering_keys_.erase(key);
        
           CHECK(delayed_actions_by_key_.find(key) != delayed_actions_by_key_.end());
@@ -475,6 +503,14 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMP
           for (uint32 j = 0; j < delayed_queue.size(); j++) {
             uint64 distinct_id = delayed_queue[j];
             delayed_actions_by_id_[distinct_id].erase(key);
+            
+            if (delayed_actions_.find(distinct_id) != delayed_actions_.end()) {
+              // The master node
+              delayed_actions_[distinct_id]->add_keys_origins()->CopyFrom(map_entry);
+            } else {
+              slave_entries[distinct_id].add_entries()->CopyFrom(map_entry);
+            }
+
             if (delayed_actions_by_id_[distinct_id].size() == 0) {
               delayed_actions_by_id_.erase(distinct_id);
               if (delayed_actions_.find(distinct_id) != delayed_actions_.end()) {
@@ -490,6 +526,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMP
                 // the slave node, should send remaster_request_ack to master node
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMPLETED_REMASTER messagea. from machine:"<<header->from()<<"  slave send REMASTER_REQUEST_ACK to:"<<coordinated_machine_by_id_[distinct_id];
                 CHECK(coordinated_machine_by_id_.find(distinct_id) != coordinated_machine_by_id_.end());
+
                 Header* header = new Header();
                 header->set_from(machine()->machine_id());
                 header->set_to(coordinated_machine_by_id_[distinct_id]);
@@ -497,7 +534,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMP
                 header->set_app(name());
                 header->set_rpc("REMASTER_REQUEST_ACK");
                 header->add_misc_int(distinct_id);
-                MessageBuffer* m = new MessageBuffer();
+                MessageBuffer* m = new MessageBuffer(slave_entries[distinct_id]);
                 machine()->SendMessage(header, m);
                 
                 coordinated_machine_by_id_.erase(distinct_id);
@@ -650,7 +687,10 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log finished COM
 
   map<uint64, set<uint64>> coordinated_machins_;
 
-  set<string> local_remastered_keys_;
+  map<uint64, KeyMasterEntries> slave_entries;
+
+  // key-->counter
+  map<string, uint64> local_remastered_keys_;
 
   set<string> local_remastering_keys_;
 
