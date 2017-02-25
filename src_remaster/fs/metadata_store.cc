@@ -214,7 +214,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
 
 
       if (remote_remaster == true) {
-        // Only need to generate once
+        // Only the origin of the remaster action needs to generate new remaster action
         if (replica_ == action->origin()) {
           // Send the remaster actions(generate a new action) to the involved replicas;
           Action* remaster_action = new Action();

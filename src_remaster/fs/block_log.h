@@ -237,7 +237,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a re
       } else {
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a multi-replica action. action id is:"<< a->distinct_id() <<" from machine:"<<header->from();
         Lock l(&remaster_latch);
-        // The multi-replica actions that generate remaster actions
+        // The multi-replica actions or single-replica actions that come from remote replica that may generate remaster actions
         a->set_remaster_to(replica_);
         uint64 distinct_id = a->distinct_id();
         set<uint32> involved_other_replicas;
@@ -246,7 +246,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
         // forwarded_entries： all entries that need to remaster, machine_id=>entries
         map<uint64, KeyMasterEntries> forwarded_entries;
   
-
+        // Backup the old_keys_origins because we will update them with the latest results
         KeyMasterEntries old_keys_origins;
         for (int i = 0; i < a->keys_origins_size(); i++) {
           old_keys_origins.add_entries()->CopyFrom(a->keys_origins(i));
@@ -265,7 +265,6 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
             if (local_remastered_keys_.find(key) == local_remastered_keys_.end()) {
               if (key_replica != replica_) {
                 forwarded_entries[machineid].add_entries()->CopyFrom(map_entry);
-
               } else { 
                 if (local_remastering_keys_.find(key) != local_remastering_keys_.end()) {
                   forwarded_entries[machineid].add_entries()->CopyFrom(map_entry);
@@ -381,12 +380,12 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie REMA
         if (local_remastered_keys_.find(key) != local_remastered_keys_.end()) {
           map_entry.set_master(replica_);
           map_entry.set_counter(local_remastered_keys_[key]); 
-          slave_entries[distinct_id].add_entries()->CopyFrom(map_entry);
+          slave_entries_[distinct_id].add_entries()->CopyFrom(map_entry);
           continue;
         }
         
         if (key_replica == replica_ && local_remastering_keys_.find(key) == local_remastering_keys_.end()) {
-          slave_entries[distinct_id].add_entries()->CopyFrom(map_entry);
+          slave_entries_[distinct_id].add_entries()->CopyFrom(map_entry);
           continue;
         }
         
@@ -407,10 +406,12 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie REMA
         header->set_app(name());
         header->set_rpc("REMASTER_REQUEST_ACK");
         header->add_misc_int(distinct_id);
-        MessageBuffer* m = new MessageBuffer(slave_entries[distinct_id]);
+        MessageBuffer* m = new MessageBuffer(slave_entries_[distinct_id]);
         machine()->SendMessage(header, m);
                 
         coordinated_machine_by_id_.erase(distinct_id);
+        slave_entries_.erase(distinct_id);
+
         return;
       }
 
@@ -506,9 +507,11 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMP
             
             if (delayed_actions_.find(distinct_id) != delayed_actions_.end()) {
               // The master node
-              delayed_actions_[distinct_id]->add_keys_origins()->CopyFrom(map_entry);
+              if (delayed_actions_[distinct_id]->remaster() == false) {
+                delayed_actions_[distinct_id]->add_keys_origins()->CopyFrom(map_entry);
+              }
             } else {
-              slave_entries[distinct_id].add_entries()->CopyFrom(map_entry);
+              slave_entries_[distinct_id].add_entries()->CopyFrom(map_entry);
             }
 
             if (delayed_actions_by_id_[distinct_id].size() == 0) {
@@ -534,10 +537,11 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMP
                 header->set_app(name());
                 header->set_rpc("REMASTER_REQUEST_ACK");
                 header->add_misc_int(distinct_id);
-                MessageBuffer* m = new MessageBuffer(slave_entries[distinct_id]);
+                MessageBuffer* m = new MessageBuffer(slave_entries_[distinct_id]);
                 machine()->SendMessage(header, m);
                 
                 coordinated_machine_by_id_.erase(distinct_id);
+                slave_entries_.erase(distinct_id);
               }
             }
           }
@@ -687,7 +691,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log finished COM
 
   map<uint64, set<uint64>> coordinated_machins_;
 
-  map<uint64, KeyMasterEntries> slave_entries;
+  map<uint64, KeyMasterEntries> slave_entries_;
 
   // key-->counter
   map<string, uint64> local_remastered_keys_;
