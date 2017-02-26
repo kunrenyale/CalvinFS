@@ -365,6 +365,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log receive a ac
 
     } else if (header->rpc() == "REMASTER_REQUEST") {
       // Slave machines receive the remaster request
+      Lock l(&remaster_latch);
       KeyMasterEntries remote_entries;
       remote_entries.ParseFromArray((*message)[0].data(), (*message)[0].size());
       uint64 distinct_id = header->misc_int(0);
