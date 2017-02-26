@@ -457,17 +457,18 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log will generat
       Lock l(&remaster_latch);
       uint64 machine_from = header->from();
       uint64 distinct_id = header->misc_int(0);
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie REMASTER_REQUEST_ACK messagea. from machine:"<<header->from()<<"  distinct_id is:"<<distinct_id;    
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie REMASTER_REQUEST_ACK messagea. from machine:"<<header->from()<<"  distinct_id is:"<<distinct_id;  
       CHECK(coordinated_machins_.find(distinct_id) != coordinated_machins_.end());
       coordinated_machins_[distinct_id].erase(machine_from);
-     
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie REMASTER_REQUEST_ACK messagea(1). from machine:"<<header->from()<<"  distinct_id is:"<<distinct_id;      
       KeyMasterEntries remote_entries;
       remote_entries.ParseFromArray((*message)[0].data(), (*message)[0].size());
 
+CHECK(delayed_actions_[distinct_id] != NULL);
       for (int j = 0; j < remote_entries.entries_size(); j++) {
         delayed_actions_[distinct_id]->add_keys_origins()->CopyFrom(remote_entries.entries(j)); 
       }
-
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie REMASTER_REQUEST_ACK messagea(2). from machine:"<<header->from()<<"  distinct_id is:"<<distinct_id; 
       if (coordinated_machins_[distinct_id].size() == 0) {
         // Now the action can go to log
         coordinated_machins_.erase(distinct_id);
@@ -527,7 +528,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMP
                 }
               } else {
                 // the slave node, should send remaster_request_ack to master node
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMPLETED_REMASTER messagea. from machine:"<<header->from()<<"  slave send REMASTER_REQUEST_ACK to:"<<coordinated_machine_by_id_[distinct_id];
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie COMPLETED_REMASTER messagea. from machine:"<<header->from()<<"  slave send REMASTER_REQUEST_ACK to:"<<coordinated_machine_by_id_[distinct_id]<<"  distinct_id is:"<<distinct_id;
                 CHECK(coordinated_machine_by_id_.find(distinct_id) != coordinated_machine_by_id_.end());
 
                 Header* header = new Header();
