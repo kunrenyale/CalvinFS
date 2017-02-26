@@ -117,6 +117,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler finish running
     if (ready_actions_.size() != 0) {
       action = ready_actions_.front();
       ready_actions_.pop();
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action(from ready queue), distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin();
     } else if (!action_requests_->Get(&action)){
       return;
     }
