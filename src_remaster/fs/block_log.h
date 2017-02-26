@@ -355,9 +355,14 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log send REMASTE
           }
         }
 
+        if (forwarded_entries.find(machine()->machine_id()) == forwarded_entries.end()) {
+          delayed_actions_[distinct_id] = a;
+        }
+
         if (forwarded_entries.size() == 0) {
           a->set_single_replica(true);
-          queue_.Push(a); 
+          queue_.Push(a);
+          delayed_actions_.erase(distinct_id);
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log receive a action. Action already is ready to go and put into the queue. distinct_id is:"<<distinct_id;  
         }
 
@@ -461,15 +466,15 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log will generat
 LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie REMASTER_REQUEST_ACK messagea. from machine:"<<header->from()<<"  distinct_id is:"<<distinct_id;  
       CHECK(coordinated_machins_.find(distinct_id) != coordinated_machins_.end());
       coordinated_machins_[distinct_id].erase(machine_from);
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie REMASTER_REQUEST_ACK messagea(1). from machine:"<<header->from()<<"  distinct_id is:"<<distinct_id;      
+
       KeyMasterEntries remote_entries;
       remote_entries.ParseFromArray((*message)[0].data(), (*message)[0].size());
 
-CHECK(delayed_actions_[distinct_id] != NULL);
+      CHECK(delayed_actions_[distinct_id] != NULL);
       for (int j = 0; j < remote_entries.entries_size(); j++) {
         delayed_actions_[distinct_id]->add_keys_origins()->CopyFrom(remote_entries.entries(j)); 
       }
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie REMASTER_REQUEST_ACK messagea(2). from machine:"<<header->from()<<"  distinct_id is:"<<distinct_id; 
+
       if (coordinated_machins_[distinct_id].size() == 0) {
         // Now the action can go to log
         coordinated_machins_.erase(distinct_id);
