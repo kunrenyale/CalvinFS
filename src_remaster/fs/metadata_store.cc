@@ -685,7 +685,8 @@ bool MetadataStore::CheckLocalMastership(Action* action, set<pair<string,uint64>
       pair<uint32, uint64> key_info = GetLocalKeyMastership(key);
       if (key_counter > key_info.second) {
         keys.insert(make_pair(key, key_counter));
-        can_execute_now = false;  
+        can_execute_now = false;
+LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::CheckLocalMastership(remaster action)^^^^^^  distinct id is:"<<action->distinct_id()<<"---- check failed, wait on :key:"<<key<<" and counter:"<<key_counter;
       }
     }
   } else {
