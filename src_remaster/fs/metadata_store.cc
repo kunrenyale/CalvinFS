@@ -325,13 +325,13 @@ class DistributedExecutionContext : public ExecutionContext {
         header->set_from(machine_id_);
         header->set_to(min_machine_id);
         header->set_type(Header::DATA);
-        header->set_data_channel("action-check" + UInt64ToString(data_channel_version));
+        header->set_data_channel("action-check-" + UInt32ToString(origin_) + "-" + UInt64ToString(data_channel_version));
         MessageBuffer* m = new MessageBuffer(local_entries);
         m->Append(ToScalar<uint64>(machine_id_));
         machine_->SendMessage(header, m);
 //LOG(ERROR) << "Machine: "<<machine_id_<< "  not min_machine, wait for receiving the decision:: data_channel_version:"<<data_channel_version;   
         // Wait for the final decision
-        AtomicQueue<MessageBuffer*>* channel = machine_->DataChannel("action-check-ack" + UInt64ToString(data_channel_version));
+        AtomicQueue<MessageBuffer*>* channel = machine_->DataChannel("action-check-ack-" + UInt32ToString(origin_) + "-" + UInt64ToString(data_channel_version));
         // Get results.
         while (!channel->Pop(&m)) {
           usleep(10);
@@ -340,6 +340,8 @@ class DistributedExecutionContext : public ExecutionContext {
         Scalar s;
         s.ParseFromArray((*m)[0].data(), (*m)[0].size());
         bool abort_decision = FromScalar<bool>(s);
+        // Close channel.
+        machine_->CloseDataChannel("action-check-ack-" + UInt32ToString(origin_) + "-" + UInt64ToString(data_channel_version));
 
         if (abort_decision == true) {
           aborted_ = true;
@@ -377,8 +379,9 @@ class DistributedExecutionContext : public ExecutionContext {
         }
 //LOG(ERROR) << "Machine: "<<machine_id_<< "  min_machine, wait for receiving the data from all other machines:: data_channel_version:"<<data_channel_version;  
         // Wait to receive remote keys/masters
-        AtomicQueue<MessageBuffer*>* channel = machine_->DataChannel("action-check" + UInt64ToString(data_channel_version));
+        AtomicQueue<MessageBuffer*>* channel = machine_->DataChannel("action-check-" + UInt32ToString(origin_) + "-" + UInt64ToString(data_channel_version));
         for (uint32 i = 0; i < remote_nonmin_machines.size(); i++) {
+
           MessageBuffer* m = NULL;
           // Get results.
           while (!channel->Pop(&m)) {
@@ -406,6 +409,8 @@ class DistributedExecutionContext : public ExecutionContext {
             }
           }     
         }
+        // Close channel.
+        machine_->CloseDataChannel("action-check-" + UInt32ToString(origin_) + "-" + UInt64ToString(data_channel_version));
 
         // Send the final decision to all involved machines
         for (auto it = remote_nonmin_machines.begin(); it != remote_nonmin_machines.end(); ++it) {
@@ -414,11 +419,12 @@ class DistributedExecutionContext : public ExecutionContext {
           header->set_from(machine_id_);
           header->set_to(*it);
           header->set_type(Header::DATA);
-          header->set_data_channel("action-check-ack" + UInt64ToString(data_channel_version));
+          header->set_data_channel("action-check-ack-" + UInt32ToString(origin_) + "-" + UInt64ToString(data_channel_version));
           MessageBuffer* m = new MessageBuffer();
           m->Append(ToScalar<bool>(aborted_));
           machine_->SendMessage(header, m); 
         }
+
 //LOG(ERROR) << "Machine: "<<machine_id_<< "  min_machine, got all the data from all other machines:: data_channel_version:"<<data_channel_version<<" *** abort decision is:"<<aborted_;
         // Send the action to the new replica
         if (aborted_ == true) {
@@ -466,7 +472,7 @@ class DistributedExecutionContext : public ExecutionContext {
           header->set_from(machine_id_);
           header->set_to(*it);
           header->set_type(Header::DATA);
-          header->set_data_channel("action-" + UInt64ToString(data_channel_version));
+          header->set_data_channel("action-"+ UInt32ToString(origin_) + "-" + UInt64ToString(data_channel_version));
           machine_->SendMessage(header, new MessageBuffer(local_reads));
         }
       }
@@ -475,7 +481,7 @@ class DistributedExecutionContext : public ExecutionContext {
       if (writer_) {
         // Get channel.
         AtomicQueue<MessageBuffer*>* channel =
-          machine_->DataChannel("action-" + UInt64ToString(data_channel_version));
+          machine_->DataChannel("action-"+ UInt32ToString(origin_) + "-" + UInt64ToString(data_channel_version));
         for (uint32 i = 0; i < remote_readers.size(); i++) {
           MessageBuffer* m = NULL;
           // Get results.
@@ -490,7 +496,7 @@ class DistributedExecutionContext : public ExecutionContext {
           }
         }
         // Close channel.
-        machine_->CloseDataChannel("action-" + UInt64ToString(data_channel_version));
+        machine_->CloseDataChannel("action-"+ UInt32ToString(origin_) + "-" + UInt64ToString(data_channel_version));
       }
 //LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a txn:: data_channel_version:"<<data_channel_version<<"-- finish DistributedExecutionContext. min machine is:"<<min_machine_id;  
     }
