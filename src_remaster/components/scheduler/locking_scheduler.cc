@@ -28,13 +28,14 @@ void LockingScheduler::MainLoopBody() {
   // Process all actions that have finished running.
   while (completed_.Pop(&action)) {
     if (action->remaster() == true) {
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler: remaster action completed， action:"<<action->distinct_id();
       // Release the locks and wake up the waiting actions.
       for (int i = 0; i < action->remastered_keys_size(); i++) {
         KeyMasterEntry map_entry = action->remastered_keys(i);
         pair <string, uint64> key_info = make_pair(map_entry.key(), map_entry.counter()+1);
-LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler: remaster action completed， action:"<<action->distinct_id()<<" so can wake up key: "<<action->remastered_keys(i).key();
-        if (map_entry.master() != action->remaster_to() && waiting_actions_by_key_.find(key_info) != waiting_actions_by_key_.end()) {
 
+        if (map_entry.master() != action->remaster_to() && waiting_actions_by_key_.find(key_info) != waiting_actions_by_key_.end()) {
+LOG(ERROR) << "Machine: "<<machine()->machine_id()<< " --Scheduler: remaster action completed， action:"<<action->distinct_id()<<" so can wake up key: "<<action->remastered_keys(i).key();
           vector<Action*> blocked_actions = waiting_actions_by_key_[key_info];
 
           for (auto it = blocked_actions.begin(); it != blocked_actions.end(); it++) {

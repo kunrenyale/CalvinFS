@@ -327,7 +327,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
               }
 
               if (remaster_action->remastered_keys_size() > 0) {
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log will generate a new action. action id is:"<< remaster_action->distinct_id() <<" to machine:"<<config_->LookupMetadataShard(config_->GetMdsFromMachine(machine()->machine_id()), remote_replica);
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log will generate a new action. action id is:"<< remaster_action->distinct_id() <<" to machine:"<<config_->LookupMetadataShard(config_->GetMdsFromMachine(machine()->machine_id()), remote_replica)<<" --- generate from action:"<<distinct_id;;
                 // Send the action to the relevant replica
                 Header* header = new Header();
                 header->set_from(machine()->machine_id());
@@ -449,7 +449,7 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie REMA
         }
 
         if (remaster_action->remastered_keys_size() > 0) {
-LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log will generate a new action. action id is:"<< remaster_action->distinct_id() <<" to machine:"<<config_->LookupMetadataShard(config_->GetMdsFromMachine(machine()->machine_id()), remote_replica);
+LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log will generate a new action. action id is:"<< remaster_action->distinct_id() <<" to machine:"<<config_->LookupMetadataShard(config_->GetMdsFromMachine(machine()->machine_id()), remote_replica)<<" --- generate from action:"<<distinct_id;
           // Send the action to the relevant replica
           Header* header = new Header();
           header->set_from(machine()->machine_id());

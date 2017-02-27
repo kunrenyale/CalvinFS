@@ -424,8 +424,12 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  min_machine, send decision to machin
         }
 LOG(ERROR) << "Machine: "<<machine_id_<< "  min_machine, got all the data from all other machines:: data_channel_version:"<<data_channel_version<<" *** abort decision is:"<<aborted_;
         // Send the action to the new replica
-        if (aborted_ == true && replica_ == origin_) {
+        if (aborted_ == true) {
 LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a txn:: data_channel_version:"<<data_channel_version<<"-- abort this action, will forward this action";
+          if (replica_ != origin_) {
+            return;
+          }
+ 
           if (involved_replicas.size() == 1) {
             action->set_single_replica(true);
           } else {
@@ -444,7 +448,7 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
           string* block = new string();
           action->SerializeToString(block);
           machine_->SendMessage(header, new MessageBuffer(Slice(*block)));
-LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a txn:: data_channel_version:"<<data_channel_version<<"-- abort this action, and forward this action to"<<machine_sent;
+LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a txn:: data_channel_version:"<<data_channel_version<<"-- abort this action, and forward this action to: "<<machine_sent;
   
           return;
         }
