@@ -702,7 +702,7 @@ void LatencyExperimentAppend() {
   }
 
   void RenameExperiment(int local_percentage) {
-    /**uint64 partitions_per_replica = config_->GetPartitionsPerReplica();
+    uint64 partitions_per_replica = config_->GetPartitionsPerReplica();
     uint64 replicas_num = config_->GetReplicas();
     vector<uint64> machines_other_replicas;      
 
@@ -712,7 +712,7 @@ void LatencyExperimentAppend() {
       }
     }
 
-    uint64 size_other_machines = machines_other_replicas.size();**/
+    uint64 size_other_machines = machines_other_replicas.size();
 
     Spin(1);
     metadata_->Init();
@@ -722,7 +722,7 @@ void LatencyExperimentAppend() {
 
     double start = GetTime();
 
-    /**for (int j = 0; j < 250; j++) {
+    for (int j = 0; j < 10; j++) {
       int seed = rand() % 100;
       
       // Copy operations inside one data center
@@ -744,9 +744,9 @@ void LatencyExperimentAppend() {
         LOG(ERROR) << "[" << machine()->machine_id() << "] "
                    << "Test progress : " << j / 100 << "/" << 5;
       }
-    }**/
+    }
 
-    for (int j = 0; j < 10; j++) {
+    /**for (int j = 0; j < 10; j++) {
       
         int a1 = rand() % 1000;
         int a2 = rand() % 1000;
@@ -760,29 +760,19 @@ void LatencyExperimentAppend() {
                              "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a2) + "/d" + IntToString(machine()->GetGUID()));
       } else if (machine()->machine_id() == 2){
          // Only test 1 multi-replica rename operation for now
-         //if (j == 5) {
-           BackgroundRenameFile("/a" + IntToString(2) + "/b" + IntToString(j) + "/c" + IntToString(j),
+         BackgroundRenameFile("/a" + IntToString(2) + "/b" + IntToString(j) + "/c" + IntToString(j),
                              "/a" + IntToString(4) + "/b" + IntToString(j) + "/d" + IntToString(machine()->GetGUID()));
-         /**} else {
-           BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a1) + "/c" + IntToString(j),
-                             "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a2) + "/d" + IntToString(machine()->GetGUID()));
-         }**/
       } else if (machine()->machine_id() == 0){
          // Only test 1 multi-replica rename operation for now
-         //if (j == 5) {
-           BackgroundRenameFile("/a" + IntToString(0) + "/b" + IntToString(j) + "/c" + IntToString(j),
+         BackgroundRenameFile("/a" + IntToString(0) + "/b" + IntToString(j) + "/c" + IntToString(j),
                              "/a" + IntToString(4) + "/b" + IntToString(j) + "/d" + IntToString(machine()->GetGUID()));
-         /**} else {
-           BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a1) + "/c" + IntToString(j),
-                             "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a2) + "/d" + IntToString(machine()->GetGUID()));
-         }**/
       }
 
       if (j % 100 == 0) {
         LOG(ERROR) << "[" << machine()->machine_id() << "] "
                    << "Test progress : " << j / 100 << "/" << 5;
       }
-    }
+    }**/
 
     // Wait for all operations to finish.
     while (capacity_.load() < kMaxCapacity) {
