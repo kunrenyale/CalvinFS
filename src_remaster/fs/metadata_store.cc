@@ -279,6 +279,8 @@ class DistributedExecutionContext : public ExecutionContext {
           // Local read.
           if (!store_->Get(action->readset(i), &reads_[action->readset(i)])) {
             reads_.erase(action->readset(i));
+            aborted_ = true;
+            break;
             LOG(ERROR) <<"Entry doesn't exist!, should not happen!";
           }
           reader_ = true;
@@ -334,6 +336,7 @@ class DistributedExecutionContext : public ExecutionContext {
         header->set_data_channel("action-check-" + UInt32ToString(origin_) + "-" + UInt64ToString(data_channel_version));
         MessageBuffer* m = new MessageBuffer(local_entries);
         m->Append(ToScalar<uint64>(machine_id_));
+        m->Append(ToScalar<bool>(aborted_));
         machine_->SendMessage(header, m);
 //LOG(ERROR) << "Machine: "<<machine_id_<< "  not min_machine, wait for receiving the decision:: data_channel_version:"<<data_channel_version;   
         // Wait for the final decision
@@ -399,6 +402,13 @@ class DistributedExecutionContext : public ExecutionContext {
           Scalar s;
           s.ParseFromArray((*m)[1].data(), (*m)[1].size());
           uint64 remote_machine_id = FromScalar<uint64>(s);
+
+          s.ParseFromArray((*m)[2].data(), (*m)[2].size());
+          bool remote_aborted_decision = FromScalar<bool>(s);
+          if (remote_aborted_decision == true) {
+            aborted_ = true;
+          }
+
 //LOG(ERROR) << "Machine: "<<machine_id_<< "  min_machine, got data from one remote machine:: data_channel_version:"<<data_channel_version<<" from machine:"<<remote_machine_id; 
           for (int j = 0; j < remote_entries.entries_size(); j++) {
             action->add_keys_origins()->CopyFrom(remote_entries.entries(j));
