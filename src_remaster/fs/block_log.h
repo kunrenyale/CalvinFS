@@ -19,6 +19,7 @@
 #include "fs/calvinfs.h"
 #include "machine/app/app.h"
 #include "proto/action.pb.h"
+#include "fs/metadata.pb.h"
 
 using std::set;
 using std::vector;
@@ -306,6 +307,8 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a mu
             remaster_action->set_remaster(true);
             remaster_action->set_remaster_to(replica_);
             remaster_action->set_single_replica(true);
+            remaster_action->set_action_type(MetadataAction::REMASTER);
+            remaster_action->set_input("remaster");
 
             for (auto it2 = action_local_remastered_keys.begin(); it2 != action_local_remastered_keys.end(); it2++) {
               uint32 remote_replica = it2->first;
@@ -435,6 +438,8 @@ LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie REMA
         remaster_action->clear_distinct_id();
         remaster_action->set_distinct_id(machine()->GetGUID());
         remaster_action->clear_remastered_keys();
+        remaster_action->set_action_type(MetadataAction::REMASTER);
+        remaster_action->set_input("remaster");
 
         for (int i = 0; i < remote_keys.entries_size(); i++) {
           if (local_remastering_keys_.find(remote_keys.entries(i).key()) == local_remastering_keys_.end()) {

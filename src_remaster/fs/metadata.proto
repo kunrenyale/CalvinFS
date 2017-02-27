@@ -65,6 +65,7 @@ enum Type {
   WRITE              = 6;
   APPEND             = 7;
   CHANGE_PERMISSIONS = 8;
+  REMASTER           = 9;
 }
 
 // Possible error conditions.

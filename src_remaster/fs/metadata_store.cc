@@ -221,6 +221,8 @@ LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received
           remaster_action->set_remaster(true);
           remaster_action->set_remaster_to(action->remaster_to());
           remaster_action->set_single_replica(true);
+          remaster_action->set_action_type(MetadataAction::REMASTER);
+          remaster_action->set_input("remaster");
 
           for (auto it = forward_remaster.begin(); it != forward_remaster.end(); it++) {
             uint32 remote_replica = it->first;
@@ -1001,7 +1003,7 @@ LOG(ERROR) << "Machine: "<<machine_->machine_id()<< " MetadataStore::Run(&&& Abo
   MetadataAction::Type type =
       static_cast<MetadataAction::Type>(action->action_type());
 
-  if (action->remaster() == true) {
+  if (type == MetadataAction::REMASTER) {
     Remaster_Internal(context, action);
 LOG(ERROR) << "Machine: "<<machine_->machine_id()<< " MetadataStore::Run(*** finish Remaster_Internal)， action:"<<action->distinct_id();
   } else {
