@@ -322,7 +322,7 @@ MessageBuffer* CalvinFSClientApp::RenameFile(const Slice& from_path, const Slice
   if (out.success()) {
     return new MessageBuffer();
   } else {
-    return new MessageBuffer(new string("error creating file/dir\n"));
+    return new MessageBuffer(new string("error renameing file/dir\n"));
   }
 }
 

@@ -281,7 +281,6 @@ class DistributedExecutionContext : public ExecutionContext {
             reads_.erase(action->readset(i));
             aborted_ = true;
             break;
-            LOG(ERROR) <<"Entry doesn't exist!, should not happen!";
           }
           reader_ = true;
           
@@ -756,7 +755,7 @@ uint32 MetadataStore::LocalReplica() {
 pair<uint32, uint64> MetadataStore::GetLocalKeyMastership(string key) {
    string value;
    if (!store_->Get(key, &value)) {
-LOG(ERROR) << "Machine: "<<machine_id_<< "  MetadataStore::GetLocalKeyMastership: can not get the value, key is:"<<key;
+//LOG(ERROR) << "Machine: "<<machine_id_<< "  MetadataStore::GetLocalKeyMastership: can not get the value, key is:"<<key;
      return make_pair(UINT32_MAX, UINT64_MAX);
    }
    MetadataEntry entry;
