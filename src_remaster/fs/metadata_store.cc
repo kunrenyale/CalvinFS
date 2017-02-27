@@ -190,10 +190,13 @@ class DistributedExecutionContext : public ExecutionContext {
         // Local read.
         if (!store_->Get(map_entry.key(), &reads_[map_entry.key()])) {
           reads_.erase(map_entry.key());
+          LOG(ERROR) <<"Entry doesn't exist!, should not happen!";
         }
 
         MetadataEntry entry;
-        GetEntry(map_entry.key(), &entry);
+        if (!GetEntry(map_entry.key(), &entry)) {
+          LOG(ERROR) <<"Entry doesn't exist!, should not happen!";
+        }
         if (entry.master() != action->remaster_from() || entry.counter() != map_entry.counter()) {
           remote_remaster = true;
           map_entry.set_master(entry.master());
@@ -276,11 +279,14 @@ class DistributedExecutionContext : public ExecutionContext {
           // Local read.
           if (!store_->Get(action->readset(i), &reads_[action->readset(i)])) {
             reads_.erase(action->readset(i));
+            LOG(ERROR) <<"Entry doesn't exist!, should not happen!";
           }
           reader_ = true;
           
           MetadataEntry entry;
-          GetEntry(action->readset(i), &entry);
+          if (!GetEntry(action->readset(i), &entry)) {
+            LOG(ERROR) <<"Entry doesn't exist!, should not happen!";
+          }
 
           KeyMasterEntry* e = local_entries.add_entries();
           e->set_key(action->readset(i));
@@ -739,7 +745,10 @@ uint32 MetadataStore::LocalReplica() {
 
 pair<uint32, uint64> MetadataStore::GetLocalKeyMastership(string key) {
    string value;
-   store_->Get(key, &value);
+   if (!store_->Get(key, &value)) {
+LOG(ERROR) << "Machine: "<<machine_id_<< "  MetadataStore::GetLocalKeyMastership: can not get the value, key is:"<<key;
+     return make_pair(UINT32_MAX, UINT64_MAX);
+   }
    MetadataEntry entry;
    entry.ParseFromString(value);
 
@@ -1162,6 +1171,7 @@ void MetadataStore::CreateFile_Internal(
   MetadataEntry parent_entry;
   if (!context->GetEntry(parent_path, &parent_entry)) {
     // Parent doesn't exist!
+    LOG(ERROR) <<"Entry doesn't exist!, should not happen!";
     out->set_success(false);
     out->add_errors(MetadataAction::FileDoesNotExist);
     return;
@@ -1210,6 +1220,7 @@ void MetadataStore::Erase_Internal(
   MetadataEntry parent_entry;
   if (!context->GetEntry(parent_path, &parent_entry)) {
     // Parent doesn't exist!
+    LOG(ERROR) <<"Entry doesn't exist!, should not happen!";
     out->set_success(false);
     out->add_errors(MetadataAction::FileDoesNotExist);
     return;
@@ -1219,6 +1230,7 @@ void MetadataStore::Erase_Internal(
   MetadataEntry entry;
   if (!context->GetEntry(in.path(), &entry)) {
     // File doesn't exist!
+    LOG(ERROR) <<"Entry doesn't exist!, should not happen!";
     out->set_success(false);
     out->add_errors(MetadataAction::FileDoesNotExist);
     return;
@@ -1260,6 +1272,7 @@ void MetadataStore::Copy_Internal(
   MetadataEntry from_entry;
   if (!context->GetEntry(in.from_path(), &from_entry)) {
     // File doesn't exist!
+    LOG(ERROR) <<"Entry doesn't exist!, should not happen!";
     out->set_success(false);
     out->add_errors(MetadataAction::FileDoesNotExist);
     return;
@@ -1269,6 +1282,7 @@ void MetadataStore::Copy_Internal(
   MetadataEntry parent_to_entry;
   if (!context->GetEntry(parent_to_path, &parent_to_entry)) {
     // File doesn't exist!
+    LOG(ERROR) <<"Entry doesn't exist!, should not happen!";
     out->set_success(false);
     out->add_errors(MetadataAction::FileDoesNotExist);
     return;
@@ -1305,6 +1319,7 @@ void MetadataStore::Rename_Internal(
   MetadataEntry from_entry;
   if (!context->GetEntry(in.from_path(), &from_entry)) {
     // File doesn't exist!
+    LOG(ERROR) <<"Entry doesn't exist!, should not happen!";
     out->set_success(false);
     out->add_errors(MetadataAction::FileDoesNotExist);
     return;
@@ -1314,6 +1329,7 @@ void MetadataStore::Rename_Internal(
   MetadataEntry parent_from_entry;
   if (!context->GetEntry(parent_from_path, &parent_from_entry)) {
     // File doesn't exist!
+    LOG(ERROR) <<"Entry doesn't exist!, should not happen!";
     out->set_success(false);
     out->add_errors(MetadataAction::FileDoesNotExist);
     return;
@@ -1323,6 +1339,7 @@ void MetadataStore::Rename_Internal(
   MetadataEntry parent_to_entry;
   if (!context->GetEntry(parent_to_path, &parent_to_entry)) {
     // File doesn't exist!
+    LOG(ERROR) <<"Entry doesn't exist!, should not happen!";
     out->set_success(false);
     out->add_errors(MetadataAction::FileDoesNotExist);
     return;
@@ -1379,6 +1396,7 @@ void MetadataStore::Lookup_Internal(
   MetadataEntry entry;
   if (!context->GetEntry(in.path(), &entry)) {
     // File doesn't exist!
+    LOG(ERROR) <<"Entry doesn't exist!, should not happen!";
     out->set_success(false);
     out->add_errors(MetadataAction::FileDoesNotExist);
     return;
@@ -1398,6 +1416,7 @@ void MetadataStore::Resize_Internal(
   MetadataEntry entry;
   if (!context->GetEntry(in.path(), &entry)) {
     // File doesn't exist!
+    LOG(ERROR) <<"Entry doesn't exist!, should not happen!";
     out->set_success(false);
     out->add_errors(MetadataAction::FileDoesNotExist);
     return;
@@ -1459,6 +1478,7 @@ void MetadataStore::Append_Internal(
   MetadataEntry entry;
   if (!context->GetEntry(in.path(), &entry)) {
     // File doesn't exist!
+    LOG(ERROR) <<"Entry doesn't exist!, should not happen!";
     out->set_success(false);
     out->add_errors(MetadataAction::FileDoesNotExist);
     return;
