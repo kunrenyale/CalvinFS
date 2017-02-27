@@ -560,6 +560,8 @@ void MetadataStore::SetMachine(Machine* m) {
     MetadataEntry entry;
     entry.mutable_permissions();
     entry.set_type(DIR);
+    entry.set_master(0);
+    entry.set_counter(0);
     string serialized_entry;
     entry.SerializeToString(&serialized_entry);
     store_->Put("", serialized_entry);
@@ -1182,6 +1184,7 @@ void MetadataStore::CreateFile_Internal(
   entry.mutable_permissions()->CopyFrom(in.permissions());
   entry.set_type(in.type());
   entry.set_master(replica_);
+  entry.set_counter(0);
   context->PutEntry(in.path(), entry);
 }
 
@@ -1283,6 +1286,7 @@ void MetadataStore::Copy_Internal(
   MetadataEntry to_entry;
   to_entry.CopyFrom(from_entry);
   to_entry.set_master(replica_);
+  to_entry.set_counter(0);
   context->PutEntry(in.to_path(), to_entry);
 }
 
@@ -1336,6 +1340,8 @@ void MetadataStore::Rename_Internal(
   MetadataEntry to_entry;
   to_entry.CopyFrom(from_entry);
   to_entry.set_master(replica_);
+  to_entry.set_counter(0);
+  to_entry.set_type(DATA);
   context->PutEntry(in.to_path(), to_entry);
 
   // Update from_parent(Find file and remove it from parent directory.)
