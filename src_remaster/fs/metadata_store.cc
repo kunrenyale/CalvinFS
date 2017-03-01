@@ -1130,7 +1130,7 @@ void MetadataStore::Remaster_Internal(ExecutionContext* context, Action* action)
       map_entry.set_master(origin_master);
       map_entry.set_counter(entry.counter());
       remastered_entries.add_entries()->CopyFrom(map_entry);
-LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::Remaster_Internal^^^^^^  distinct id is:"<<action->distinct_id()<<" remaster record:"<<map_entry.key()<<"  from"<<origin_from<<"  to:"<<origin_master;
+//LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::Remaster_Internal^^^^^^  distinct id is:"<<action->distinct_id()<<" remaster record:"<<map_entry.key()<<"  from:"<<origin_from<<"  to:"<<origin_master;
     }
 
   }
