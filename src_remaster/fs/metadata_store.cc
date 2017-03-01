@@ -466,7 +466,7 @@ class DistributedExecutionContext : public ExecutionContext {
           string* block = new string();
           action->SerializeToString(block);
           machine_->SendMessage(header, new MessageBuffer(Slice(*block)));
-LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a txn::id:"<<data_channel_version<<"-- abort this action, and forward this action to: "<<machine_sent;
+//LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a txn::id:"<<data_channel_version<<"-- abort this action, and forward this action to: "<<machine_sent;
   
           return;
         }
