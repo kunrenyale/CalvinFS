@@ -466,7 +466,7 @@ class DistributedExecutionContext : public ExecutionContext {
           string* block = new string();
           action->SerializeToString(block);
           machine_->SendMessage(header, new MessageBuffer(Slice(*block)));
-//LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a txn:: data_channel_version:"<<data_channel_version<<"-- abort this action, and forward this action to: "<<machine_sent;
+LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a txn::id:"<<data_channel_version<<"-- abort this action, and forward this action to: "<<machine_sent;
   
           return;
         }
@@ -1130,6 +1130,7 @@ void MetadataStore::Remaster_Internal(ExecutionContext* context, Action* action)
       map_entry.set_master(origin_master);
       map_entry.set_counter(entry.counter());
       remastered_entries.add_entries()->CopyFrom(map_entry);
+LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::Remaster_Internal^^^^^^  distinct id is:"<<action->distinct_id()<<" remaster record:"<<map_entry.key()<<"  from"<<origin_from<<"  to:"<<origin_master;
     }
 
   }
