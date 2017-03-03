@@ -746,7 +746,7 @@ void LatencyExperimentAppend() {
       }
 
       double end = GetTime();
-      if (end - start > 1) {
+      if (end - start > 0.2) {
         LOG(ERROR) << "[" << machine()->machine_id() << "] "<< "Test progress,  Throughput is :"<<action_count_/(end-start);
         start = end;
         action_count_ = 0;
