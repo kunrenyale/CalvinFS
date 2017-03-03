@@ -6,7 +6,7 @@
 #define CALVIN_FS_CALVINFS_CLIENT_APP_H_
 
 #include <leveldb/env.h>
-
+#include "common/mutex.h"
 #include "components/scheduler/scheduler.h"
 #include "components/store/store.h"
 #include "components/store/store_app.h"
@@ -191,6 +191,18 @@ class CalvinFSClientApp : public App {
     }
 
     action_count_++;
+
+    {
+      Lock l(&throughput_latch_);
+      if (action_count_ == 50) {
+        double end = GetTime();
+        LOG(ERROR) << "[" << machine()->machine_id() << "] "<< "Test progress,  Throughput is :"<<50/(end-throughput_start_);
+        throughput_start_ = end;
+        action_count_ = 0;
+      }
+    }
+
+    
   }
 
   uint64 RandomBlockSize() {
@@ -723,6 +735,7 @@ void LatencyExperimentAppend() {
     Spin(1);
 
     double start = GetTime();
+    throughput_start_ = start;
 
     for (int j = 0; j < 500; j++) {
       int seed = rand() % 100;
@@ -743,13 +756,6 @@ void LatencyExperimentAppend() {
 // For high contention
 /**BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(0) + "/c" + IntToString(j),
                              "/a" + IntToString((machine()->machine_id() + 2)%6) + "/b" + IntToString(0) + "/d" + IntToString(machine()->GetGUID()));**/
-      }
-
-      double end = GetTime();
-      if (end - start > 0.2) {
-        LOG(ERROR) << "[" << machine()->machine_id() << "] "<< "Test progress,  Throughput is :"<<action_count_/(end-start);
-        start = end;
-        action_count_ = 0;
       }
     }
 
@@ -1050,6 +1056,8 @@ void LatencyExperimentRenameFile(int local_percentage) {
 
   atomic<int> action_count_;
   atomic<int> capacity_;
+  Mutex throughput_latch_;
+  double throughput_start_;
 
   string random_data_;
 
