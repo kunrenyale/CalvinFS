@@ -743,9 +743,10 @@ void LatencyExperimentAppend() {
                              "/a" + IntToString((machine()->machine_id() + 2)%6) + "/b" + IntToString(0) + "/d" + IntToString(machine()->GetGUID()));**/
       }
 
-      if (j % 100 == 0) {
-        LOG(ERROR) << "[" << machine()->machine_id() << "] "
-                   << "Test progress : " << j / 100 << "/" << 5;
+      if ((j+1) % 50 == 0) {
+        double end = GetTime();
+        LOG(ERROR) << "[" << machine()->machine_id() << "] "<< "Test progress : " << (j+1) / 50 << "/" << 5<<" Throughput is :"<<50.0/(end-start);
+        start = end;
       }
     }
 
