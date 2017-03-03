@@ -189,6 +189,8 @@ class CalvinFSClientApp : public App {
     } else {
       LOG(FATAL) << "unknown RPC: " << header->rpc();
     }
+
+    action_count_++;
   }
 
   uint64 RandomBlockSize() {
@@ -722,7 +724,7 @@ void LatencyExperimentAppend() {
 
     double start = GetTime();
 
-    for (int j = 0; j < 250; j++) {
+    for (int j = 0; j < 500; j++) {
       int seed = rand() % 100;
       
       // Copy operations inside one data center
@@ -743,10 +745,11 @@ void LatencyExperimentAppend() {
                              "/a" + IntToString((machine()->machine_id() + 2)%6) + "/b" + IntToString(0) + "/d" + IntToString(machine()->GetGUID()));**/
       }
 
-      if ((j+1) % 50 == 0) {
-        double end = GetTime();
-        LOG(ERROR) << "[" << machine()->machine_id() << "] "<< "Test progress : " << (j+1) / 50 << "/" << 5<<" Throughput is :"<<50.0/(end-start);
+      double end = GetTime();
+      if (end - start > 1) {
+        LOG(ERROR) << "[" << machine()->machine_id() << "] "<< "Test progress,  Throughput is :"<<action_count_/(end-start);
         start = end;
+        action_count_ = 0;
       }
     }
 
