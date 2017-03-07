@@ -192,7 +192,7 @@ class CalvinFSClientApp : public App {
 
 
     
-    {
+    /**{
       Lock l(&throughput_latch_);
       action_count_++;
       double end = GetTime();
@@ -201,7 +201,7 @@ class CalvinFSClientApp : public App {
         throughput_start_ = end;
         action_count_ = 0;
       }
-    }
+    } **/
 
     
   }
