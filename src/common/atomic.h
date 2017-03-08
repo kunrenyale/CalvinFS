@@ -9,6 +9,7 @@
 #include <map>
 #include <queue>
 #include <vector>
+#include <tr1/unordered_map>
 #include "btree/btree_map.h"
 #include "common/mutex.h"
 #include "common/types.h"
@@ -19,6 +20,7 @@ using std::map;
 using std::pair;
 using std::queue;
 using std::vector;
+using std::tr1::unordered_map;
 
 // Queue with atomic push and pop operations. One Push and one Pop can occur
 // concurrently, so consumers will not block producers, and producers will not
