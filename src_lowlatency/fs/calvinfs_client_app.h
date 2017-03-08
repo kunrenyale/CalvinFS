@@ -756,9 +756,9 @@ void LatencyExperimentAppend() {
                              "/a" + IntToString((machine()->machine_id() + 3)%9) + "/b" + IntToString(0) + "/d" + IntToString(machine()->GetGUID()));**/
       }
 
-      if (j % 100 == 0) {
+      if (j % 50 == 0) {
         LOG(ERROR) << "[" << machine()->machine_id() << "] "
-                   << "Test progress : " << j / 100 << "/" << 5;
+                   << "Test progress : " << j / 50 << "/" << 5;
       }
     }
 
@@ -769,7 +769,7 @@ void LatencyExperimentAppend() {
 
     // Report.
     LOG(ERROR) << "[" << machine()->machine_id() << "] "
-               << "Renamed " <<  "500 files. Elapsed time: "
+               << "Renamed " <<  "250 files. Elapsed time: "
                << (GetTime() - start) << " seconds";
   }
 
@@ -814,9 +814,9 @@ void LatencyExperimentRenameFile(int local_percentage) {
                            "/a" + IntToString(machines_other_replicas[rand()%size_other_machines]) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));
         }     
 
-        if (j % 100 == 0) {
+        if (j % 50 == 0) {
           LOG(ERROR) << "[" << machine()->machine_id() << "] "
-                   << "Test progress : " << j / 100 << "/" << 5;
+                   << "Test progress : " << j / 50 << "/" << 5;
         } 
     }
 
@@ -827,7 +827,7 @@ void LatencyExperimentRenameFile(int local_percentage) {
 
     // Report.
     LOG(ERROR) << "[" << machine()->machine_id() << "] "
-               << "Renamed " <<  "500 files. Elapsed time: "
+               << "Renamed " <<  "250 files. Elapsed time: "
                << (GetTime() - start) << " seconds";
 
     // Write out latency reports.

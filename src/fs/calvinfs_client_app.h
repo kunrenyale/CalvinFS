@@ -178,8 +178,7 @@ class CalvinFSClientApp : public App {
         }
       }
 
-      latencies_[category]->Push(
-          end - header->misc_double(0));
+      latencies_[category]->Push(end - header->misc_double(0));
 
       delete header;
       delete message;
@@ -693,7 +692,7 @@ void LatencyExperimentAppend() {
       BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a1) + "/c" + IntToString(j),
                            "/a" + IntToString(rand() % machine()->config().size()) + "/b" + IntToString(a2) + "/d" + IntToString(machine()->GetGUID())); 
 
-      if (j % 100 == 0) {
+      if (j % 50 == 0) {
         LOG(ERROR) << "[" << machine()->machine_id() << "] "
                    << "Test progress : " << j / 100 << "/" << 5;
       }
@@ -706,7 +705,7 @@ void LatencyExperimentAppend() {
 
     // Report.
     LOG(ERROR) << "[" << machine()->machine_id() << "] "
-               << "Renamed " <<  "500 files. Elapsed time: "
+               << "Renamed " <<  "250 files. Elapsed time: "
                << (GetTime() - start) << " seconds";
   }
 
@@ -727,9 +726,9 @@ void LatencyExperimentAppend() {
       BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a1) + "/c" + IntToString(j),
                            "/a" + IntToString(rand() % machine()->config().size()) + "/b" + IntToString(a2) + "/d" + IntToString(machine()->GetGUID())); 
 
-      if (j % 100 == 0) {
+      if (j % 50 == 0) {
         LOG(ERROR) << "[" << machine()->machine_id() << "] "
-                   << "Test progress : " << j / 100 << "/" << 5;
+                   << "Test progress : " << j / 50 << "/" << 5;
       }
     }
 
@@ -740,7 +739,7 @@ void LatencyExperimentAppend() {
 
     // Report.
     LOG(ERROR) << "[" << machine()->machine_id() << "] "
-               << "Renamed " <<  "500 files. Elapsed time: "
+               << "Renamed " <<  "250 files. Elapsed time: "
                << (GetTime() - start) << " seconds";
 
     // Write out latency reports.
