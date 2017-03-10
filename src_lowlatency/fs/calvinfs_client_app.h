@@ -194,7 +194,7 @@ class CalvinFSClientApp : public App {
       Lock l(&throughput_latch_);
       action_count_++;
       double end = GetTime();
-      if (end-throughput_start_ > 1) {
+      if (end-throughput_start_ > 2) {
         LOG(ERROR) << "[" << machine()->machine_id() << "] "<< "Test progress,  Throughput is :"<<action_count_/(end-throughput_start_);
         throughput_start_ = end;
         action_count_ = 0;
