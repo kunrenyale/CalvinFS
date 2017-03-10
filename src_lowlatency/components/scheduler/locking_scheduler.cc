@@ -30,7 +30,6 @@ void LockingScheduler::MainLoopBody() {
       running_action_count_ < kMaxRunningActions &&
       action_requests_->Get(&action)) {
 
-    high_water_mark_ = action->version();
     active_actions_.insert(action->version());
     int ungranted_requests = 0;
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action:" << action->version()<<" distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin();
@@ -149,10 +148,10 @@ else {
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":** scheduler finish running action:" << action->version()<<" distinct id is:"<<action->distinct_id();
     active_actions_.erase(action->version());
     running_action_count_--;
-    safe_version_.store(
-        active_actions_.empty()
-        ? (high_water_mark_ + 1)
-        : *active_actions_.begin());
+ 
+    if (rand() % action->involved_machines() == 0) {
+      throughput_++;
+    }
   }
 
   // Start executing all actions that have newly acquired all their locks.
@@ -160,6 +159,13 @@ else {
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ Previous blocked, now active:" << action->version()<<" distinct id is:"<<action->distinct_id();    
     running_action_count_++;
     store_->RunAsync(action, &completed_);
+  }
+  
+  double current_time = GetTime();
+  if (current_time - start_time_ > 1) {
+    LOG(ERROR) << "[" << machine()->machine_id() << "] "<< "Scheduler:  Throughput is :"<<throughput_/(current_time-start_time_);
+    throughput_ = 0;
+    start_time_ = current_time;
   }
 }
 

@@ -59,6 +59,8 @@ message Action {
 
   optional bool fake_action = 46 [default = false];
 
+  optional uint32 involved_machines = 47 [default = 1];
+
   // Miscellaneous data.
   repeated Scalar misc = 51;
   

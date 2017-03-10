@@ -263,9 +263,11 @@ class BlockLogApp : public App {
             recipients.insert(config_->LookupMetadataShard(mds, replica_));
           }
         }
-
+   
+        Action a = batch.entries(i);
+        a.set_involved_machines(recipients.size());
         for (auto it = recipients.begin(); it != recipients.end(); ++it) {
-          subbatches[*it].add_entries()->CopyFrom(batch.entries(i));
+          subbatches[*it].add_entries()->CopyFrom(a);
         }
       }
 
@@ -372,7 +374,8 @@ class BlockLogApp : public App {
             new_action->set_fake_action(false);
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request(fake_action). append a action:"<<new_action->distinct_id()<<" block id:"<<fake_subbatch_id;
           }
-
+          
+          new_action->clear_involved_machines();
           new_action->set_new_generated(true);
           new_generated_queue.Push(new_action);
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  append a action:"<<new_action->distinct_id()<<" batch size is:"<<fake_subbatch->entries_size()<<" block id:"<<fake_subbatch_id;   

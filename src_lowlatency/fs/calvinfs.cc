@@ -234,7 +234,6 @@ Status LocalCalvinFS::ReadFileToString(const string& path, string* data) {
 
   // Lookup MetadataEntry.
   Action a;
-  a.set_version(scheduler_->SafeVersion());
   a.set_action_type(MetadataAction::LOOKUP);
   MetadataAction::LookupInput in;
   in.set_path(path);
@@ -370,7 +369,6 @@ Status LocalCalvinFS::LS(const string& path, vector<string>* contents) {
 
   // Lookup MetadataEntry.
   Action a;
-  a.set_version(scheduler_->SafeVersion());
   a.set_action_type(MetadataAction::LOOKUP);
   MetadataAction::LookupInput in;
   in.set_path(path);
