@@ -735,7 +735,7 @@ void LatencyExperimentAppend() {
     double start = GetTime();
     throughput_start_ = start;
 
-    for (int j = 0; j < 500; j++) {
+    for (int j = 0; j < 250; j++) {
       int seed = rand() % 100;
       
       // Copy operations inside one data center
