@@ -265,9 +265,9 @@ void ThreadPool::ShowStatus() {
   LOG(ERROR) << "Status H:   idle threads: " << high_->idle_thread_count_.load()
              << ", total threads: " << high_->thread_count_ << ", queue size: "
              << high_->queue_.Size();
-  LOG(ERROR) << "Status L:   idle threads: " << low_->idle_thread_count_.load()
+  /**LOG(ERROR) << "Status L:   idle threads: " << low_->idle_thread_count_.load()
              << ", total threads: " << low_->thread_count_ << ", queue size: "
-             << low_->queue_.Size();
+             << low_->queue_.Size();**/
   LOG(ERROR) << "";
 }
 
@@ -280,7 +280,7 @@ void* ThreadPool::MonitorThread(void* arg) {
 
   while (!tp->stopped_all_) {
     // Show the SubPools status.
-//  tp->ShowStatus();
+  tp->ShowStatus();
 
     // Check high priority threads
     if (high->idle_thread_count_ < high->min_idle_) {
