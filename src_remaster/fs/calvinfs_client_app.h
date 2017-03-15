@@ -190,20 +190,6 @@ class CalvinFSClientApp : public App {
       LOG(FATAL) << "unknown RPC: " << header->rpc();
     }
 
-
-    
-   {
-      Lock l(&throughput_latch_);
-      action_count_++;
-      double end = GetTime();
-      if (end-throughput_start_ > 2) {
-        LOG(ERROR) << "[" << machine()->machine_id() << "] "<< "Test progress,  Throughput is :"<<action_count_/(end-throughput_start_);
-        throughput_start_ = end;
-        action_count_ = 0;
-      }
-    }
-
-    
   }
 
   uint64 RandomBlockSize() {
@@ -736,7 +722,6 @@ void LatencyExperimentAppend() {
     Spin(1);
 
     double start = GetTime();
-    throughput_start_ = start;
 
     for (int j = 0; j < 250; j++) {
       int seed = rand() % 100;
@@ -1057,8 +1042,6 @@ void LatencyExperimentRenameFile(int local_percentage) {
 
   atomic<int> action_count_;
   atomic<int> capacity_;
-  Mutex throughput_latch_;
-  double throughput_start_;
 
   string random_data_;
 
