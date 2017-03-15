@@ -265,9 +265,9 @@ void ThreadPool::ShowStatus() {
   LOG(ERROR) << "Status H:   idle threads: " << high_->idle_thread_count_.load()
              << ", total threads: " << high_->thread_count_ << ", queue size: "
              << high_->queue_.Size();
-  /**LOG(ERROR) << "Status L:   idle threads: " << low_->idle_thread_count_.load()
+  LOG(ERROR) << "Status L:   idle threads: " << low_->idle_thread_count_.load()
              << ", total threads: " << low_->thread_count_ << ", queue size: "
-             << low_->queue_.Size();**/
+             << low_->queue_.Size();
   LOG(ERROR) << "";
 }
 
@@ -280,7 +280,7 @@ void* ThreadPool::MonitorThread(void* arg) {
 
   while (!tp->stopped_all_) {
     // Show the SubPools status.
-  tp->ShowStatus();
+//  tp->ShowStatus();
 
     // Check high priority threads
     if (high->idle_thread_count_ < high->min_idle_) {
@@ -308,8 +308,9 @@ void* ThreadPool::MonitorThread(void* arg) {
       }
       high->Resize_thread_count(high->Thread_count() + add_thread_count);
       high->assigned_thread_count_ += add_thread_count;
-
+LOG(ERROR) << ":------------ Need to create more threads, now is: " << high->thread_count_;
     } else if (high->idle_thread_count_ > high->max_idle_) {
+
       // Need to delete some threads
       int delete_thread_count = 4;
       for (int i = 0; i < delete_thread_count; i++) {
@@ -323,10 +324,12 @@ void* ThreadPool::MonitorThread(void* arg) {
         high->stopped_.erase(deleted_thread);
       }
       high->Resize_thread_count(high->thread_count_ - delete_thread_count);
+LOG(ERROR) << ":------------ Need to delete some threads, now is: " << high->thread_count_;
     }
 
     // Check low priority threads
     if (low->idle_thread_count_ < low->min_idle_) {
+//LOG(ERROR) << ":------------ Need to create more threads, now is: " << high->thread_count_;
       // Need to create some threads
       int add_thread_count = 4;
 
