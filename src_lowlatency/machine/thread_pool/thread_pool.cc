@@ -140,8 +140,8 @@ void SubPool::HandleMessage(Header* header, MessageBuffer* message) {
 SubPool::SubPool(MessageHandler* handler, int priority) {
   handler_ = handler;
   priority_ = priority;
-  min_idle_ = 400;
-  max_idle_ = 628;
+  min_idle_ = 32;
+  max_idle_ = 128;
   thread_count_ = min_idle_;
   idle_thread_count_ = 0;
   assigned_thread_count_ = thread_count_;
@@ -219,7 +219,7 @@ void* SubPool::RunThread(void* arg) {
   int thread = reinterpret_cast<pair<int, SubPool*>*>(arg)->first;
   SubPool* tp = reinterpret_cast<pair<int, SubPool*>*>(arg)->second;
   pair<Header*, MessageBuffer*> message;
-  int sleep_duration = 1;  // in microseconds
+  int sleep_duration = 10;  // in microseconds
 
   ++tp->idle_thread_count_;
   while (!tp->stopped_[thread]) {
@@ -234,12 +234,12 @@ void* SubPool::RunThread(void* arg) {
       --tp->idle_thread_count_;
       tp->handler_->HandleMessage(message.first, message.second);
       // Reset backoff.
-      sleep_duration = 1;
+      sleep_duration = 10;
       ++tp->idle_thread_count_;
     } else {
       usleep(sleep_duration);
       // Back off exponentially.
-      if (sleep_duration < 64)
+      if (sleep_duration < 640)
         sleep_duration *= 2;
     }
   }
