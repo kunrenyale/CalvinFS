@@ -740,13 +740,13 @@ void LatencyExperimentAppend() {
       
       // Copy operations inside one data center
       if (seed < local_percentage) {
-        int a1 = rand() % 1000;
+        /**int a1 = rand() % 1000;
         int a2 = rand() % 1000;
         while (a2 == a1) {
           a2 = rand() % 1000;
-        }
-        BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a1) + "/c" + IntToString(j),
-                             "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a2) + "/d" + IntToString(machine()->GetGUID()));
+        }**/
+        BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(j) + "/c" + IntToString(j),
+                             "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(j+250) + "/d" + IntToString(machine()->GetGUID()));
       } else {
         // Copy operations that cross data centers
          BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/c" + IntToString(j),

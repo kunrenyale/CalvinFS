@@ -219,7 +219,7 @@ void* SubPool::RunThread(void* arg) {
   int thread = reinterpret_cast<pair<int, SubPool*>*>(arg)->first;
   SubPool* tp = reinterpret_cast<pair<int, SubPool*>*>(arg)->second;
   pair<Header*, MessageBuffer*> message;
-  int sleep_duration = 10;  // in microseconds
+  int sleep_duration = 1;  // in microseconds
 
   ++tp->idle_thread_count_;
   while (!tp->stopped_[thread]) {
@@ -234,12 +234,12 @@ void* SubPool::RunThread(void* arg) {
       --tp->idle_thread_count_;
       tp->handler_->HandleMessage(message.first, message.second);
       // Reset backoff.
-      sleep_duration = 10;
+      sleep_duration = 1;
       ++tp->idle_thread_count_;
     } else {
       usleep(sleep_duration);
       // Back off exponentially.
-      if (sleep_duration < 640)
+      if (sleep_duration < 64)
         sleep_duration *= 2;
     }
   }
@@ -316,7 +316,7 @@ void* ThreadPool::MonitorThread(void* arg) {
 //LOG(ERROR) << ":------------ Need to create more threads, now is: " << high->thread_count_;
     } else if (high->idle_thread_count_ > high->max_idle_) {
       // Need to delete some threads
-      /**int delete_thread_count = 4;
+      int delete_thread_count = 4;
       for (int i = 0; i < delete_thread_count; i++) {
         high->queue_.Push(pair<Header*, MessageBuffer*>(NULL, NULL));
         int deleted_thread;
@@ -327,7 +327,7 @@ void* ThreadPool::MonitorThread(void* arg) {
         high->threads_.erase(deleted_thread);
         high->stopped_.erase(deleted_thread);
       }
-      high->Resize_thread_count(high->thread_count_ - delete_thread_count);**/
+      high->Resize_thread_count(high->thread_count_ - delete_thread_count);
 //LOG(ERROR) << ":------------ Need to delete some threads, now is: " << high->thread_count_;
     }
 
