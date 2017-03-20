@@ -742,7 +742,7 @@ void LatencyExperimentAppend() {
                              "/a" + IntToString(machines_other_replicas[rand()%size_other_machines]) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));**/
        // Contention-free workload
        BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(j) + "/c" + IntToString(j),
-                             "/a" + IntToString(machines_other_replicas[rand()%size_other_machines]) + "/b" + IntToString(j+250) + "/d" + IntToString(machine()->GetGUID()));
+                             "/a" + IntToString((machine()->machine_id()+3)%9) + "/b" + IntToString(j+250) + "/d" + IntToString(machine()->GetGUID()));
       }
     }
 
