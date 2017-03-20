@@ -745,6 +745,11 @@ void LatencyExperimentAppend() {
         while (a2 == a1) {
           a2 = rand() % 1000;
         }**/
+
+        // Random workload
+        /**BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a1) + "/c" + IntToString(j),
+                             "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a2) + "/d" + IntToString(machine()->GetGUID()));**/
+        // contention-free workload
         BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(j) + "/c" + IntToString(j),
                              "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(j+250) + "/d" + IntToString(machine()->GetGUID()));
       } else {

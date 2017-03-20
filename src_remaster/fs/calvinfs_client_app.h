@@ -737,14 +737,16 @@ void LatencyExperimentAppend() {
                              "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a2) + "/d" + IntToString(machine()->GetGUID()));
       } else {
         // Rename operations that cross data centers
-         BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/c" + IntToString(j),
-                             "/a" + IntToString(machines_other_replicas[rand()%size_other_machines]) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));
-// For high contention
-/**BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(0) + "/c" + IntToString(j),
-                             "/a" + IntToString((machine()->machine_id() + 2)%6) + "/b" + IntToString(0) + "/d" + IntToString(machine()->GetGUID()));**/
+        // Random
+        /** BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/c" + IntToString(j),
+                             "/a" + IntToString(machines_other_replicas[rand()%size_other_machines]) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));**/
+       // Contention-free workload
+       BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(j) + "/c" + IntToString(j),
+                             "/a" + IntToString(machines_other_replicas[rand()%size_other_machines]) + "/b" + IntToString(j+250) + "/d" + IntToString(machine()->GetGUID()));
       }
     }
 
+    // For debug only
     /**for (int j = 0; j < 10; j++) {
       
         int a1 = rand() % 1000;
