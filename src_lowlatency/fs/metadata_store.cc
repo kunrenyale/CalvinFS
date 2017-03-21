@@ -29,8 +29,8 @@ using std::pair;
 using std::make_pair;
 
 REGISTER_APP(MetadataStoreApp) {
-  //return new StoreApp(new MetadataStore(new HybridVersionedKVStore()));
-  return new StoreApp(new MetadataStore(new VersionedKVStore(new BTreeStore())));
+  return new StoreApp(new MetadataStore(new HybridVersionedKVStore()));
+  //return new StoreApp(new MetadataStore(new VersionedKVStore(new BTreeStore())));
 }
 
 
