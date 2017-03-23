@@ -285,7 +285,7 @@ void* ThreadPool::MonitorThread(void* arg) {
     // Check high priority threads
     if (high->idle_thread_count_ < high->min_idle_) {
       // Need to create some threads
-      int add_thread_count = 4;
+      int add_thread_count = 12;
       // Set affinity
       cpu_set_t cpuset;
       pthread_attr_t attr;
@@ -312,7 +312,7 @@ void* ThreadPool::MonitorThread(void* arg) {
     } else if (high->idle_thread_count_ > high->max_idle_) {
 
       // Need to delete some threads
-      int delete_thread_count = 4;
+      int delete_thread_count = 8;
       for (int i = 0; i < delete_thread_count; i++) {
         high->queue_.Push(pair<Header*, MessageBuffer*>(NULL, NULL));
         int deleted_thread;
@@ -373,7 +373,7 @@ void* ThreadPool::MonitorThread(void* arg) {
     }
 
     // sleep for 1/100th of a second
-    usleep(1000);
+    usleep(10000);
   }
   return NULL;
 }
