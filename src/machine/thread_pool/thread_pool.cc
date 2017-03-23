@@ -285,7 +285,7 @@ void* ThreadPool::MonitorThread(void* arg) {
     // Check high priority threads
     if (high->idle_thread_count_ < high->min_idle_) {
       // Need to create some threads
-      int add_thread_count = 12;
+      int add_thread_count = 8;
       // Set affinity
       cpu_set_t cpuset;
       pthread_attr_t attr;
@@ -373,7 +373,7 @@ void* ThreadPool::MonitorThread(void* arg) {
     }
 
     // sleep for 1/100th of a second
-    usleep(10000);
+    usleep(1000);
   }
   return NULL;
 }
