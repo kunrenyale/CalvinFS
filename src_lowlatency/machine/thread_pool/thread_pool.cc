@@ -173,7 +173,7 @@ void SubPool::Start() {
     case 0:
       // High priority threads can use all 8 cores
       CPU_ZERO(&cpuset);
-      for (int i = 0; i < 15; i++) {
+      for (int i = 0; i < 8; i++) {
         CPU_SET(i, &cpuset);
       }
       break;
