@@ -377,7 +377,7 @@ void* ThreadPool::MonitorThread(void* arg) {
     }
 
     // sleep for 1/100th of a second
-    usleep(10000);
+    usleep(1000);
   }
   return NULL;
 }
