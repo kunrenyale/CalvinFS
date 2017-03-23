@@ -95,7 +95,7 @@ ThreadPool::ThreadPool(MessageHandler* handler) {
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
   CPU_ZERO(&cpuset);
-  for (int i = 0; i < 8; i++) {
+  for (int i = 0; i < 16; i++) {
     CPU_SET(i, &cpuset);
   }
   pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpuset);
@@ -173,7 +173,7 @@ void SubPool::Start() {
     case 0:
       // High priority threads can use all 8 cores
       CPU_ZERO(&cpuset);
-      for (int i = 0; i < 8; i++) {
+      for (int i = 0; i < 16; i++) {
         CPU_SET(i, &cpuset);
       }
       break;
@@ -292,7 +292,7 @@ void* ThreadPool::MonitorThread(void* arg) {
       pthread_attr_init(&attr);
       pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
       CPU_ZERO(&cpuset);
-      for (int i = 0; i < 8; i++) {
+      for (int i = 0; i < 16; i++) {
         CPU_SET(i, &cpuset);
       }
       pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &cpuset);
