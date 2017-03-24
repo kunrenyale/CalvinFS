@@ -613,8 +613,10 @@ class BlockLogApp : public App {
           }
         }
 
+        Action a = batch.entries(i);
+        a.set_involved_machines(recipients.size());
         for (auto it = recipients.begin(); it != recipients.end(); ++it) {
-          subbatches[*it].add_entries()->CopyFrom(batch.entries(i));
+          subbatches[*it].add_entries()->CopyFrom(a);
         }
       }
 

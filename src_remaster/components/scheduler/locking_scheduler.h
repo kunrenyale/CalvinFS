@@ -26,16 +26,9 @@ class LockingScheduler : public Scheduler {
 
  public:
   LockingScheduler()
-      : running_action_count_(0), high_water_mark_(0), safe_version_(1) {
+      : running_action_count_(0), throughput_(0), start_time_(GetTime()) {
   }
   virtual ~LockingScheduler() {}
-
-  virtual uint64 SafeVersion() {
-    return safe_version_.load();
-  }
-  virtual uint64 HighWaterMark() {
-    return high_water_mark_;
-  }
 
   virtual void MainLoopBody();
 
@@ -50,8 +43,6 @@ class LockingScheduler : public Scheduler {
   std::set<uint64> active_actions_;
   int running_action_count_;
 
-  // Version of newest action.
-  uint64 high_water_mark_;
 
   atomic<uint64> safe_version_;
 
@@ -63,6 +54,11 @@ class LockingScheduler : public Scheduler {
   map<uint32, queue<Action*>> blocking_actions_;
  
   set<uint32> blocking_replica_id_;
+
+  // calculate transaction throughput
+  uint64 throughput_;
+
+  double start_time_;
 
   // DISALLOW_COPY_AND_ASSIGN
   LockingScheduler(const LockingScheduler&);

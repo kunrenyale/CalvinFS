@@ -24,14 +24,6 @@ class Scheduler : public App {
     Stop();
   }
 
-  // Returns the highest version V such that all actions preceding V have
-  // already been committed to the store.
-  virtual uint64 SafeVersion() = 0;
-
-  // Returns the lowest version V such that NO actions following V have started
-  // yet.
-  virtual uint64 HighWaterMark() = 0;
-
   // Scheduler subclasses typically only have to implement the MainLoopBody
   // function. It is called repeatedly by Start(). Note that the MainLoopBody
   // should NOT infinite loop.

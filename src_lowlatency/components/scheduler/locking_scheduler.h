@@ -42,8 +42,6 @@ class LockingScheduler : public Scheduler {
 
   double start_time_;
 
-  atomic<uint64> safe_version_;
-
   // DISALLOW_COPY_AND_ASSIGN
   LockingScheduler(const LockingScheduler&);
   LockingScheduler& operator=(const LockingScheduler&);

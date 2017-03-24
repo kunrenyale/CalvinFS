@@ -20,21 +20,13 @@ class VLLScheduler : public Scheduler {
  private:
   static const int MaxBlockedActions = 50;
  public:
-  VLLScheduler() : safe_version_(1) {Cx.resize(ARRAY_SIZE, 0); Cs.resize(ARRAY_SIZE, 0);}
+  VLLScheduler() {Cx.resize(ARRAY_SIZE, 0); Cs.resize(ARRAY_SIZE, 0);}
 //  VLLScheduler() : safe_version_(1) {Cx(ARRAY_SIZE);}
   ~VLLScheduler() {}
-
-  virtual uint64 SafeVersion() {
-    return safe_version_;
-  }
-  virtual uint64 HighWaterMark() {
-    return safe_version_;
-  }
 
   virtual void MainLoopBody();
   
  private:
-  uint64 safe_version_;
   int blocked_actions;
   
   vector<int> Cx;

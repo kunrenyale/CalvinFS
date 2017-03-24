@@ -62,6 +62,8 @@ message Action {
 
   required uint64 distinct_id = 43;
 
+  optional uint32 involved_machines = 44 [default = 1];
+
   // Miscellaneous data.
   repeated Scalar misc = 51;
   

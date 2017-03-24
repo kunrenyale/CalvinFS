@@ -45,6 +45,8 @@ message Action {
   // w.r.t. the starting version for the ActionBatch.
   optional uint64 version_offset = 32;
 
+  optional uint32 involved_machines = 43 [default = 1];
+
   // Miscellaneous data.
   repeated Scalar misc = 51;
   

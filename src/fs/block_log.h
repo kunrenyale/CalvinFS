@@ -227,8 +227,13 @@ class BlockLogApp : public App {
           uint64 mds = config_->HashFileName(batch.entries(i).writeset(j));
           recipients.insert(config_->LookupMetadataShard(mds, replica_));
         }
+        
+        // Count how many machines are involved in this action
+        Action a = batch.entries(i);
+        a.set_involved_machines(recipients.size());
+
         for (auto it = recipients.begin(); it != recipients.end(); ++it) {
-          subbatches[*it].add_entries()->CopyFrom(batch.entries(i));
+          subbatches[*it].add_entries()->CopyFrom(a);
         }
       }
       for (auto it = mds_.begin(); it != mds_.end(); ++it) {

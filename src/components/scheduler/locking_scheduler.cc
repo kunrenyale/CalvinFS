@@ -29,7 +29,6 @@ void LockingScheduler::MainLoopBody() {
   if (static_cast<int>(active_actions_.size()) < kMaxActiveActions &&
       running_action_count_ < kMaxRunningActions &&
       action_requests_->Get(&action)) {
-    high_water_mark_ = action->version();
     active_actions_.insert(action->version());
     int ungranted_requests = 0;
 
@@ -84,10 +83,18 @@ void LockingScheduler::MainLoopBody() {
 
     active_actions_.erase(action->version());
     running_action_count_--;
-    safe_version_.store(
-        active_actions_.empty()
-        ? (high_water_mark_ + 1)
-        : *active_actions_.begin());
+
+    if (rand() % action->involved_machines() == 0) {
+      throughput_++;
+    }
+
+    double current_time = GetTime();
+    if (current_time - start_time_ > 0.5 && throughput_ > 0) {
+      LOG(ERROR) << "[" << machine()->machine_id() << "] "<< "Scheduler:  Throughput is :"<<throughput_/(current_time-start_time_);
+      throughput_ = 0;
+      start_time_ = current_time;
+    }
+
   }
 
   // Start executing all actions that have newly acquired all their locks.

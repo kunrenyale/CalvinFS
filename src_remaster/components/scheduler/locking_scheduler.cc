@@ -92,16 +92,24 @@ void LockingScheduler::MainLoopBody() {
         }
       }
     }
+
+    if (action->has_client_machine() && rand() % action->involved_machines() == 0) {
+      throughput_++;
+    }
+
+    double current_time = GetTime();
+    if (current_time - start_time_ > 0.5 && throughput_ > 0) {
+      LOG(ERROR) << "[" << machine()->machine_id() << "] "<< "Scheduler:  Throughput is :"<<throughput_/(current_time-start_time_);
+      throughput_ = 0;
+      start_time_ = current_time;
+    }
+
   }
 
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler finish running an action:  distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin();
 
   active_actions_.erase(action->version());
   running_action_count_--;
-  safe_version_.store(
-      active_actions_.empty()
-      ? (high_water_mark_ + 1)
-      : *active_actions_.begin());
   }
 
   // Start executing all actions that have newly acquired all their locks.
@@ -123,7 +131,6 @@ void LockingScheduler::MainLoopBody() {
       return;
     }
 
-    high_water_mark_ = action->version();
     active_actions_.insert(action->version());
     int ungranted_requests = 0;
 
