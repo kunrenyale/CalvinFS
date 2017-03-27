@@ -99,6 +99,7 @@ void LockingScheduler::MainLoopBody() {
 
     if (start_measure_ == false) {
       start_measure_ = true;
+      start_time_ = GetTime();
     }
 
   }
