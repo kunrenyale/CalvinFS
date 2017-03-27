@@ -694,7 +694,7 @@ void LatencyExperimentAppend() {
 
       // contention-free workload
       BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(j) + "/c" + IntToString(j),
-                             "/a" + IntToString((machine()->machine_id()+3)%9) + "/b" + IntToString(j+250) + "/d" + IntToString(machine()->GetGUID()));
+                             "/a" + IntToString((machine()->machine_id()+1)%9) + "/b" + IntToString(j+250) + "/d" + IntToString(machine()->GetGUID()));
 
 
       if (j % 50 == 0) {
