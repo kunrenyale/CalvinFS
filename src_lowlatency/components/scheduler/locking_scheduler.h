@@ -20,7 +20,7 @@ class LockingScheduler : public Scheduler {
 
  public:
   LockingScheduler()
-      : running_action_count_(0), throughput_(0), start_time_(GetTime()) {
+      : running_action_count_(0), throughput_(0), start_time_(GetTime()), start_measure_(false) {
   }
   virtual ~LockingScheduler() {}
 
@@ -41,6 +41,8 @@ class LockingScheduler : public Scheduler {
   uint64 throughput_;
 
   double start_time_;
+
+  bool start_measure_;
 
   // DISALLOW_COPY_AND_ASSIGN
   LockingScheduler(const LockingScheduler&);
