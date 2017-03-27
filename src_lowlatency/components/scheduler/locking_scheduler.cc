@@ -125,9 +125,9 @@ else {
         }
       }
 
-      if (rand() % (action->involved_machines()*2) == 0) {
+      /**if (rand() % (action->involved_machines()*2) == 0) {
         throughput_++;
-      }
+      }**/
 
     } else {
       set<string> writeset;
@@ -149,9 +149,9 @@ else {
         }
       }
 
-      if (rand() % action->involved_machines() == 0) {
+      /**if (rand() % action->involved_machines() == 0) {
         throughput_++;
-      }
+      }**/
     }
 //LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":** scheduler finish running action:" << action->version()<<" distinct id is:"<<action->distinct_id();
     active_actions_.erase(action->version());
@@ -159,10 +159,10 @@ else {
  
 
 
-    if (start_measure_ == false) {
+   /** if (start_measure_ == false) {
       start_measure_ = true;
       start_time_ = GetTime();
-    }
+    }**/
 
   }
 
@@ -173,12 +173,12 @@ else {
     store_->RunAsync(action, &completed_);
   }
 
-  double current_time = GetTime();
+  /**double current_time = GetTime();
   if (start_measure_ == true && current_time - start_time_ > 0.5 && throughput_ > 0) {
     LOG(ERROR) << "[" << machine()->machine_id() << "] "<< "Scheduler:  Throughput is :"<<throughput_/(current_time-start_time_);
     throughput_ = 0;
     start_time_ = current_time;
-  }
+  }**/
   
 }
 
