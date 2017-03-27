@@ -84,14 +84,14 @@ void LockingScheduler::MainLoopBody() {
     active_actions_.erase(action->version());
     running_action_count_--;
 
-    if (rand() % action->involved_machines() == 0) {
+    /**if (rand() % action->involved_machines() == 0) {
       throughput_++;
     }
 
     if (start_measure_ == false) {
       start_measure_ = true;
       start_time_ = GetTime();
-    }
+    }**/
   }
 
   // Start executing all actions that have newly acquired all their locks.
@@ -99,11 +99,11 @@ void LockingScheduler::MainLoopBody() {
     store_->RunAsync(action, &completed_);
   }
 
-  double current_time = GetTime();
+  /**double current_time = GetTime();
   if (start_measure_ == true && current_time - start_time_ > 0.2 && throughput_ > 0) {
     LOG(ERROR) << "[" << machine()->machine_id() << "] "<< "Scheduler:  Throughput is :"<<throughput_/(current_time-start_time_);
     throughput_ = 0;
     start_time_ = current_time;
-  }
+  }**/
 }
 
