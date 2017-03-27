@@ -174,8 +174,8 @@ else {
   }
 
   double current_time = GetTime();
-  if (start_measure_ == true && current_time - start_time_ > 0.5 && throughput_ > 0) {
-    LOG(ERROR) << "[" << machine()->machine_id() << "] "<< "Scheduler:  Throughput is :"<<throughput_/(current_time-start_time_);
+  if (start_measure_ == true && current_time - start_time_ > 0.2 && throughput_ > 0) {
+    LOG(ERROR) << "[" << machine()->machine_id() << "] "<< "Scheduler:  Throughput is: "<<throughput_/(current_time-start_time_);
     throughput_ = 0;
     start_time_ = current_time;
   }
