@@ -1,4 +1,3 @@
-// Author: Alex Thomson (thomson@cs.yale.edu)
 // Author: Kun  Ren (kun.ren@yale.edu)
 //
 
@@ -32,7 +31,6 @@ void LockingScheduler::MainLoopBody() {
 
     active_actions_.insert(action->version());
     int ungranted_requests = 0;
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":--Scheduler receive action:" << action->version()<<" distinct id is:"<<action->distinct_id()<<".  origin:"<<action->origin();
 
     if (action->single_replica() == false) {
       set<string> writeset;
@@ -93,11 +91,8 @@ void LockingScheduler::MainLoopBody() {
 
       running_action_count_++;
       store_->RunAsync(action, &completed_);
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ Get Lock immediately:" << action->version()<<" distinct id is:"<<action->distinct_id();
     } 
-else {
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ BLOCK:" << action->version()<<" distinct id is:"<<action->distinct_id();
-}
+
   }
 
   // Process all actions that have finished running.
@@ -153,7 +148,7 @@ else {
         throughput_++;
       }
     }
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":** scheduler finish running action:" << action->version()<<" distinct id is:"<<action->distinct_id();
+
     active_actions_.erase(action->version());
     running_action_count_--;
  
@@ -167,8 +162,7 @@ else {
   }
 
   // Start executing all actions that have newly acquired all their locks.
-  while (lm_.Ready(&action)) {
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":------------ Previous blocked, now active:" << action->version()<<" distinct id is:"<<action->distinct_id();    
+  while (lm_.Ready(&action)) {   
     running_action_count_++;
     store_->RunAsync(action, &completed_);
   }

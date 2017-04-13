@@ -1,4 +1,5 @@
 // Author: Alex Thomson
+// Author Kun Ren <kun.ren@yale.edu>
 //
 // An App that owns a Log, and a way of remotely reading that Log.
 

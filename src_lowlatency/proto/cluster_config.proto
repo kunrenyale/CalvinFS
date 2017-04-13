@@ -1,4 +1,5 @@
 // Author: Alex Thomson
+// Author:  Kun Ren <kun.ren@yale.edu>
 
 // ClusterConfig is essentially a collection of MachineInfo entries, each
 // of which stores the MachineID, host (ip address), and listen port for a

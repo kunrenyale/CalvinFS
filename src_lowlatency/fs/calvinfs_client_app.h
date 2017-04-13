@@ -1,5 +1,4 @@
-// Author: Alexander Thomson <thomson@cs.yale.edu>
-//         Kun  Ren <kun.ren@yale.edu>
+// Author: Kun  Ren <kun.ren@yale.edu>
 //
 
 #ifndef CALVIN_FS_CALVINFS_CLIENT_APP_H_

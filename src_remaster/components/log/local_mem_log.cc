@@ -1,4 +1,5 @@
 // Author: Alex Thomson
+// Author Kun Ren <kun.ren@yale.edu>
 //
 
 #include "components/log/local_mem_log.h"

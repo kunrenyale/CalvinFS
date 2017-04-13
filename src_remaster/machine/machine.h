@@ -1,4 +1,5 @@
 // Author: Alex Thomson
+// Author:  Kun Ren <kun.ren@yale.edu>
 //
 // A Machine is the basic unit of participation in a distributed application.
 //

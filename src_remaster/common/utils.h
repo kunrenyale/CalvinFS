@@ -1,5 +1,6 @@
 // Author Alexander Thomson <thomson@cs.yale.edu>
 // Author Thaddeus Diamond <diamond@cs.yale.edu>
+// Author Kun Ren <kun.ren@yale.edu>
 //
 // Some miscellaneous commonly-used utility functions.
 //

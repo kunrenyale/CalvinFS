@@ -1,4 +1,5 @@
 // Author: Alexander Thomson <thomson@cs.yale.edu>
+// Author:  Kun Ren <kun.ren@yale.edu>
 //
 
 #ifndef CALVIN_COMPONENTS_STORE_VERSIONED_KVSTORE_H_

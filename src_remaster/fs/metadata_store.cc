@@ -173,8 +173,6 @@ class DistributedExecutionContext : public ExecutionContext {
     replica_ = config_->LookupReplica(machine_->machine_id());
 
     machine_id_ = machine_->machine_id();
-
-//LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a txn:: data_channel_version:"<<data_channel_version;
    
     // Handle remaster action
     if (action->remaster() == true) {
@@ -238,7 +236,7 @@ class DistributedExecutionContext : public ExecutionContext {
             remaster_action->clear_remastered_keys();
             remaster_action->clear_distinct_id();
             remaster_action->set_distinct_id(machine_->GetGUID());
-//LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a remaster txn(will forward another remaster):: data_channel_version:"<<data_channel_version<<"  remaster id:"<<remaster_action->distinct_id();          
+         
             for (int i = 0; i < remote_keys.entries_size(); i++) {
               remaster_action->add_remastered_keys()->CopyFrom(remote_keys.entries(i));        
             }
@@ -258,11 +256,9 @@ class DistributedExecutionContext : public ExecutionContext {
         // If no local keys need to be remastered, then we can simply abort this action
         if (local_keys.size() == 0) {
           aborted_ = true;
-//LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a remaster txn(will abort):: data_channel_version:"<<data_channel_version; 
           return;
         }
-      }
-//LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a remaster txn(will run):: data_channel_version:"<<data_channel_version;           
+      }      
     } else {
     
       set<uint64> remote_nonmin_machines;
@@ -318,7 +314,6 @@ class DistributedExecutionContext : public ExecutionContext {
       uint64 min_machine_id;
       if (reader_ == false) {
         min_machine_id = *(remote_readers.begin());
-//LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a txn(reader_ == false), distinct id: "<<action->distinct_id();  
       }  else {
         min_machine_id = machine_id_; 
         if (remote_readers.size() > 0 && *(remote_readers.begin()) < min_machine_id) {
@@ -337,7 +332,7 @@ class DistributedExecutionContext : public ExecutionContext {
         m->Append(ToScalar<uint64>(machine_id_));
         m->Append(ToScalar<bool>(aborted_));
         machine_->SendMessage(header, m);
-//LOG(ERROR) << "Machine: "<<machine_id_<< "  not min_machine, wait for receiving the decision:: data_channel_version:"<<data_channel_version;   
+
         // Wait for the final decision
         AtomicQueue<MessageBuffer*>* channel = machine_->DataChannel("action-check-ack-" + UInt32ToString(origin_) + "-" + UInt64ToString(data_channel_version));
         // Get results.
@@ -352,11 +347,10 @@ class DistributedExecutionContext : public ExecutionContext {
         machine_->CloseDataChannel("action-check-ack-" + UInt32ToString(origin_) + "-" + UInt64ToString(data_channel_version));
 
         if (abort_decision == true) {
-          aborted_ = true;
-//LOG(ERROR) << "Machine: "<<machine_id_<< "  not min_machine, got the decision(will abort):: data_channel_version:"<<data_channel_version;   
+          aborted_ = true;  
           return;
         }
-//LOG(ERROR) << "Machine: "<<machine_id_<< "  not min_machine, got the decision(will execute):: data_channel_version:"<<data_channel_version; 
+
       } else {
         // min_machine_id
         map<string, pair<uint32, uint64>> old_keys_origins;
@@ -385,7 +379,7 @@ class DistributedExecutionContext : public ExecutionContext {
             aborted_ = true;
           }
         }
-//LOG(ERROR) << "Machine: "<<machine_id_<< "  min_machine, wait for receiving the data from all other machines:: data_channel_version:"<<data_channel_version;  
+ 
         // Wait to receive remote keys/masters
         AtomicQueue<MessageBuffer*>* channel = machine_->DataChannel("action-check-" + UInt32ToString(origin_) + "-" + UInt64ToString(data_channel_version));
         for (uint32 i = 0; i < remote_nonmin_machines.size(); i++) {
@@ -408,7 +402,6 @@ class DistributedExecutionContext : public ExecutionContext {
             aborted_ = true;
           }
 
-//LOG(ERROR) << "Machine: "<<machine_id_<< "  min_machine, got data from one remote machine:: data_channel_version:"<<data_channel_version<<" from machine:"<<remote_machine_id; 
           for (int j = 0; j < remote_entries.entries_size(); j++) {
             action->add_keys_origins()->CopyFrom(remote_entries.entries(j));
             string key = remote_entries.entries(j).key();
@@ -429,7 +422,6 @@ class DistributedExecutionContext : public ExecutionContext {
 
         // Send the final decision to all involved machines
         for (auto it = remote_nonmin_machines.begin(); it != remote_nonmin_machines.end(); ++it) {
-//LOG(ERROR) << "Machine: "<<machine_id_<< "  min_machine, send decision to machine:"<<(*it)<<" :: data_channel_version:"<<data_channel_version;
           Header* header = new Header();
           header->set_from(machine_id_);
           header->set_to(*it);
@@ -440,10 +432,8 @@ class DistributedExecutionContext : public ExecutionContext {
           machine_->SendMessage(header, m); 
         }
 
-//LOG(ERROR) << "Machine: "<<machine_id_<< "  min_machine, got all the data from all other machines:: data_channel_version:"<<data_channel_version<<" *** abort decision is:"<<aborted_;
         // Send the action to the new replica
         if (aborted_ == true) {
-//LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a txn:: data_channel_version:"<<data_channel_version<<"-- abort this action, will forward this action";
           if (replica_ != origin_) {
             return;
           }
@@ -466,11 +456,9 @@ class DistributedExecutionContext : public ExecutionContext {
           string* block = new string();
           action->SerializeToString(block);
           machine_->SendMessage(header, new MessageBuffer(Slice(*block)));
-//LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a txn::id:"<<data_channel_version<<"-- abort this action, and forward this action to: "<<machine_sent;
   
           return;
         }
-//LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a txn:: data_channel_version:"<<data_channel_version<<"-- will continue running this action. min machine is:"<<min_machine_id;   
       }
       
     
@@ -513,7 +501,6 @@ class DistributedExecutionContext : public ExecutionContext {
         // Close channel.
         machine_->CloseDataChannel("action-"+ UInt32ToString(origin_) + "-" + UInt64ToString(data_channel_version));
       }
-//LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext received a txn:: data_channel_version:"<<data_channel_version<<"-- finish DistributedExecutionContext. min machine is:"<<min_machine_id;  
     }
   }
 
@@ -525,7 +512,6 @@ class DistributedExecutionContext : public ExecutionContext {
         uint64 machine = config_->LookupMetadataShard(mds, replica_);
         if (machine == machine_id_) {
           store_->Put(it->first, it->second);
-//LOG(ERROR) << "Machine: "<<machine_id_<< "  DistributedExecutionContext just write a record, key:"<<it->first; 
         }
       }
       for (auto it = deletions_.begin(); it != deletions_.end(); ++it) {
@@ -605,9 +591,6 @@ uint64 MetadataStore::GetMachineForReplica(Action* action) {
   set<uint64> machines_involved;
   map<uint64, set<string>> remote_keys;
 
-
-//LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(begin)^^^^^^  distinct id is:"<<action->distinct_id();
-
   // Only need to check the readset(Note: read-write keys are also in the readset)
   for (int i = 0; i < action->readset_size(); i++) {
     uint64 mds = config_->HashFileName(action->readset(i));
@@ -624,7 +607,7 @@ uint64 MetadataStore::GetMachineForReplica(Action* action) {
       map_entry.set_master(replica_counter.first);
       map_entry.set_counter(replica_counter.second);
       action->add_keys_origins()->CopyFrom(map_entry);
-//LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(begin)^^^^^^  distinct id is:"<<action->distinct_id()<<" --key is local:"<<action->readset(i);
+
     } else {
       remote_keys[remote_machine_id].insert(action->readset(i));
     }
@@ -673,8 +656,6 @@ uint64 MetadataStore::GetMachineForReplica(Action* action) {
     to_expect--;
   }
 
-//LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(finish getting all master)^^^^^^  distinct id is:"<<action->distinct_id();
-
   CHECK(replica_involved.size() >= 1);
 
   uint32 lowest_replica = *(replica_involved.begin());
@@ -691,8 +672,6 @@ uint64 MetadataStore::GetMachineForReplica(Action* action) {
     }
   } else {
     action->set_single_replica(false);
-
-//LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::GetMachineForReplica(multi-replica action)^^^^^^  distinct id is:"<<action->distinct_id()<<"  will forward to machine:"<<config_->LookupMetadataShard(*(machines_involved.begin()), lowest_replica);
 
     return config_->LookupMetadataShard(*(machines_involved.begin()), lowest_replica);
   }
@@ -712,7 +691,6 @@ bool MetadataStore::CheckLocalMastership(Action* action, set<pair<string,uint64>
       if (key_counter > key_info.second) {
         keys.insert(make_pair(key, key_counter));
         can_execute_now = false;
-//LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::CheckLocalMastership(remaster action)^^^^^^  distinct id is:"<<action->distinct_id()<<"---- check failed, wait on :key:"<<key<<" and counter:"<<key_counter;
       }
     }
   } else {
@@ -755,7 +733,6 @@ uint32 MetadataStore::LocalReplica() {
 pair<uint32, uint64> MetadataStore::GetLocalKeyMastership(string key) {
    string value;
    if (!store_->Get(key, &value)) {
-//LOG(ERROR) << "Machine: "<<machine_id_<< "  MetadataStore::GetLocalKeyMastership: can not get the value, key is:"<<key;
      return make_pair(UINT32_MAX, UINT64_MAX);
    }
    MetadataEntry entry;
@@ -1018,7 +995,6 @@ void MetadataStore::Run(Action* action) {
   }
 
   if (context->Abort() == true) {
-//LOG(ERROR) << "Machine: "<<machine_->machine_id()<< " MetadataStore::Run(&&& Abort &&&)， action:"<<action->distinct_id();
     action->clear_client_machine();
     delete context;
     return;
@@ -1032,7 +1008,6 @@ void MetadataStore::Run(Action* action) {
 
   if (type == MetadataAction::REMASTER) {
     Remaster_Internal(context, action);
-//LOG(ERROR) << "Machine: "<<machine_->machine_id()<< " MetadataStore::Run(*** finish Remaster_Internal)， action:"<<action->distinct_id();
   } else {
 
   if (type == MetadataAction::CREATE_FILE) {
@@ -1057,13 +1032,11 @@ void MetadataStore::Run(Action* action) {
     out.SerializeToString(action->mutable_output());
 
   } else if (type == MetadataAction::RENAME) {
-//LOG(ERROR) << "Machine: "<<machine_->machine_id()<< " MetadataStore::Run(*** begin RENAME)， action:"<<action->distinct_id();
     MetadataAction::RenameInput in;
     MetadataAction::RenameOutput out;
     in.ParseFromString(action->input());
     Rename_Internal(context, in, &out);
     out.SerializeToString(action->mutable_output());
-//LOG(ERROR) << "Machine: "<<machine_->machine_id()<< " MetadataStore::Run(*** finish RENAME)， action:"<<action->distinct_id();
   } else if (type == MetadataAction::LOOKUP) {
     MetadataAction::LookupInput in;
     MetadataAction::LookupOutput out;
@@ -1130,12 +1103,10 @@ void MetadataStore::Remaster_Internal(ExecutionContext* context, Action* action)
       map_entry.set_master(origin_master);
       map_entry.set_counter(entry.counter());
       remastered_entries.add_entries()->CopyFrom(map_entry);
-//LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::Remaster_Internal^^^^^^  distinct id is:"<<action->distinct_id()<<" remaster record:"<<map_entry.key()<<"  from:"<<origin_from<<"  to:"<<origin_master;
     }
 
   }
 
-//LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::Remaster_Internal^^^^^^  distinct id is:"<<action->distinct_id();
 
   if (origin_master == replica_ || action->remaster_from() == replica_) {
     // Need to send message to confirm the completation of the remaster operation
@@ -1161,7 +1132,6 @@ void MetadataStore::Remaster_Internal(ExecutionContext* context, Action* action)
     m->Append(remastered_entries);
 
     machine_->SendMessage(header, m);
-//LOG(ERROR) << "Machine: "<<machine_id_<<":^^^^^^^^ MetadataStore::Remaster_Internal^^^^^^(send COMPLETED_REMASTER)  distinct id is:"<<action->distinct_id();
   }
 }
 

@@ -1,4 +1,3 @@
-// Author: Alexander Thomson <thomson@cs.yale.edu>
 //         Kun  Ren <kun.ren@yale.edu>
 //
 
@@ -257,7 +256,6 @@ MessageBuffer* CalvinFSClientApp::CopyFile(const Slice& from_path, const Slice& 
     usleep(100);
   }
 
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":^^^^^^^^ CalvinFSClientApp::CopyFile completed ^^^^^^  distinct id is:"<<distinct_id;
 
   Action result;
   result.ParseFromArray((*m)[0].data(), (*m)[0].size());
@@ -284,7 +282,6 @@ MessageBuffer* CalvinFSClientApp::RenameFile(const Slice& from_path, const Slice
   a->set_action_type(MetadataAction::RENAME);
   a->set_distinct_id(distinct_id);
 
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":^^^^^^^^ CalvinFSClientApp:: begin RenameFile ^^^^^^  distinct id is:"<<distinct_id;
 
   MetadataAction::RenameInput in;
   in.set_from_path(from_path.data(), from_path.size());
@@ -309,9 +306,6 @@ MessageBuffer* CalvinFSClientApp::RenameFile(const Slice& from_path, const Slice
     // Wait for action to complete and be sent back.
     usleep(100);
   }
-
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<<":^^^^^^^^ CalvinFSClientApp::RenameFile completed ^^^^^^  distinct id is:"<<distinct_id;
-  //machine()->CloseDataChannel(channel_name);
 
   Action result;
   result.ParseFromArray((*m)[0].data(), (*m)[0].size());

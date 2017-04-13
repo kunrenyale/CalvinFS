@@ -1,4 +1,5 @@
 // Author: Alex Thomson
+// Author Kun Ren <kun.ren@yale.edu>
 //
 // Super-simple in-memory implementation of a components log. The log entries
 // are in fact specific to a given Log object. This is not in any way a

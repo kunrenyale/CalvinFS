@@ -1,4 +1,5 @@
 // Author: Alex Thomson
+// Author:  Kun Ren <kun.ren@yale.edu>
 
 #include "machine/machine.h"
 

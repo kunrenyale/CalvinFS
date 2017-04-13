@@ -1,4 +1,5 @@
 // Author: Alex Thomson
+// Author:  Kun Ren <kun.ren@yale.edu>
 //
 // Protobuf type used as header for all caravan Messages.
 syntax = "proto2";

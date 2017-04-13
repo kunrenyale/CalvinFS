@@ -1,7 +1,6 @@
 // Author: Alex Thomson (thomson@cs.yale.edu)
 //         Kun  Ren <kun.ren@yale.edu>
 //
-// TODO(agt): Reduce number of string copies.
 
 #ifndef CALVIN_FS_BLOCK_LOG_H_
 #define CALVIN_FS_BLOCK_LOG_H_
@@ -52,7 +51,6 @@ LOG(ERROR) <<"^^^^^^^^^SequenceSource wrong!!!";
       } else {
         index_ = 0;
         offset_ = current_->misc();
-//LOG(ERROR) <<"^^^^^^^^^SequenceSource get a sequence:"<< offset_ << " first block_id is:"<<current_->pairs(0).first();
       }
     }
 
@@ -215,7 +213,6 @@ class BlockLogApp : public App {
       a->ParseFromArray((*message)[0].data(), (*message)[0].size());
       a->set_origin(replica_);
       queue_.Push(a);
-//LOG(ERROR) << "Machine: "<<machine()->machine_id() <<" =>Block log recevie a APPEND request. distinct id is:"<< a->distinct_id()<<" from machine:"<<header->from();
     } else if (header->rpc() == "BATCH") {
       // Write batch block to local block store.
       uint64 block_id = header->misc_int(0);
@@ -223,7 +220,7 @@ class BlockLogApp : public App {
       bool need_submit = header->misc_bool(0);
 
       blocks_->Put(block_id, (*message)[0]);
-//LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Block log recevie a BATCH request. block id is:"<< block_id <<" from machine:"<<header->from()<<" , batch size is:"<<batch_size;
+
       // Parse batch.
       ActionBatch batch;
       batch.ParseFromArray((*message)[0].data(), (*message)[0].size());
@@ -289,7 +286,6 @@ class BlockLogApp : public App {
           if (batch.entries(i).single_replica() == false && batch.entries(i).new_generated() == false) {
             for (int j = 0; j < batch.entries(i).involved_replicas_size(); j++) {
               if (batch.entries(i).involved_replicas(j) == replica_) {
-//LOG(ERROR) << "Machine: "<<machine()->machine_id() << " =>Add the faked multi-replicas actions into batch. block id: "<<block_id<<"  distinct_id:"<<batch.entries(i).distinct_id();
                  fake_action_batch.add_entries()->CopyFrom(batch.entries(i));
                  break;
               }
@@ -306,7 +302,6 @@ class BlockLogApp : public App {
         header->set_rpc("FAKEACTIONBATCH");
         header->add_misc_int(block_id);
         machine()->SendMessage(header, new MessageBuffer(fake_action_batch));
-//LOG(ERROR) << "Machine: "<<machine()->machine_id() << " Send FAKEACTIONBATCH . block id: "<<block_id<<"  size(): "<<fake_action_batch.entries_size();
       }
       
 
@@ -316,19 +311,16 @@ class BlockLogApp : public App {
 
       uint64 count = header->misc_int(1);
       paxos_leader_->Append(block_id, count);
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log recevie a SUBMIT request. block id is:"<< block_id<<" . size:"<<count<<" from machine:"<<header->from();
     } else if (header->rpc() == "SUBBATCH") {
       uint64 block_id = header->misc_int(0);
       ActionBatch* batch = new ActionBatch();
       batch->ParseFromArray((*message)[0].data(), (*message)[0].size());
       subbatches_.Put(block_id, batch);
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log recevie a SUBBATCH request. block id is:"<< block_id<<" from machine:"<<header->from();
     } else if (header->rpc() == "FAKEACTIONBATCH") {
       uint64 block_id = header->misc_int(0);
       ActionBatch* batch = new ActionBatch();
       batch->ParseFromArray((*message)[0].data(), (*message)[0].size());
-      fakebatches_.Put(block_id, batch);
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received FAKEACTIONBATCH request.  batch_id:"<<block_id<<"  size is:"<<batch->entries_size();  
+      fakebatches_.Put(block_id, batch); 
     } else if (header->rpc() == "APPEND_MULTIREPLICA_ACTIONS") {
       MessageBuffer* m = NULL;
       PairSequence sequence;
@@ -338,21 +330,18 @@ class BlockLogApp : public App {
       CHECK(m != NULL);
 
       sequence.ParseFromArray((*m)[0].data(), (*m)[0].size());
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request. version:"<<sequence.misc();
       ActionBatch* fake_subbatch = NULL;
       Action* new_action;
 
       for (int i = 0; i < sequence.pairs_size();i++) {
         uint64 fake_subbatch_id = sequence.pairs(i).first();
 
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  begin batch_id:"<<fake_subbatch_id<<" version:"<<sequence.misc();
         bool got_it;
         do {
           got_it = fakebatches_.Lookup(fake_subbatch_id, &fake_subbatch);
           usleep(10);
         } while (got_it == false);
 
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request. (after get the fake_subbatch):"<<fake_subbatch_id<<"  size is:"<<fake_subbatch->entries_size();
 
         if (fake_subbatch->entries_size() == 0) {
           continue;
@@ -372,19 +361,16 @@ class BlockLogApp : public App {
             new_action->clear_client_channel();
           } else {
             new_action->set_fake_action(false);
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request(fake_action). append a action:"<<new_action->distinct_id()<<" block id:"<<fake_subbatch_id;
           }
           
           new_action->clear_involved_machines();
           new_action->set_new_generated(true);
           new_generated_queue.Push(new_action);
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  append a action:"<<new_action->distinct_id()<<" batch size is:"<<fake_subbatch->entries_size()<<" block id:"<<fake_subbatch_id;   
         }
 
         fakebatches_.Erase(fake_subbatch_id);
         delete fake_subbatch;
         fake_subbatch = NULL;
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  finish batch_id:"<<fake_subbatch_id;   
       }
 
       if (new_generated_queue.Size() > 0) {
@@ -410,8 +396,6 @@ class BlockLogApp : public App {
 
           // Choose block_id.
           block_id = machine()->GetGUID() * 2 + (block->size() > 1024 ? 1 : 0);
-
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log Received APPEND_MULTIREPLICA_ACTIONS request.  new_generated batch id:"<<block_id; 
 
           // Send batch to block stores.
           for (uint64 i = 0; i < config_->config().block_replication_factor(); i++) {
@@ -443,8 +427,7 @@ class BlockLogApp : public App {
       Scalar s;
       s.ParseFromArray((*message)[0].data(), (*message)[0].size());
       h->set_ack_counter(FromScalar<uint64>(s));
-      machine()->SendMessage(h, new MessageBuffer());   
-//LOG(ERROR) << "Machine: "<<machine()->machine_id()<< "=>Block log send back a APPEND_MULTIREPLICA_ACTIONS request.  from machine:"<<header->from();     
+      machine()->SendMessage(h, new MessageBuffer());      
 
     } else {
       LOG(FATAL) << "unknown RPC type: " << header->rpc();
@@ -490,7 +473,6 @@ class BlockLogApp : public App {
   AtomicQueue<Action*> queue_;
 
   // Delayed deallocation queue.
-  // TODO(agt): Ugh this is horrible, we should replace this with ref counting!
   DelayQueue<string*> to_delete_;
 
   uint64 local_paxos_leader_;
@@ -512,7 +494,6 @@ class BlockLogApp : public App {
             subbatch_id_ = p->first();
             subbatch_version_ = p->second();
             delete p;
-//LOG(ERROR) << "*********Blocklog subbatch_id:"<< subbatch_id_ << " subbatch_version_:"<<subbatch_version_;
           } else {
             usleep(200);
             return false;
@@ -525,14 +506,12 @@ class BlockLogApp : public App {
           // Have we received the subbatch corresponding to subbatch_id_?
           if (!log_->subbatches_.Lookup(subbatch_id_, &subbatch_)) {
             // Nope. Gotta try again later.
-//LOG(ERROR) << "*********Have we received the subbatch corresponding to subbatch_id_? batch_id:"<<subbatch_id_;
             usleep(20);
             return false;
           } else {
             // Got the subbatch! Is it empty?
             if (subbatch_->entries_size() == 0) {
               // Doh, the batch was empty! Throw it away and keep looking.
-//LOG(ERROR) <<"*********Doh, the batch was empty! Throw it away and keep looking.";
               delete subbatch_;
               log_->subbatches_.Erase(subbatch_id_);
               subbatch_ = NULL;
@@ -540,7 +519,6 @@ class BlockLogApp : public App {
             } else {
               // Okay, got a non-empty subbatch! Reverse the order of elements
               // so we can now repeatedly call ReleaseLast on the entries.
-//LOG(ERROR) <<"*********Okay, got a non-empty subbatch! Reverse the order of elements. the subbatch size is:"<<subbatch_->entries_size();
               for (int i = 0; i < subbatch_->entries_size() / 2; i++) {
                 subbatch_->mutable_entries()->SwapElements(
                     i,
@@ -552,7 +530,6 @@ class BlockLogApp : public App {
           }
         } else {
           // Already had a good subbatch. Onward.
-//LOG(ERROR) <<"*********Already had a good subbatch. Onward.";
           break;
         }
       }
@@ -562,7 +539,6 @@ class BlockLogApp : public App {
       *a = subbatch_->mutable_entries()->ReleaseLast();
       (*a)->set_version(subbatch_version_ + (*a)->version_offset());
       (*a)->clear_version_offset();
-//LOG(ERROR) <<"^^^^^^^^^ActionSource get a txn: distinct_id is: "<<(*a)->distinct_id();
       if (subbatch_->entries_size() == 0) {
         // Okay, NOW the batch is empty.
         delete subbatch_;

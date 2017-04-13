@@ -1,5 +1,7 @@
 // Author: Alexander Thomson (thomson@cs.yale.edu)
+// Author:  Kun Ren <kun.ren@yale.edu>
 //
+
 
 #include <gflags/gflags.h>
 #include <glog/logging.h>
