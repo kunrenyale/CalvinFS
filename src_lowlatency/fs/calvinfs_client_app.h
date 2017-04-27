@@ -814,19 +814,19 @@ void LatencyExperimentRenameFile(int local_percentage) {
           a2 = rand() % 1000;
         }
         // contention-free workload
-        BackgroundRenameFile2("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(j) + "/c" + IntToString(j),
-                             "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(j+250) + "/d" + IntToString(machine()->GetGUID()), false);
+        /**BackgroundRenameFile2("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(j) + "/c" + IntToString(j),
+                             "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(j+250) + "/d" + IntToString(machine()->GetGUID()), false);**/
 
-        /**BackgroundRenameFile2("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a1) + "/c" + IntToString(j),
-                           "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a2) + "/d" + IntToString(machine()->GetGUID()), false); **/
+        BackgroundRenameFile2("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a1) + "/c" + IntToString(j),
+                           "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a2) + "/d" + IntToString(machine()->GetGUID()), false); 
       } else {
         // contention-free workload
-        BackgroundRenameFile2("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(j) + "/c" + IntToString(j),
-                             "/a" + IntToString((machine()->machine_id()+3)%9) + "/b" + IntToString(j+250) + "/d" + IntToString(machine()->GetGUID()), true);
+       /** BackgroundRenameFile2("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(j) + "/c" + IntToString(j),
+                             "/a" + IntToString((machine()->machine_id()+3)%9) + "/b" + IntToString(j+250) + "/d" + IntToString(machine()->GetGUID()), true);**/
 
         // Copy operations that cross data centers
-        /**BackgroundRenameFile2("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/c" + IntToString(j),
-                           "/a" + IntToString(machines_other_replicas[rand()%size_other_machines]) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()), true);**/
+        BackgroundRenameFile2("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/c" + IntToString(j),
+                           "/a" + IntToString(machines_other_replicas[rand()%size_other_machines]) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()), true);
         }     
 
         if (j % 50 == 0) {
