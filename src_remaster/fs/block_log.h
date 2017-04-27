@@ -230,7 +230,7 @@ class BlockLogApp : public App {
         }
         
       } else if (a->single_replica() == true && header->from()/config_->GetPartitionsPerReplica() == replica_) {
-        // Directly push the action into the queue if it is from local replica, otherwise double check
+        // Directly push the action into the queue if it is from local replica and is single-replica action. Otherwise we should check before push it into the queue
         queue_.Push(a);
       } else {
         Lock l(&remaster_latch);
