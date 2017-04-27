@@ -803,7 +803,7 @@ void LatencyExperimentRenameFile(int local_percentage) {
     // Begin mix of operations.
     reporting_ = true;
     double start = GetTime();
-    for (int j = 0; j < 50; j++) {
+    for (int j = 0; j < 250; j++) {
       int seed = rand() % 100;
       
       // Copy operations inside one data center
@@ -814,19 +814,19 @@ void LatencyExperimentRenameFile(int local_percentage) {
           a2 = rand() % 1000;
         }
         // contention-free workload
-        BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(j) + "/c" + IntToString(j),
-                             "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(j+250) + "/d" + IntToString(machine()->GetGUID()));
+        BackgroundRenameFile2("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(j) + "/c" + IntToString(j),
+                             "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(j+250) + "/d" + IntToString(machine()->GetGUID()), false);
 
-        /**BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a1) + "/c" + IntToString(j),
-                           "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a2) + "/d" + IntToString(machine()->GetGUID())); **/
+        /**BackgroundRenameFile2("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a1) + "/c" + IntToString(j),
+                           "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a2) + "/d" + IntToString(machine()->GetGUID()), false); **/
       } else {
         // contention-free workload
-        BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(j) + "/c" + IntToString(j),
-                             "/a" + IntToString((machine()->machine_id()+3)%9) + "/b" + IntToString(j+250) + "/d" + IntToString(machine()->GetGUID()));
+        BackgroundRenameFile2("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(j) + "/c" + IntToString(j),
+                             "/a" + IntToString((machine()->machine_id()+3)%9) + "/b" + IntToString(j+250) + "/d" + IntToString(machine()->GetGUID()), true);
 
         // Copy operations that cross data centers
-        /**BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/c" + IntToString(j),
-                           "/a" + IntToString(machines_other_replicas[rand()%size_other_machines]) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));**/
+        /**BackgroundRenameFile2("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/c" + IntToString(j),
+                           "/a" + IntToString(machines_other_replicas[rand()%size_other_machines]) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()), true);**/
         }     
 
         if (j % 50 == 0) {
@@ -1015,6 +1015,31 @@ void LatencyExperimentRenameFile(int local_percentage) {
     header->add_misc_string(from_path.data(), from_path.size());
     header->add_misc_string(to_path.data(), to_path.size());
     if (reporting_ && rand() % 2 == 0) {
+      header->set_callback_app(name());
+      header->set_callback_rpc("CB");
+      header->add_misc_string("rename");
+      header->add_misc_double(GetTime());
+    } else {
+      header->set_ack_counter(reinterpret_cast<uint64>(&capacity_));
+      while (capacity_.load() <= 0) {
+        // Wait for some old operations to complete.
+        usleep(100);
+      }
+      --capacity_;
+    }
+    machine()->SendMessage(header, new MessageBuffer());
+  }
+
+  void BackgroundRenameFile2 (const Slice& from_path, const Slice& to_path, bool multireplica) {
+    Header* header = new Header();
+    header->set_from(machine()->machine_id());
+    header->set_to(machine()->machine_id());
+    header->set_type(Header::RPC);
+    header->set_app(name());
+    header->set_rpc("RENAME_FILE");
+    header->add_misc_string(from_path.data(), from_path.size());
+    header->add_misc_string(to_path.data(), to_path.size());
+    if ((multireplica == true) || (reporting_ && rand() % 2 == 0)) {
       header->set_callback_app(name());
       header->set_callback_rpc("CB");
       header->add_misc_string("rename");
