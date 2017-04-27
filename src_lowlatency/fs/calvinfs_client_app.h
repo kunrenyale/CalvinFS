@@ -813,12 +813,20 @@ void LatencyExperimentRenameFile(int local_percentage) {
         while (a2 == a1) {
           a2 = rand() % 1000;
         }
-        BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a1) + "/c" + IntToString(j),
-                           "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a2) + "/d" + IntToString(machine()->GetGUID()));
+        // contention-free workload
+        BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(j) + "/c" + IntToString(j),
+                             "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(j+250) + "/d" + IntToString(machine()->GetGUID()));
+
+        /**BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a1) + "/c" + IntToString(j),
+                           "/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(a2) + "/d" + IntToString(machine()->GetGUID())); **/
       } else {
+        // contention-free workload
+        BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(j) + "/c" + IntToString(j),
+                             "/a" + IntToString((machine()->machine_id()+3)%9) + "/b" + IntToString(j+250) + "/d" + IntToString(machine()->GetGUID()));
+
         // Copy operations that cross data centers
-        BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/c" + IntToString(j),
-                           "/a" + IntToString(machines_other_replicas[rand()%size_other_machines]) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));
+        /**BackgroundRenameFile("/a" + IntToString(machine()->machine_id()) + "/b" + IntToString(rand() % 1000) + "/c" + IntToString(j),
+                           "/a" + IntToString(machines_other_replicas[rand()%size_other_machines]) + "/b" + IntToString(rand() % 1000) + "/d" + IntToString(machine()->GetGUID()));**/
         }     
 
         if (j % 50 == 0) {
