@@ -111,20 +111,27 @@ void Paxos2App::HandleOtherMessages(Header* header, MessageBuffer* message) {
     has_local_sequence_ = 1;
 
   } else if (header->rpc() == "NEW-SEQUENCE") {
-
-PairSequence other_sequence;
-other_sequence.ParseFromArray((*message)[0].data(), (*message)[0].size());
-CHECK(other_sequence.pairs_size() != 0);
-
-MessageBuffer* m = new MessageBuffer(other_sequence);
-
     Scalar s;
-    s.ParseFromArray((*message)[1].data(), (*message)[1].size());
-    m->Append(s);
-    s.ParseFromArray((*message)[2].data(), (*message)[2].size());
-    m->Append(s);
+    s.ParseFromArray((*message)[0].data(), (*message)[0].size());
+    uint32 count = FromScalar<uint32>(s);
+   
+    Scalar s2;
+    s2.ParseFromArray((*message)[2*count+1].data(), (*message)[2*count+1].size());
+    PairSequence other_sequence;
 
-    sequences_other_replicas.Push(m);
+    for (uint32 i = 0; i < count; i++) {
+      other_sequence.ParseFromArray((*message)[i*2+1].data(), (*message)[i*2+1].size());
+      CHECK(other_sequence.pairs_size() != 0);
+
+      MessageBuffer* m = new MessageBuffer(other_sequence);
+
+      s.ParseFromArray((*message)[i*2+2].data(), (*message)[i*2+2].size());
+      m->Append(s);
+      m->Append(s2);
+
+      sequences_other_replicas.Push(m);
+    }
+
 
   } else if (header->rpc() == "NEW-SEQUENCE-ACK") {
     // Send next sequence to the from-replica
@@ -141,6 +148,17 @@ MessageBuffer* m = new MessageBuffer(other_sequence);
 
     CHECK(find == true);
 
+    vector<Slice> slices;
+    vector<uint64> counts;
+
+    slices.push_back(r->Entry());
+    counts.push_back(r->Count());
+
+    while (r->Next() == true) {
+      slices.push_back(r->Entry());
+      counts.push_back(r->Count());
+    }
+
     Header* header2 = new Header();
     header2->set_from(machine()->machine_id());
     header2->set_to(from_replica * partitions_per_replica);
@@ -148,8 +166,13 @@ MessageBuffer* m = new MessageBuffer(other_sequence);
     header2->set_app(name());
     header2->set_rpc("NEW-SEQUENCE");
     MessageBuffer* m = new MessageBuffer();
-    m->Append(r->Entry());
-    m->Append(ToScalar<uint64>(r->Count()));
+    m->Append(ToScalar<uint32>(slices.size()));
+
+    for (uint32 i = 0; i < slices.size();i++) {
+      m->Append(slices[i]);
+      m->Append(ToScalar<uint64>(counts[i]));
+    }
+
     m->Append(ToScalar<uint32>(machine()->machine_id()));
     machine()->SendMessage(header2, m);
 
@@ -295,7 +318,9 @@ CHECK(other_sequence.pairs_size() != 0);
           header->set_type(Header::RPC);
           header->set_app(name());
           header->set_rpc("NEW-SEQUENCE");
-          m = new MessageBuffer(new string(encoded));
+          m = new MessageBuffer();
+          m->Append(ToScalar<uint32>(1));
+          m->Append(new string(encoded));
 	  m->Append(ToScalar<uint64>(next_version - version));
           m->Append(ToScalar<uint32>(machine()->machine_id()));
           machine()->SendMessage(header, m);
