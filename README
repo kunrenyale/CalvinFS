@@ -30,9 +30,10 @@ Then run source ~/.bashrc.
 
 
 4. Now you can compile the code:
-Currently there are two source code directories:
+Currently there are three source code directories:
 src/ ------- The original CalvinFS source code (Synchronous-by-default)
-src_lowlatency/ -------- The low-latency CalvinFS that we are currently working on. (consistent-by-default)
+src_lowlatency/ --------  The low-latency CalvinFS that uses request chopping algorithm. (consistent-by-default)
+src_remaster/   --------- The low-latency CalvinFS that uses remaster algorithm. (consistent-by-default)
 
 $ cd ~/CalvinFS/src
 $ make -j
